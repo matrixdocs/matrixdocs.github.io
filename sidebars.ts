@@ -2,6 +2,7 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
 const sidebars: SidebarsConfig = {
   mainSidebar: [
+    'index',
     {
       type: 'category',
       label: 'Getting Started',
@@ -34,6 +35,16 @@ const sidebars: SidebarsConfig = {
         'servers/dendrite',
         'servers/conduit',
         'servers/comparison',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Deployment',
+      collapsed: true,
+      items: [
+        'deployment/overview',
+        'deployment/docker',
+        'deployment/ansible',
       ],
     },
     {
@@ -87,6 +98,23 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: 'Security & Privacy',
+      collapsed: true,
+      items: [
+        'security/overview',
+        'security/account',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Troubleshooting',
+      collapsed: true,
+      items: [
+        'troubleshooting/overview',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Hidden Gems',
       collapsed: true,
       items: [
@@ -95,6 +123,14 @@ const sidebars: SidebarsConfig = {
         'gems/lesser-known-clients',
         'gems/advanced-features',
         'gems/self-hosting-tips',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Community',
+      collapsed: true,
+      items: [
+        'community/overview',
       ],
     },
   ],

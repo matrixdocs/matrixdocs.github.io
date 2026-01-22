@@ -102,9 +102,17 @@ const config: Config = {
           ],
         },
         {
-          to: '/specification/overview',
-          label: 'Spec',
+          type: 'dropdown',
+          label: 'Resources',
           position: 'left',
+          items: [
+            {label: 'Specification', to: '/specification/overview'},
+            {label: 'Deployment', to: '/deployment/overview'},
+            {type: 'html', value: '<hr style="margin: 0.5rem 0;">'},
+            {label: 'Security & Privacy', to: '/security/overview'},
+            {label: 'Troubleshooting', to: '/troubleshooting/overview'},
+            {label: 'Community', to: '/community/overview'},
+          ],
         },
         {
           href: 'https://github.com/matrixdocs/matrixdocs.github.io',
@@ -135,18 +143,21 @@ const config: Config = {
           ],
         },
         {
-          title: 'Community',
+          title: 'Resources',
           items: [
-            {label: 'Matrix.org', href: 'https://matrix.org'},
-            {label: 'Element', href: 'https://element.io'},
-            {label: 'Spec', href: 'https://spec.matrix.org'},
+            {label: 'Deployment', to: '/deployment/overview'},
+            {label: 'Security', to: '/security/overview'},
+            {label: 'Troubleshooting', to: '/troubleshooting/overview'},
+            {label: 'Specification', to: '/specification/overview'},
           ],
         },
         {
-          title: 'More',
+          title: 'Community',
           items: [
+            {label: 'Community & Resources', to: '/community/overview'},
+            {label: 'Matrix.org', href: 'https://matrix.org'},
+            {label: 'Element', href: 'https://element.io'},
             {label: 'GitHub', href: 'https://github.com/matrixdocs/matrixdocs.github.io'},
-            {label: 'Matrix Room', href: 'https://matrix.to/#/#matrixdocs:matrix.org'},
           ],
         },
       ],
