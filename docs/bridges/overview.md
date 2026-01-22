@@ -33,6 +33,10 @@ The mautrix bridge family is the most actively maintained set of bridges:
 | **E2EE stable** | End-to-bridge encryption production-ready |
 | **MSC4153 support** | Cross-signing for bridge bots |
 | **Matrix v12 rooms** | Full support in Hookshot and mautrix bridges |
+| **bridgev2 framework** | New unified architecture for Go bridges |
+| **mautrix-zulip** | New Zulip bridge with thread support |
+| **mautrix-irc** | New IRC bridge replacing Heisenbridge |
+| **DMA progress** | WhatsApp interoperability moving forward |
 
 ## Bridge Types
 
@@ -112,6 +116,7 @@ Features:
 | [Telegram](./telegram) | mautrix-telegram | ✅ | ✅ | Stable | Relay + puppet modes |
 | [Slack](./slack) | matrix-appservice-slack | ✅ | ✅ | Stable | OAuth or token |
 | [IRC](./irc) | Heisenbridge | Bouncer | ❌ | Stable | Per-user connections |
+| [IRC](./irc) | mautrix-irc | ✅ | ✅ | **New** | bridgev2 framework |
 | [Signal](./signal) | mautrix-signal | ✅ | ✅ | Stable | **NEW:** History backfill |
 | [WhatsApp](./whatsapp) | mautrix-whatsapp | ✅ | ✅ | Stable | Multi-device API |
 | Instagram | mautrix-meta | ✅ | ✅ | Stable | **Replaces mautrix-instagram** |
@@ -120,12 +125,120 @@ Features:
 | Google Chat | mautrix-googlechat | ✅ | ✅ | Stable | Workspace accounts |
 | LinkedIn | beeper-linkedin | ✅ | ✅ | Beta | Based on mautrix-python |
 | Twitter/X | mautrix-twitter | ✅ | ✅ | Stable | DMs only |
+| Zulip | mautrix-zulip | ✅ | ✅ | **New** | Topics → threads |
+| Bluesky | (in progress) | - | - | Exploratory | Community efforts |
 
 ### Bridge Version Format (2025)
 
 Go-based mautrix bridges now use calendar versioning: `vYY.0M.patch`
 - Example: `v25.01.2` = January 2025, patch 2
 - Makes it easy to see how old a version is
+
+## New Bridge Initiatives (2025)
+
+### mautrix-zulip
+
+A new bridge connecting Matrix to [Zulip](https://zulip.com/), the team chat platform.
+
+**Key features:**
+- Zulip **topics** map to Matrix **threads** (MSC3440)
+- Full puppeting support
+- E2EE support via bridgev2 framework
+- Works with both Zulip Cloud and self-hosted
+
+```yaml title="Basic config"
+zulip:
+  site: https://your-org.zulipchat.com
+  email: bot-email@example.com
+  api_key: your-bot-api-key
+```
+
+**Status:** New, part of the bridgev2 rewrite
+
+### mautrix-irc (bridgev2)
+
+A new IRC bridge built on the modern bridgev2 framework, designed to eventually replace Heisenbridge.
+
+**Why a new IRC bridge?**
+- **Unified architecture** - Same framework as other mautrix bridges
+- **E2EE support** - Unlike Heisenbridge
+- **Better maintenance** - Part of the mautrix ecosystem
+- **Modern features** - Threads, reactions where possible
+
+**Comparison:**
+
+| Feature | Heisenbridge | mautrix-irc |
+|---------|--------------|-------------|
+| Framework | Standalone | bridgev2 |
+| E2EE | ❌ | ✅ |
+| Bouncer mode | ✅ | ✅ |
+| Relay mode | ✅ | ✅ |
+| Maintenance | Stable | Active development |
+
+**Status:** Active development, not yet production-ready for all use cases
+
+### DMA Interoperability
+
+The EU Digital Markets Act (DMA) requires "gatekeepers" (Meta, Apple, Google) to enable interoperability with other messaging platforms. Matrix is a key player.
+
+**WhatsApp → Matrix progress:**
+
+| Aspect | Status |
+|--------|--------|
+| Protocol work | Active via Matrix.org Foundation |
+| Geographic availability | EU only (initially) |
+| User opt-in | Required on both sides |
+| E2EE | Must be maintained |
+| Feature parity | Basic messaging first |
+
+**What this means:**
+- Official WhatsApp interoperability (beyond the mautrix bridge)
+- Users must explicitly opt-in to third-party messaging
+- Initially EU residents only
+- Basic text messaging first, media/calls later
+
+**Timeline:**
+- DMA compliance deadline: March 2024
+- WhatsApp announced interop plans: 2024
+- Full rollout: Gradual through 2025-2026
+
+:::info DMA vs mautrix-whatsapp
+DMA interoperability is **official** Meta support. mautrix-whatsapp uses the unofficial multi-device API. Both can coexist - mautrix gives you more control today.
+:::
+
+### Bluesky Bridge
+
+Community exploration of bridging Matrix to Bluesky (AT Protocol).
+
+**Challenges:**
+- Bluesky is public-first (like Twitter), not private DMs
+- Different model: posts vs chat messages
+- AT Protocol identity system differs from Matrix
+
+**Current approaches:**
+- **Post mirroring** - Public Matrix rooms mirror Bluesky feeds
+- **Bot integration** - Bots that post/reply across platforms
+- **Full bridge** - Not yet viable for DMs
+
+**Status:** Exploratory, community-driven projects. No official mautrix bridge yet.
+
+### bridgev2 Framework
+
+The next generation architecture for mautrix Go bridges. Being adopted by all new bridges.
+
+**What's different:**
+- Unified connector interface
+- Better state management
+- Simplified configuration
+- Improved logging/metrics
+- Easier to add new networks
+
+**Bridges using bridgev2:**
+- mautrix-signal (ported)
+- mautrix-whatsapp (ported)
+- mautrix-discord (porting)
+- mautrix-irc (new)
+- mautrix-zulip (new)
 
 ## Hosted Bridge Services
 
@@ -400,6 +513,22 @@ Bridges use MSC2409 for ephemeral events:
 - Check `ephemeral_events: true` in registration
 - Update bridge config if using old instance
 
+## Resources
+
+### Official
+- [mautrix bridges](https://github.com/mautrix) - Main bridge repositories
+- [mautrix documentation](https://docs.mau.fi/bridges/) - Comprehensive setup guides
+- [Matrix.org bridges](https://matrix.org/ecosystem/bridges/) - Official bridge listing
+
+### Community
+- [#bridges:matrix.org](https://matrix.to/#/#bridges:matrix.org) - General bridge discussion
+- [#mautrix:maunium.net](https://matrix.to/#/#mautrix:maunium.net) - mautrix bridge support
+- [#heisenbridge:vi.fi](https://matrix.to/#/#heisenbridge:vi.fi) - IRC bridge support
+
+### DMA/Interoperability
+- [Matrix.org DMA updates](https://matrix.org/blog/category/dma/) - Official DMA progress
+- [MIMI working group](https://datatracker.ietf.org/wg/mimi/about/) - IETF interoperability work
+
 ## Next Steps
 
 Choose a bridge to set up:
@@ -409,3 +538,7 @@ Choose a bridge to set up:
 - [IRC Bridge](./irc)
 - [Signal Bridge](./signal)
 - [WhatsApp Bridge](./whatsapp)
+
+---
+
+*Last updated: January 2025*
