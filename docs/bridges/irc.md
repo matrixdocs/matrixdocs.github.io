@@ -6,14 +6,28 @@ description: Bridge Matrix to IRC networks
 
 # IRC Bridge
 
-Connect to IRC networks from Matrix using Heisenbridge.
+Connect to IRC networks from Matrix using Heisenbridge - a bouncer-style IRC bridge.
 
 ## Why Heisenbridge?
 
-- **Personal bouncer** style - Each user connects separately
-- **Modern codebase** - Python 3, async
-- **Simple setup** - Easy to deploy
-- **Full IRC support** - All standard features
+Heisenbridge takes a **bouncer approach**: each Matrix user connects to IRC individually, like a traditional IRC bouncer. This is different from portal-style bridges.
+
+| Feature | Heisenbridge | matrix-appservice-irc |
+|---------|--------------|----------------------|
+| **Style** | Bouncer (per-user) | Portal (server-wide) |
+| **Setup** | Simple | Complex |
+| **IRC identity** | Your own | Shared prefix |
+| **Admin required** | Yes (appservice) | Yes |
+| **Best for** | Personal use | Communities |
+
+### Key Features
+
+- **Zero configuration** - No database required
+- **Bouncer mode** - Each user has their own IRC connection
+- **Relaybot mode** - Optional shared connection for rooms
+- **Full IRC** - All standard IRC features work
+- **Managed via DM** - Just message @heisenbridge
+- **Sustainable maintenance** - Active development (v1.14.5+)
 
 ## Docker Setup
 
@@ -149,6 +163,55 @@ NICK differentnick
 
 Heisenbridge reconnects automatically. Check logs for errors.
 
+## Bouncer vs Relaybot Mode
+
+### Bouncer Mode (Default)
+
+Each Matrix user gets their own IRC connection:
+
+```
+Matrix User Alice  →  IRC user "Alice"
+Matrix User Bob    →  IRC user "Bob"
+```
+
+- Full control over your IRC identity
+- Private messages work naturally
+- You manage your own channels
+
+### Relaybot Mode
+
+Single IRC connection relays messages for a Matrix room:
+
+```
+Matrix Room  →  [Heisenbridge Relay]  →  IRC Channel
+```
+
+Use when:
+- Bridging a community room
+- Users don't need individual IRC identities
+- Simpler management needed
+
+**Enable relaybot:**
+In the network room: `RELAYBOT #channel`
+
+## User Synchronization
+
+Control how IRC users appear in Matrix:
+
+| Mode | Behavior |
+|------|----------|
+| **Full** | Sync all users on connect |
+| **Half** | Sync users on join |
+| **Lazy** | Only sync when user talks |
+
+Configure in bridge settings for performance vs completeness tradeoff.
+
+## Privacy Note
+
+:::tip IRC Users Don't Know
+Users on IRC shouldn't know you're using Matrix - unless you send media that links to your homeserver. Messages appear as normal IRC.
+:::
+
 ## Alternative: matrix-appservice-irc
 
 For larger deployments, consider [matrix-appservice-irc](https://github.com/matrix-org/matrix-appservice-irc):
@@ -157,6 +220,12 @@ For larger deployments, consider [matrix-appservice-irc](https://github.com/matr
 - **Portal rooms** for channels
 - **Ident support**
 - More complex setup
+
+## Resources
+
+- [Heisenbridge GitHub](https://github.com/hifi/heisenbridge)
+- [Matrix Room](https://matrix.to/#/#heisenbridge:vi.fi)
+- [IRC Channel](irc://irc.libera.chat/#heisenbridge)
 
 ---
 

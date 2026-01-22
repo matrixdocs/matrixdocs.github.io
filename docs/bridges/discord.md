@@ -12,10 +12,21 @@ Connect Discord servers and DMs to Matrix using mautrix-discord.
 
 - **Double puppeting** - Your Matrix messages appear from you on Discord
 - **Full Discord support** - Servers, channels, threads, DMs, groups
-- **Media bridging** - Images, videos, files, embeds
+- **Media bridging** - Images, videos, files, embeds, animated stickers
 - **Reactions** - Emoji reactions sync both ways
 - **Replies & threads** - Maintain conversation context
-- **Guild bridging** - Bridge entire Discord servers
+- **Guild bridging** - Bridge entire Discord servers at once
+- **Bot account support** - Use Discord bot instead of user token
+- **Backfill** - Sync message history on room creation
+
+### 2025 Updates
+
+| Feature | Description |
+|---------|-------------|
+| **Authenticated media** | Matrix v1.11 media support |
+| **create-portal command** | Bridge individual channels selectively |
+| **Room upgrades** | Auto-follow Matrix room upgrades |
+| **Webhook avatars** | Configure `public_address` for avatars |
 
 ## Quick Start (Docker)
 
@@ -98,46 +109,114 @@ bridge:
 
 ## Logging In
 
-### Via Bot
+### Method 1: QR Code (Recommended)
 
 1. Start a DM with `@discordbot:example.com`
 2. Send `!discord login`
-3. Click the link to authorize
-4. Or use token: `!discord login-token YOUR_TOKEN`
+3. Bridge sends QR code image
+4. Open Discord mobile app → Settings → Scan QR Code
+5. Scan the QR code to authenticate
 
-### Getting a Token (Advanced)
+```
+You: !discord login
+Bot: [QR Code Image]
+Bot: Scan this QR code with the Discord mobile app
+Bot: Successfully logged in as YourName#1234
+```
 
-1. Open Discord in browser
+### Method 2: Token Login
+
+1. Start a DM with `@discordbot:example.com`
+2. Send `!discord login-token YOUR_TOKEN`
+
+**Getting a token:**
+1. Open Discord in browser (not app)
 2. Press F12 → Network tab
-3. Filter for "api"
-4. Find request with `authorization` header
-5. Copy the token value
+3. Type something in any channel
+4. Find request to `messages` endpoint
+5. Look for `authorization` header → copy token
 
 :::warning
-Using a user token violates Discord ToS. Consider using a bot account for server bridging.
+Using a user token violates Discord ToS. Your account could be banned. Consider using a bot account for server bridging.
 :::
 
-## Bridging Discord Servers
+### Method 3: Bot Account (Safest)
 
-### As User
+For bridging servers without risking your personal account:
 
-```
-!discord guilds         - List your Discord servers
-!discord bridge <id>    - Bridge a server
-```
-
-### As Bot
-
-1. Create a Discord bot at discord.com/developers
-2. Add bot to server with required permissions:
-   - Read Messages, Send Messages
-   - Read Message History
-   - Manage Webhooks (for puppeting)
-3. Configure bot token in bridge config
+1. Create app at [discord.com/developers](https://discord.com/developers)
+2. Create bot, copy token
+3. Configure in bridge:
 
 ```yaml
 bridge:
   bot_token: "your-bot-token"
+```
+
+4. Invite bot to server with permissions:
+   - Read Messages, Send Messages
+   - Read Message History
+   - Manage Webhooks (for user avatars)
+   - Add Reactions
+
+## Bridging Discord Servers
+
+### List Your Servers
+
+```
+!discord guilds status
+```
+
+Shows all Discord servers you're in with their IDs.
+
+### Bridge Entire Server
+
+```
+!discord guilds bridge <server-id>
+```
+
+This creates:
+- A Matrix Space for the server
+- Portal rooms created as messages arrive
+
+**Bridge all channels immediately:**
+```
+!discord guilds bridge <server-id> --entire
+```
+
+### Bridge Individual Channels
+
+New in 2025 - use `create-portal` to selectively bridge:
+
+```
+!discord create-portal <channel-id>
+```
+
+Combined with `if-portal-exists` bridging mode, you can bridge only specific channels from a guild.
+
+### Bridging Modes
+
+```yaml
+bridge:
+  # When to create portal rooms
+  portal_creation:
+    # "always" - Create on any activity
+    # "if-portal-exists" - Only if manually created
+    mode: always
+```
+
+### Manual Channel Bridging
+
+To bridge a specific channel to an existing Matrix room:
+
+1. Invite `@discordbot:example.com` to the Matrix room
+2. Run: `!discord bridge <channel-id>`
+
+### Unbridging
+
+```
+!discord unbridge           # Unbridge current room
+!discord guilds unbridge <id>  # Unbridge entire server
 ```
 
 ## Room Management

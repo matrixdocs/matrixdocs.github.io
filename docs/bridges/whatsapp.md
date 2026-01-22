@@ -6,16 +6,34 @@ description: Bridge Matrix to WhatsApp
 
 # WhatsApp Bridge
 
-Connect WhatsApp to Matrix using mautrix-whatsapp.
+Connect WhatsApp to Matrix using mautrix-whatsapp. Uses the official WhatsApp Web multi-device API.
 
 ## Features
 
 - **Full puppeting** - Appear as yourself on WhatsApp
 - **Chats** - Individual and group chats
-- **Media** - Images, videos, documents, voice
-- **Reactions** - Emoji reactions
+- **Media** - Images, videos, documents, voice messages
+- **Reactions** - Emoji reactions sync both ways
 - **Status** - WhatsApp status/stories
-- **History sync** - Backfill message history
+- **History sync** - One-time backfill on login
+- **HD media** - Dual uploads bridged as edits
+- **Animated stickers** - LottieConverter support in Docker
+- **Group creation** - Create WhatsApp groups from Matrix
+
+### 2025 Updates
+
+| Feature | Description |
+|---------|-------------|
+| **LID DM handling** | Better merging of phone number and LID DMs |
+| **Animated stickers** | LottieConverter now in Docker images |
+| **HD photo bridging** | Bridged as edits on Matrix |
+| **Pin/keep messages** | Placeholder support |
+
+### Requirements
+
+- WhatsApp on a phone (physical or virtual)
+- Phone must come online at least every **12 days**
+- ffmpeg (for sending GIFs from Matrix)
 
 ## Docker Setup
 
@@ -64,19 +82,41 @@ bridge:
 
 ## Linking Your Account
 
+### QR Code Login (Recommended)
+
 1. DM `@whatsappbot:example.com`
 2. Send `!wa login`
-3. Scan QR code with WhatsApp:
-   - WhatsApp → Menu → Linked Devices → Link a Device
+3. Open WhatsApp on phone:
+   - **Android:** Menu (⋮) → Linked Devices → Link a Device
+   - **iPhone:** Settings → Linked Devices → Link a Device
+4. Point phone at QR code
 
 ```
 You: !wa login
-Bot: [QR Code]
+Bot: [QR Code Image]
 Bot: Scan this QR code with WhatsApp
+Bot: Successfully logged in as +1234567890
 ```
 
-:::warning
-WhatsApp limits linked devices. The bridge uses the multi-device feature.
+### Pairing Code Login
+
+If QR scanning doesn't work:
+
+1. Send `!wa login --pairing`
+2. Bot provides a pairing code
+3. In WhatsApp: Linked Devices → Link with phone number instead
+4. Enter the code
+
+### Important Limitations
+
+:::warning Phone Must Stay Online
+WhatsApp requires your phone to connect to the internet **at least every 12 days**. If offline longer, the bridge will be disconnected and you'll need to re-login.
+
+The bridge will warn you if it hasn't seen your phone in over 12 days.
+:::
+
+:::info Device Limits
+WhatsApp allows up to 4 linked devices. The bridge counts as one device.
 :::
 
 ## Commands
@@ -92,15 +132,53 @@ WhatsApp limits linked devices. The bridge uses the multi-device feature.
 
 ## History Sync
 
-WhatsApp syncs history automatically on link:
+WhatsApp performs a **one-time history transfer** when you link the bridge. Configure this **before** your first login.
 
 ```yaml
 bridge:
   history_sync:
+    # Enable backfill
     backfill: true
+
+    # How many chats to backfill
     max_initial_conversations: 50
+
+    # Messages per chat
     message_count: 100
+
+    # Only recent messages (recommended)
     recent_only: true
+
+    # Request full sync from phone
+    request_full_sync: false
+```
+
+### How It Works
+
+1. You scan QR code to link bridge
+2. WhatsApp phone sends history to bridge
+3. Bridge creates Matrix rooms and imports messages
+4. Messages appear with original timestamps
+
+### Limitations
+
+:::warning Backfill Only Works Once
+Matrix cannot insert messages into existing room history. Backfill only works in **new empty rooms**.
+
+If you re-login after already having rooms, missed messages won't appear in correct chronological order.
+:::
+
+### Full Sync Options
+
+Request more history from phone (uses more bandwidth):
+
+```yaml
+bridge:
+  history_sync:
+    request_full_sync: true
+    full_sync_config:
+      days_of_messages: 365
+      size_mb: 500
 ```
 
 ## Group Management

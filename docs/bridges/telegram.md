@@ -6,17 +6,28 @@ description: Bridge Matrix to Telegram with mautrix-telegram
 
 # Telegram Bridge
 
-Connect Telegram chats, groups, and channels to Matrix.
+Connect Telegram chats, groups, and channels to Matrix. mautrix-telegram is a **hybrid puppeting/relaybot** bridge - it supports both personal accounts and relay bots.
 
 ## Features
 
 - **Full puppeting** - Appear as yourself on Telegram
+- **Relay bot mode** - Bridge without everyone logging in
 - **Groups & supergroups** - Bridge any Telegram group
-- **Channels** - Bridge Telegram channels
+- **Channels** - Bridge Telegram channels (read-only or via bot)
 - **Bots** - Use Telegram bots from Matrix
 - **Stickers** - Convert and send stickers
-- **Reactions** - Emoji reactions both ways
+- **Reactions** - Emoji reactions both ways (bot account support added 2025)
 - **Location sharing** - Send and receive locations
+- **File size limits** - Configurable per chat type
+
+### 2025 Updates
+
+| Feature | Description |
+|---------|-------------|
+| **Reactions on bot** | Receive reactions when using bot account |
+| **File size limits** | Limit by chat type configuration |
+| **Hidden members fix** | No more kicking puppets from private groups |
+| **Relaybot improvements** | Better portal creation with `ignore_unbridged_group_chat` |
 
 ## Docker Setup
 
@@ -202,19 +213,76 @@ bridge:
   forward_telegram_bot_messages: true
 ```
 
-## Relay Mode
+## Relay Bot Mode
 
-For groups where users can't log in individually:
+For groups where users can't or won't log in individually. Matrix users appear through a Telegram bot.
+
+### Setup Relay Bot
+
+1. Create bot via [@BotFather](https://t.me/BotFather)
+2. Add token to config:
+
+```yaml
+telegram:
+  bot_token: "123456:ABC-your-bot-token"
+```
+
+3. Configure relay mode:
 
 ```yaml
 bridge:
-  relay_mode:
-    enabled: true
-    message_formats:
-      m.text: "[{displayname}] {message}"
+  relaybot:
+    # Allow anyone to use relay
+    whitelist: []
+
+    # Or limit to specific Matrix users
+    # whitelist:
+    #   - "@user:example.com"
+
+    # Allow creating portals from Telegram
+    authless_portals: true
+
+    # Ignore unbridged groups (don't auto-create portals)
+    ignore_unbridged_group_chat: false
 ```
 
-All Matrix users appear through the relay bot.
+### Create Portal from Telegram
+
+With `authless_portals: true`:
+
+1. Add relay bot to Telegram group
+2. Send `/portal` in the group
+3. Bot creates Matrix room and replies with alias (public groups)
+4. For private groups, use `/invite @matrix:example.com`
+
+### Message Formatting
+
+Customize how relay messages appear:
+
+```yaml
+bridge:
+  relaybot:
+    message_formats:
+      m.text: "[{displayname}] {message}"
+      m.notice: "[{displayname}] {message}"
+      m.emote: "* {displayname} {message}"
+
+    # Per-room config via !tg config command
+```
+
+### Hybrid Mode
+
+Use both puppeting AND relay:
+- Logged-in users appear as themselves
+- Non-logged-in users go through relay bot
+- Best of both worlds
+
+```yaml
+bridge:
+  permissions:
+    "*": relaybot          # Everyone can use relay
+    "example.com": user    # Your users can also puppet
+```
 
 ## Troubleshooting
 

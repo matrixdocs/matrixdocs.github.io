@@ -16,6 +16,20 @@ Connect Signal to Matrix using mautrix-signal.
 - **Media** - Images, voice messages, files
 - **Reactions** - Emoji reactions
 - **Receipts** - Read receipts and typing
+- **NEW: History backfill** - Transfer history on login (Feb 2025)
+
+### 2025 Updates
+
+| Feature | Description |
+|---------|-------------|
+| **History transfer** | Backfill from phone on pairing |
+| **Backfill fixes** | Fixed backfilling after re-login |
+| **Calendar versioning** | Now uses vYY.0M.patch format |
+
+### Requirements
+
+- Signal app on phone
+- ffmpeg (for voice messages)
 
 ## Docker Setup
 
@@ -76,17 +90,53 @@ bridge:
 
 1. DM `@signalbot:example.com`
 2. Send `!signal link`
-3. Scan QR code with Signal app:
-   - Signal → Settings → Linked Devices → Link New Device
+3. Open Signal on phone:
+   - **Android/iOS:** Settings → Linked Devices → Link New Device
+4. Scan QR code with Signal app
+5. **Important:** When prompted, choose to **transfer history**
 
 ```
 You: !signal link
 Bot: [QR Code Image]
 Bot: Open Signal, go to Settings > Linked Devices, and scan this code.
+Bot: Successfully linked as YourName
 ```
 
-:::warning
-Signal only allows one primary device. The bridge links as a secondary device.
+:::tip Transfer History
+When pairing, Signal will ask if you want to transfer message history. **Say yes** to backfill your messages to Matrix. If you don't see this prompt, your Signal app may be outdated.
+:::
+
+:::info Secondary Device
+Signal allows one primary device (phone) and multiple linked devices. The bridge links as a secondary device, so you keep full Signal functionality on your phone.
+:::
+
+## History Backfill
+
+Signal performs a **one-time history transfer** when you link the bridge (similar to WhatsApp).
+
+### Configuration
+
+```yaml
+bridge:
+  history_sync:
+    # Request history amount (web=3mo, desktop=1yr)
+    request_full_sync: false
+    full_sync_config:
+      days_of_messages: 365  # Request up to 1 year
+
+    # How much to actually backfill
+    max_initial_messages: 100
+```
+
+### How It Works
+
+1. You scan QR code to link bridge
+2. Signal asks "Transfer message history?"
+3. If yes, phone sends history to bridge
+4. Bridge creates rooms and imports messages
+
+:::warning Configure Before Linking
+Set your backfill preferences **before** the first login. History transfer only happens once during initial pairing.
 :::
 
 ## Commands
