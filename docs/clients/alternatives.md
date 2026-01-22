@@ -28,11 +28,22 @@ https://github.com/cinnyapp/cinny-desktop/releases
 - Excellent keyboard navigation
 - Markdown preview while typing
 - Custom emoji support
+- Threads support
+- Spaces hierarchy
+
+**v4+ Features (2025):**
+- **Custom power levels** - Set specific levels for any action
+- **Developer tools** - Explore room state and events
+- **Improved notifications** - Better push notification support
+- **Custom emojis** - Native emoji pack support
+- **Better accessibility** - Screen reader improvements
 
 **Power User Tips:**
 - `Ctrl + K` - Quick room switcher
 - `Ctrl + Shift + E` - Emoji picker
 - Create custom themes via CSS
+- Use `/devtools` for state exploration
+- Right-click for power level management
 
 :::tip Hidden Gem
 Cinny supports custom CSS themes. Access via Settings → Appearance → Custom CSS. Community themes: [github.com/nichobi/cinny-theme](https://github.com/nichobi)
@@ -158,21 +169,34 @@ Built on matrix-rust-sdk for incredible performance.
 
 ### gomuks
 
-**Terminal client written in Go**
+**Terminal client written in Go - now with web frontend!**
 
 ```bash
 # Install
 go install maunium.net/go/gomuks@latest
 
 # Or download binary
-https://github.com/tulir/gomuks/releases
+https://github.com/gomuks/gomuks/releases
 ```
 
 **Features:**
 - Full TUI (terminal UI)
+- **New: Web frontend** - Access via browser
 - E2EE support
 - Image preview (in supported terminals)
 - Vim-like keybindings
+- Low resource usage
+
+**Web Frontend (New!):**
+```bash
+# Start gomuks with web server
+gomuks --web-listen :8080
+
+# Access in browser
+http://localhost:8080
+```
+
+The web frontend provides a modern UI while using gomuks as the backend - best of both worlds.
 
 **Commands:**
 ```
@@ -180,7 +204,15 @@ https://github.com/tulir/gomuks/releases
 /leave                - Leave current room
 /send filename        - Send file
 /toggle markdown      - Toggle markdown
+/export [format]      - Export room history
+/rainbow text         - Send rainbow-colored text
 ```
+
+**Power User Features:**
+- Export room history to JSON
+- Set power levels: `/op @user:server 50`
+- Custom keybindings via config
+- Multiple accounts support
 
 ### iamb
 
@@ -212,6 +244,62 @@ cargo install iamb
 - Familiar IRC-style interface
 - E2EE via pantalaimon
 - Highly scriptable
+
+## All-in-One Solutions
+
+### Beeper
+
+**Unified messaging via Matrix bridges**
+
+Beeper is a commercial service that bridges all your messaging apps through Matrix:
+
+**Supported Platforms:**
+- iMessage, SMS (via phone/Mac)
+- WhatsApp, Signal, Telegram
+- Slack, Discord, Instagram
+- LinkedIn, Twitter/X DMs
+- And more...
+
+**How It Works:**
+1. Sign up at [beeper.com](https://www.beeper.com)
+2. Connect your accounts
+3. All messages appear in one inbox
+4. Uses Matrix protocol underneath
+
+**Features:**
+- Unified inbox for all messengers
+- Search across all platforms
+- Desktop and mobile apps
+- Schedule messages
+- Archive functionality
+
+**Self-Hosting Alternative:**
+
+Use mautrix bridges with your own homeserver:
+```bash
+# Deploy bridges via matrix-docker-ansible-deploy
+ansible-playbook -i inventory/hosts setup.yml --tags=setup-all
+```
+
+Bridges available:
+- mautrix-whatsapp
+- mautrix-telegram
+- mautrix-signal
+- mautrix-discord
+- mautrix-instagram
+- mautrix-twitter
+
+**Beeper vs Self-Hosted:**
+
+| Feature | Beeper | Self-Hosted |
+|---------|--------|-------------|
+| Setup | Easy (managed) | Complex |
+| Cost | Subscription | Free (server costs) |
+| Control | Limited | Full |
+| iMessage | ✅ (needs Mac/phone) | ✅ (needs Mac/phone) |
+| Privacy | Trust Beeper | Self-controlled |
+
+---
 
 ## Special Purpose Clients
 

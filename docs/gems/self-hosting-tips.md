@@ -8,6 +8,65 @@ description: Optimization and management tips for homeserver admins
 
 Expert tips for running your own Matrix homeserver.
 
+## Homeserver Alternatives
+
+### Conduit (Rust)
+
+**[Conduit](https://conduit.rs)** is a lightweight Matrix homeserver written in Rust:
+
+**Pros:**
+- Single binary, no dependencies
+- Low memory usage (~100MB for small deployments)
+- Fast startup
+- Easy configuration
+
+**Cons:**
+- Missing some advanced Synapse features
+- Smaller community
+- Less tested at scale
+
+**Installation:**
+```bash
+# Docker
+docker run -d -p 8448:6167 \
+  -v db:/var/lib/matrix-conduit \
+  -e CONDUIT_SERVER_NAME=your.server.name \
+  -e CONDUIT_DATABASE_BACKEND=rocksdb \
+  matrixconduit/matrix-conduit:latest
+```
+
+**Configuration:**
+```toml title="conduit.toml"
+[global]
+server_name = "your.server.name"
+database_backend = "rocksdb"
+port = 6167
+max_request_size = 20_000_000
+allow_registration = false
+```
+
+### conduwuit (Conduit Fork)
+
+**[conduwuit](https://github.com/girlbossceo/conduwuit)** is an actively maintained Conduit fork with more features:
+
+- Experimental room v11 support
+- Better federation compatibility
+- More active development
+- Bug fixes not in upstream
+
+### When to Use What
+
+| Use Case | Recommended |
+|----------|-------------|
+| Large deployment (500+ users) | **Synapse** with workers |
+| Small personal server | **Conduit/conduwuit** |
+| Maximum features | **Synapse** |
+| Minimal resources | **Conduit** |
+| Production critical | **Synapse** |
+| Experimentation | **Conduit/Dendrite** |
+
+---
+
 ## Performance Optimization
 
 ### Synapse Tuning
@@ -98,6 +157,136 @@ listeners:
   - port: 9000
     type: metrics
 ```
+
+## Media Management
+
+### matrix-media-repo
+
+**[matrix-media-repo](https://github.com/t2bot/matrix-media-repo)** is an alternative media repository:
+
+**Features:**
+- S3/MinIO storage support
+- Media deduplication
+- Thumbnail generation
+- Federation media caching
+- Multiple homeserver support
+
+**Installation:**
+```yaml title="docker-compose.yml"
+services:
+  media-repo:
+    image: t2bot/matrix-media-repo:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./media-repo.yaml:/etc/media-repo.yaml
+      - ./media:/media
+```
+
+**Configuration:**
+```yaml title="media-repo.yaml"
+repo:
+  bindAddress: "0.0.0.0"
+  port: 8000
+
+database:
+  postgres: "postgres://user:pass@localhost/mediarepo"
+
+homeservers:
+  - name: example.com
+    csApi: "https://matrix.example.com"
+    backoffAt: 10
+
+datastores:
+  - type: s3
+    opts:
+      tempPath: "/tmp/mediarepo_s3"
+      endpoint: s3.amazonaws.com
+      accessKeyId: "YOUR_ACCESS_KEY"
+      secretAccessKey: "YOUR_SECRET_KEY"
+      bucketName: "matrix-media"
+```
+
+### S3 Storage (Native Synapse)
+
+Store media directly in S3 without external repo:
+
+```yaml title="homeserver.yaml"
+media_storage_providers:
+  - module: s3_storage_provider.S3StorageProviderBackend
+    store_local: true
+    store_remote: true
+    store_synchronous: true
+    config:
+      bucket: matrix-media
+      region_name: us-east-1
+      access_key_id: YOUR_KEY
+      secret_access_key: YOUR_SECRET
+```
+
+**Install provider:**
+```bash
+pip install synapse-s3-storage-provider
+```
+
+### Media Cleanup
+
+Remove old remote media:
+
+```bash
+# Via Admin API
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  "https://matrix.server/_synapse/admin/v1/purge_media_cache?before_ts=1577836800000"
+```
+
+---
+
+## Identity Server
+
+### Sydent
+
+**[Sydent](https://github.com/matrix-org/sydent)** is the reference Matrix identity server:
+
+**Purpose:**
+- Email/phone to Matrix ID lookup
+- Third-party identity verification
+- Required for some discovery features
+
+**Installation:**
+```yaml title="docker-compose.yml"
+services:
+  sydent:
+    image: matrixdotorg/sydent
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./sydent.yaml:/etc/sydent/sydent.yaml
+      - ./sydent-data:/var/lib/sydent
+```
+
+**Configuration:**
+```yaml title="sydent.yaml"
+general:
+  server.name: id.example.com
+  log.path: /var/log/sydent
+
+db:
+  file: /var/lib/sydent/sydent.db
+
+http:
+  port: 8090
+
+email:
+  smtphost: smtp.example.com
+  smtpport: 587
+  smtpusername: matrix@example.com
+  smtppassword: secret
+  from: "Matrix ID Server <noreply@example.com>"
+```
+
+**Note:** Most small deployments don't need their own identity server. Use `matrix.org` or `vector.im` identity servers instead.
+
+---
 
 ## Backup Strategy
 

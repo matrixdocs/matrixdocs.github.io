@@ -12,7 +12,7 @@ Beyond the popular clients, these hidden gems offer unique features.
 
 ### gomuks
 
-**The best terminal Matrix client**
+**The best terminal Matrix client - now with web UI!**
 
 ```bash
 go install maunium.net/go/gomuks@latest
@@ -23,9 +23,24 @@ Features:
 - Image previews (Kitty/iTerm2)
 - Vim-like keybindings
 - Minimal resource usage
+- **NEW: Web frontend option**
+
+**Web Frontend Mode:**
+```bash
+# Start with web server
+gomuks --web-listen :8080
+```
+
+Access at `http://localhost:8080` for a modern browser UI powered by gomuks backend.
+
+**Power Features:**
+- Export room history to JSON
+- Set power levels from terminal
+- Multiple account support
+- Custom keybindings
 
 :::tip Hidden Feature
-In terminals that support it, gomuks can display images inline!
+In terminals that support it, gomuks can display images inline! The web frontend gives you the best of both worlds.
 :::
 
 ### iamb
@@ -170,6 +185,22 @@ Generate static HTML from Matrix rooms:
 - Share without Matrix account
 - SEO-friendly
 
+## Bridge Services
+
+### Beeper
+
+**All messengers in one inbox**
+
+Beeper provides managed Matrix bridges:
+- iMessage, WhatsApp, Signal, Telegram
+- Slack, Discord, Instagram, Twitter/X
+- All messages unified in one place
+- Matrix protocol underneath
+
+See [beeper.com](https://www.beeper.com) or self-host with mautrix bridges.
+
+---
+
 ## Client Experiments
 
 ### Third Room
@@ -180,12 +211,52 @@ Experience Matrix in virtual reality:
 - 3D environments
 - Spatial audio
 - VR headset support
+- WebXR compatible
 
 ### Populus
 
 **Collaborative whiteboard**
 
 Matrix-based collaborative drawing and diagramming.
+
+---
+
+## Power User Features by Client
+
+### Cinny v4+
+
+**Advanced hidden features:**
+- Custom power levels UI
+- Developer tools (`/devtools`)
+- Room state explorer
+- Native custom emoji packs
+- Improved threads support
+
+### Nheko Extras
+
+**Native Qt client power features:**
+
+```bash
+# Config location
+~/.config/nheko/nheko.conf
+```
+
+- GIF search integration
+- Custom emoji packs
+- Video calls via GStreamer
+- Room directory search
+- Full message search
+- Screen reader support
+
+### FluffyChat Power Mode
+
+Enable Developer Mode in settings for:
+- Event source viewing
+- Room state access
+- Debug logging
+- Experimental features
+
+---
 
 ## Finding More
 
