@@ -539,6 +539,9 @@ Choose a bridge to set up:
 - [Signal Bridge](./signal)
 - [WhatsApp Bridge](./whatsapp)
 
+### Experimental
+- [Solid & WebID Integration](./solid) - Decentralized identity and chat archives
+
 ---
 
 *Last updated: January 2025*
