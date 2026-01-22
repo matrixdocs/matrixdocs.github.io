@@ -12,37 +12,82 @@ These tools transform your Matrix experience from basic chat to a powerful commu
 
 ### synadm - CLI Admin Swiss Army Knife
 
-**[synadm](https://github.com/JOJ0/synadm)** is a command-line admin tool for Synapse that makes server administration effortless.
+**[synadm](https://codeberg.org/synadm/synadm)** is a command-line admin tool for Synapse that makes server administration effortless.
+
+**Note:** synadm has migrated to Codeberg. GitHub repo will be archived.
 
 **Installation:**
 ```bash
 pipx install synadm
+
+# First-time setup
+synadm config
+# Enter: homeserver URL, admin access token
 ```
 
-**Power Features:**
+**User Management:**
 ```bash
-# User management
-synadm user list                    # List all users
-synadm user details @user:server    # Get user info
-synadm user modify @user:server --admin  # Grant admin
+# List and search users
+synadm user list                      # All users
+synadm user list --name "john"        # Search by name
+synadm user details @user:server      # Full user info
+
+# Modify users
+synadm user modify @user:server --admin       # Grant admin
+synadm user modify @user:server --deactivate  # Deactivate
+synadm user password @user:server             # Reset password
 
 # Get access token to act as user (24h expiry)
 synadm user login @user:server
 
-# Shadow-ban problematic users (they won't know)
+# Shadow-ban (user won't know they're banned)
 synadm user shadow-ban @spammer:server
 
-# Room management
-synadm room list                    # List all rooms
-synadm room details !roomid:server  # Room info
-synadm room delete !roomid:server   # Purge room
-
-# Media management
-synadm media list @user:server      # User's media
-synadm media purge-remote 30        # Purge remote media older than 30 days
+# Redact all messages from a user (NEW 2025)
+synadm user redact @spammer:server --rooms '!room1:server' '!room2:server'
 ```
 
-**Why It's Powerful:** Direct API access without web interfaces. Script server maintenance, automate cleanups, manage users in bulk.
+**Room Management:**
+```bash
+# List rooms with filters
+synadm room list                      # All rooms
+synadm room list --empty              # Empty rooms only (NEW)
+synadm room list --not-empty          # Non-empty rooms
+synadm room list --name "general"     # Search by name
+
+# Room details and members
+synadm room details !roomid:server
+synadm room members !roomid:server
+
+# Cleanup
+synadm room delete !roomid:server     # Delete room
+synadm room purge-empty               # Purge all empty rooms
+```
+
+**Media Management:**
+```bash
+# List media
+synadm media list @user:server        # User's uploads
+synadm media list-remote              # Cached remote media
+
+# Cleanup
+synadm media purge-remote 30          # Purge remote media >30 days
+synadm media delete mxc://server/id   # Delete specific media
+
+# Quarantine (NEW)
+synadm media quarantine -U mxc://server/media-id
+synadm media unquarantine -U mxc://server/media-id
+```
+
+**Server Info:**
+```bash
+synadm version                        # Synapse version
+synadm server-notice send @user:server "Important message"
+```
+
+**Why It's Powerful:** Direct API access without web interfaces. Script server maintenance, automate cleanups, manage users in bulk. Works over SSH, perfect for headless servers.
+
+**Support:** [#synadm:peek-a-boo.at](https://matrix.to/#/#synadm:peek-a-boo.at)
 
 ### Synapse Admin UI
 
@@ -108,7 +153,9 @@ Subscribe to community-curated ban lists:
 
 ### Maubot - Plugin-Based Bot System
 
-**[Maubot](https://mau.bot)** lets you run multiple bot functions from a single instance.
+**[Maubot](https://mau.bot)** lets you run multiple bot functions from a single instance. No coding required for most plugins.
+
+**Requirements:** Linux, Python 3.10+, a Matrix account for the bot
 
 **Must-Have Plugins:**
 
@@ -118,22 +165,47 @@ Subscribe to community-curated ban lists:
 | **[github](https://github.com/maubot/github)** | GitHub webhooks + commands | ⭐⭐⭐ |
 | **[rss](https://github.com/maubot/rss)** | RSS/Atom feed subscriptions | ⭐⭐⭐ |
 | **[ntfy](https://github.com/maubot/ntfy)** | Push notifications via ntfy | ⭐⭐⭐ |
-| **[translate](https://github.com/maubot/translate)** | Google Translate integration | ⭐⭐ |
+| **[translate](https://github.com/maubot/translate)** | Google/DeepL translation | ⭐⭐ |
 | **[supportportal](https://github.com/coffeebank/coffee-maubot)** | Support ticket system | ⭐⭐⭐ |
 | **[gladia](https://github.com/maubot/gladia)** | Voice message transcription | ⭐⭐ |
+| **[dice](https://github.com/maubot/dice)** | Dice roller + calculator | ⭐⭐ |
+| **[media](https://github.com/maubot/media)** | Giphy/Tenor GIF search | ⭐⭐ |
+| **[reactbot](https://github.com/maubot/reactbot)** | Auto-reactions & responses | ⭐⭐ |
+| **[sed](https://github.com/maubot/sed)** | s/typo/fix/ corrections | ⭐ |
 
-**AI Integration:**
+**AI/LLM Plugins:**
 ```
-# LLM plugin supports:
-- OpenAI (GPT-4, etc.)
+# LLM plugin capabilities:
+- OpenAI (GPT-4, GPT-4o)
 - Anthropic (Claude)
 - Text-to-speech
-- Speech-to-text
-- Image generation
+- Speech-to-text (Whisper)
+- Image generation (DALL-E)
 ```
 
-**Space Admin Plugin:**
-Manage entire Matrix Spaces with user management, room creation tools, and bulk operations.
+**Example commands:**
+```
+!ai summarize the last 50 messages
+!ai explain this error: [paste]
+!ai translate to Spanish: Hello world
+```
+
+**Admin Plugins:**
+
+| Plugin | Purpose |
+|--------|---------|
+| **space-admin** | Manage Spaces, bulk user operations |
+| **registration-tokens** | Create/manage Synapse registration tokens |
+| **thread-redact** | Auto-delete thread replies |
+| **welcome** | Welcome messages for new room members |
+
+**Social Media:**
+- Reddit/Instagram/YouTube link previews
+- Twitch live notifications
+- Fediverse feed forwarding
+- Spotify link conversion
+
+**Full Plugin List:** [plugins.mau.bot](https://plugins.mau.bot/)
 
 **Setup Guide:** [coffeebank.github.io/coffee-maubot](https://coffeebank.github.io/coffee-maubot/start/)
 
@@ -142,31 +214,142 @@ Manage entire Matrix Spaces with user management, room creation tools, and bulk 
 **[Hookshot](https://github.com/matrix-org/matrix-hookshot)** connects Matrix to development tools.
 
 **Supported Services:**
-- GitHub (issues, PRs, commits, actions)
+- GitHub (issues, PRs, commits, actions, workflows)
 - GitLab (issues, MRs, pipelines)
 - JIRA (issues, transitions)
 - RSS/Atom feeds
 - Generic webhooks
 - **NEW:** OpenProject support
 
+**GitHub Commands (prefix: `!gh`):**
+```bash
+# Issue management
+!gh create "Bug: Login fails"           # Create issue
+!gh close 123                            # Close issue
+!gh assign 123 @developer               # Assign issue
+
+# Workflows
+!gh workflow run deploy.yml             # Trigger workflow
+!gh workflow run build.yml --input env=prod
+
+# PRs and commits
+!gh prs                                 # List open PRs
+!gh pr 456                              # View PR details
+!gh commits                             # Recent commits
+```
+
+**GitLab Commands (prefix: `!gitlab`):**
+```bash
+!gitlab issue new "Fix database"        # Create issue
+!gitlab issue close 42                  # Close issue
+!gitlab mrs list                        # List merge requests
+!gitlab pipeline status                 # Check CI status
+```
+
 **RSS Feeds:**
 ```
 !hookshot feed https://blog.example.com/rss
 ```
 
-**GitHub Integration:**
-```
-!github create issue "Bug: Login fails" --repo owner/repo
-!github assign #123 @developer
-```
-
 **Webhook Templates:**
-Write custom JavaScript templates for rich message formatting.
+Write custom JavaScript templates for rich message formatting:
+```javascript
+({
+  body: `**${data.event}**: ${data.message}`,
+  msgtype: data.level === "error" ? "m.notice" : "m.text"
+})
+```
 
 **2025 Updates:**
-- E2E encryption now stable in production
-- Secure JIRA Cloud webhooks (breaking change)
+- E2E encryption stable in production
+- Secure JIRA Cloud webhooks
 - Node 24 support
+- Matrix v12 room support
+- Follows room upgrades automatically
+
+📖 **[Full Hookshot Guide →](../bots/hookshot)**
+
+---
+
+## Git & CI/CD Integration
+
+### GitHub Actions → Matrix
+
+Send workflow notifications directly from GitHub Actions:
+
+**Matrix Notify Action (Recommended):**
+```yaml title=".github/workflows/ci.yml"
+notify:
+  if: always()
+  runs-on: ubuntu-latest
+  needs: [build, test, lint]
+  steps:
+    - uses: Cadair/matrix-notify-action@main
+      with:
+        matrix_token: ${{ secrets.MATRIX_TOKEN }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        homeserver: 'https://matrix.org'
+        roomid: '!roomId:matrix.org'
+        summarise_success: true
+```
+
+**Features:**
+- Overall workflow status with emoji
+- Per-job status reactions
+- Configurable job filtering
+- Link to workflow run
+
+**Simple Message Action:**
+```yaml
+- uses: s3krit/matrix-message-action@v1
+  with:
+    homeserver: matrix.org
+    token: ${{ secrets.MATRIX_TOKEN }}
+    channel: '!roomId:matrix.org'
+    message: "Build ${{ job.status }} on ${{ github.ref_name }}"
+```
+
+### GitLab CI → Matrix
+
+```yaml title=".gitlab-ci.yml"
+notify_matrix:
+  stage: .post
+  script:
+    - |
+      curl -X POST "https://matrix.server/_matrix/client/r0/rooms/$ROOM/send/m.room.message" \
+        -H "Authorization: Bearer $MATRIX_TOKEN" \
+        -d "{\"msgtype\":\"m.text\",\"body\":\"Pipeline $CI_PIPELINE_STATUS for $CI_PROJECT_NAME\"}"
+  when: always
+```
+
+### ChatOps Workflow
+
+With Hookshot, manage your entire dev workflow from Matrix:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Developer workflow from Matrix                          │
+├─────────────────────────────────────────────────────────┤
+│ 1. !gh create "Bug: API timeout"  → Issue #123 created  │
+│ 2. !gh assign 123 @alice          → Assigned            │
+│ 3. (Alice pushes fix, opens PR)                         │
+│ 4. [Hookshot]: PR #456 opened by alice                  │
+│ 5. !gh approve 456                → PR approved         │
+│ 6. [Hookshot]: PR #456 merged                           │
+│ 7. !gh workflow run deploy.yml    → Deploy triggered    │
+│ 8. [Hookshot]: Workflow succeeded ✅                     │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Room Strategy
+
+```
+#dev-commits:server    - Push notifications (high volume)
+#dev-prs:server        - PR activity
+#dev-issues:server     - Issue tracking
+#ci-alerts:server      - Build failures only
+#deployments:server    - Production deploys
+```
 
 ---
 
@@ -207,22 +390,92 @@ go install maunium.net/go/gomuks@latest
 
 ### matrix-commander - Scripting CLI
 
-**[matrix-commander](https://github.com/8go/matrix-commander)** is perfect for scripting and automation.
+**[matrix-commander](https://github.com/8go/matrix-commander)** is perfect for scripting and automation. E2EE is enabled by default and cannot be disabled.
 
-**Use Cases:**
+**Latest:** v8.0.5 (2025-06-17)
+
+**Basic Usage:**
 ```bash
-# Send message from script
+# Send message
 matrix-commander -m "Build complete!" -r '!roomid:server'
+
+# Send to multiple rooms
+matrix-commander -m "Alert!" -r '!room1:server' -r '!room2:server'
 
 # Send file
 matrix-commander --file ./report.pdf -r '!roomid:server'
 
-# Monitor room (receive messages)
-matrix-commander --listen forever --room '!roomid:server'
-
-# Cron job notifications
-0 9 * * * matrix-commander -m "Daily report ready"
+# Send image with caption
+matrix-commander --image ./screenshot.png -m "Bug reproduction"
 ```
+
+**Scripting Integration:**
+```bash
+#!/bin/bash
+# CI notification script
+
+STATUS=$1
+REPO=$2
+
+if [ "$STATUS" = "success" ]; then
+    MSG="✅ Build passed for $REPO"
+else
+    MSG="❌ Build FAILED for $REPO"
+fi
+
+matrix-commander -m "$MSG" -r '!builds:server'
+```
+
+**Monitoring & Listening:**
+```bash
+# Listen forever and pipe to script
+matrix-commander --listen forever --room '!room:server' | ./process.sh
+
+# Listen once (single message)
+matrix-commander --listen once --room '!room:server'
+
+# Tail mode (like tail -f)
+matrix-commander --listen tail --room '!room:server'
+```
+
+**Admin Features:**
+```bash
+# Invite user to room
+matrix-commander --room-invite '!room:server' --user '@user:server'
+
+# Kick user
+matrix-commander --room-kick '!room:server' --user '@user:server'
+
+# Set room name
+matrix-commander --room-set-name '!room:server' "New Room Name"
+
+# Create room
+matrix-commander --room-create --name "My Room" --alias "#myroom:server"
+```
+
+**Cron Examples:**
+```bash
+# /etc/cron.d/matrix-notifications
+
+# Morning standup reminder
+0 9 * * 1-5 user matrix-commander -m "☕ Standup in 15 minutes" -r '!team:server'
+
+# Daily backup status
+0 6 * * * user /scripts/backup.sh && matrix-commander -m "✅ Backup complete"
+
+# Disk space alert
+*/30 * * * * user [ $(df / --output=pcent | tail -1 | tr -d ' %') -gt 90 ] && \
+    matrix-commander -m "⚠️ Disk usage over 90%!" -r '!alerts:server'
+```
+
+**TUI Mode:**
+```bash
+# Interactive terminal interface
+matrix-commander-tui
+```
+
+**Rust Version:**
+There's also [matrix-commander-rs](https://github.com/8go/matrix-commander-rs) for Rust enthusiasts (minimal features currently).
 
 ---
 
