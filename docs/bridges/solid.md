@@ -23,6 +23,22 @@ This page covers two related concepts:
 
 Together, these enable **decentralized identity** and **data ownership** for Matrix users.
 
+```mermaid
+flowchart LR
+    subgraph Matrix
+        MID["@alice:matrix.org"]
+        MRoom["Matrix Room"]
+    end
+
+    subgraph Solid Pod
+        WebID["WebID Profile"]
+        Archive["Chat Archive<br/>(JSON-LD)"]
+    end
+
+    MID <-->|"owl:sameAs"| WebID
+    MRoom -->|"Archive Bot"| Archive
+```
+
 ## Background
 
 ### What is WebID?
@@ -80,6 +96,17 @@ This URI scheme enables Matrix identities to be used in Linked Data contexts - y
 ### The Identity Problem
 
 Matrix identities (`@alice:matrix.org`) and WebIDs (`https://alice.example.com/profile/card#me`) are separate systems. To enable cross-platform features, we need to declare they represent the same person.
+
+```mermaid
+flowchart TB
+    subgraph "Without Linking"
+        A1["matrix:u/alice:matrix.org"] -.->|"?"| B1["https://pod.example.com/profile/card#me"]
+    end
+
+    subgraph "With owl:sameAs"
+        A2["matrix:u/alice:matrix.org"] <-->|"owl:sameAs"| B2["https://pod.example.com/profile/card#me"]
+    end
+```
 
 ### Adding to Your WebID Profile
 
@@ -150,24 +177,24 @@ Messages are stored using standard vocabularies:
     "dct": "http://purl.org/dc/terms/",
     "meeting": "http://www.w3.org/ns/pim/meeting#"
   },
-  "@graph": [
-    {
-      "@type": "meeting:message",
-      "dct:created": "2025-01-22T14:30:00Z",
-      "sioc:content": "Hello, world!",
-      "foaf:maker": {
-        "@id": "matrix:u/alice:matrix.org",
-        "@type": "foaf:Person",
-        "foaf:name": "Alice",
-        "foaf:nick": "@alice:matrix.org",
-        "foaf:img": {
-          "@id": "https://pod.example.com/chats/avatars/alice.png"
-        }
-      }
+  "@type": "meeting:message",
+  "dct:created": "2025-01-22T14:30:00Z",
+  "sioc:content": "Hello, world!",
+  "foaf:maker": {
+    "@id": "matrix:u/alice:matrix.org",
+    "@type": "foaf:Person",
+    "foaf:name": "Alice",
+    "foaf:nick": "@alice:matrix.org",
+    "foaf:img": {
+      "@id": "https://pod.example.com/chats/avatars/alice.png"
     }
-  ]
+  }
 }
 ```
+
+:::tip When to use @graph
+Use `@graph` only when storing multiple messages in one file. For a single message, it's not needed.
+:::
 
 ### Directory Structure
 
@@ -219,9 +246,20 @@ Matrix media URLs require authentication, so bridges typically:
 
 A Matrix bot joins rooms and archives messages to a Solid pod:
 
-```
-Matrix Room  →  [Archive Bot]  →  Solid Pod
-                                  └── JSON-LD files
+```mermaid
+sequenceDiagram
+    participant Room as Matrix Room
+    participant Bot as Archive Bot
+    participant Pod as Solid Pod
+
+    Room->>Bot: New message event
+    Bot->>Bot: Convert to JSON-LD
+    Bot->>Pod: Append to /chats/2025/01/22/chat.json
+
+    Room->>Bot: Message with new user
+    Bot->>Room: Fetch avatar (media API)
+    Bot->>Pod: Store avatar in /chats/avatars/
+    Bot->>Pod: Append message with avatar reference
 ```
 
 The bot:
@@ -243,11 +281,18 @@ Matrix clients could export history directly to Solid:
 
 Chat viewers can enrich Matrix identities:
 
-```
-1. Parse matrix:u/alice:matrix.org from message
-2. SPARQL query: ?webid owl:sameAs <matrix:u/alice:matrix.org>
-3. Fetch WebID profile for avatar, name, links
-4. Display enriched user info
+```mermaid
+sequenceDiagram
+    participant Client as Chat Viewer
+    participant Pod as Solid Pod
+    participant Profile as WebID Profile
+
+    Client->>Client: Parse matrix:u/alice:matrix.org
+    Client->>Pod: SPARQL: ?webid owl:sameAs <matrix:u/alice:...>
+    Pod-->>Client: https://pod.example.com/profile/card#me
+    Client->>Profile: Fetch WebID document
+    Profile-->>Client: Name, avatar, bio, links
+    Client->>Client: Display enriched user info
 ```
 
 ## Discovery Mechanisms
@@ -291,11 +336,22 @@ Users own their conversation history:
 
 ### Cross-Platform Identity
 
-One identity across:
-- Matrix chat
-- Solid apps
-- ActivityPub (Mastodon)
-- Traditional web
+One identity across multiple platforms:
+
+```mermaid
+flowchart TB
+    WebID["WebID<br/>pod.example.com/profile/card#me"]
+
+    Matrix["Matrix<br/>matrix:u/alice:matrix.org"]
+    GitHub["GitHub<br/>github.com/alice"]
+    Mastodon["Mastodon<br/>@alice@mastodon.social"]
+    Website["Website<br/>alice.example.com"]
+
+    WebID <-->|"owl:sameAs"| Matrix
+    WebID <-->|"owl:sameAs"| GitHub
+    WebID <-->|"owl:sameAs"| Mastodon
+    WebID <-->|"foaf:homepage"| Website
+```
 
 ### Semantic Queries
 
