@@ -25,6 +25,31 @@ const config: Config = {
     locales: ['en'],
   },
 
+  headTags: [
+    // Preconnect to external resources
+    {tagName: 'link', attributes: {rel: 'preconnect', href: 'https://fonts.googleapis.com'}},
+    // Theme color for browser UI
+    {tagName: 'meta', attributes: {name: 'theme-color', content: '#0DBD8B'}},
+    // Apple touch icon
+    {tagName: 'link', attributes: {rel: 'apple-touch-icon', href: '/img/matrix-logo.svg'}},
+    // Canonical structured data
+    {
+      tagName: 'script',
+      attributes: {type: 'application/ld+json'},
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'Matrix Docs',
+        url: 'https://matrixdocs.github.io',
+        description: 'The definitive Matrix protocol developer resource - comprehensive guides, hidden gems, and power user tips',
+        publisher: {
+          '@type': 'Organization',
+          name: 'Matrix Docs Community',
+        },
+      }),
+    },
+  ],
+
   presets: [
     [
       'classic',
@@ -44,11 +69,21 @@ const config: Config = {
 
   themeConfig: {
     image: 'img/matrix-social-card.png',
+    // Note: Social card image should be 1200x630 PNG for best compatibility
 
     metadata: [
-      {name: 'keywords', content: 'matrix, protocol, decentralized, chat, element, synapse, federation, bridges, bots'},
-      {name: 'description', content: 'The definitive Matrix protocol developer resource - comprehensive guides, hidden gems, and power user tips'},
+      // Basic meta
+      {name: 'keywords', content: 'matrix, protocol, decentralized, chat, element, synapse, federation, bridges, bots, encryption, e2ee'},
+      {name: 'author', content: 'Matrix Docs Community'},
+      {name: 'robots', content: 'index, follow'},
+      // Open Graph
       {property: 'og:type', content: 'website'},
+      {property: 'og:site_name', content: 'Matrix Docs'},
+      {property: 'og:locale', content: 'en_US'},
+      // Twitter Card
+      {name: 'twitter:card', content: 'summary_large_image'},
+      {name: 'twitter:site', content: '@matrixdotorg'},
+      {name: 'twitter:creator', content: '@matrixdotorg'},
     ],
 
     colorMode: {

@@ -1,0 +1,58 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#1a1a2e"/>
+
+  <!-- Grid pattern -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0DBD8B" stroke-width="0.5" opacity="0.1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Decorative elements -->
+  <circle cx="100" cy="100" r="200" fill="#0DBD8B" opacity="0.05"/>
+  <circle cx="1100" cy="530" r="250" fill="#0DBD8B" opacity="0.05"/>
+
+  <!-- Matrix bracket logo stylized -->
+  <g transform="translate(100, 215)">
+    <!-- Left bracket -->
+    <path d="M0 0 L0 200 M0 0 L30 0 M0 200 L30 200" stroke="#0DBD8B" stroke-width="8" fill="none"/>
+    <!-- Right bracket -->
+    <path d="M170 0 L200 0 L200 200 L170 200" stroke="#0DBD8B" stroke-width="8" fill="none"/>
+    <!-- Inner dots representing matrix -->
+    <circle cx="60" cy="50" r="8" fill="#0DBD8B"/>
+    <circle cx="100" cy="50" r="8" fill="#0DBD8B"/>
+    <circle cx="140" cy="50" r="8" fill="#0DBD8B"/>
+    <circle cx="60" cy="100" r="8" fill="#0DBD8B"/>
+    <circle cx="100" cy="100" r="8" fill="#0DBD8B"/>
+    <circle cx="140" cy="100" r="8" fill="#0DBD8B"/>
+    <circle cx="60" cy="150" r="8" fill="#0DBD8B"/>
+    <circle cx="100" cy="150" r="8" fill="#0DBD8B"/>
+    <circle cx="140" cy="150" r="8" fill="#0DBD8B"/>
+  </g>
+
+  <!-- Main title -->
+  <text x="350" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="700" fill="#ffffff">Matrix Docs</text>
+
+  <!-- Tagline -->
+  <text x="350" y="350" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#a0a0a0">The definitive Matrix protocol developer resource</text>
+
+  <!-- Features -->
+  <g transform="translate(350, 400)" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#0DBD8B">
+    <text x="0" y="0">◆ Clients</text>
+    <text x="150" y="0">◆ Servers</text>
+    <text x="300" y="0">◆ Bridges</text>
+    <text x="450" y="0">◆ SDKs</text>
+    <text x="0" y="40">◆ Bots</text>
+    <text x="150" y="40">◆ Security</text>
+    <text x="300" y="40">◆ Deployment</text>
+    <text x="450" y="40">◆ Hidden Gems</text>
+  </g>
+
+  <!-- URL -->
+  <text x="350" y="550" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#666666">matrixdocs.github.io</text>
+
+  <!-- Bottom accent line -->
+  <rect x="0" y="610" width="1200" height="20" fill="#0DBD8B"/>
+</svg>
