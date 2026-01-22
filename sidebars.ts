@@ -116,10 +116,12 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Hidden Gems',
-      collapsed: true,
+      collapsed: false,
       items: [
         'gems/overview',
         'gems/power-user-tips',
+        'gems/power-tools',
+        'gems/automation',
         'gems/lesser-known-clients',
         'gems/advanced-features',
         'gems/self-hosting-tips',

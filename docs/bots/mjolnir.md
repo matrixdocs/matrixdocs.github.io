@@ -1,125 +1,120 @@
 ---
 sidebar_position: 3
-title: Mjolnir
-description: Moderation bot for Matrix communities
+title: Mjolnir & Draupnir
+description: Moderation bots for Matrix communities
 ---
 
-# Mjolnir
+# Mjolnir & Draupnir
 
-Mjolnir is a powerful moderation bot for Matrix. Essential for managing communities and protecting against spam.
+Powerful moderation bots for Matrix. **Draupnir is the recommended choice** for new deployments as the actively maintained successor to Mjolnir.
 
-## Features
+## Draupnir vs Mjolnir
 
-- **Ban lists** - Shared blocklists across rooms
-- **Spam protection** - Automated detection and removal
-- **Mass moderation** - Act across multiple rooms
-- **Server ACLs** - Block entire servers
-- **Audit logging** - Track all mod actions
+| Feature | Draupnir | Mjolnir |
+|---------|----------|---------|
+| Status | **Actively maintained** | Legacy (minimal updates) |
+| Performance | Fast (room state caching) | Slower startup |
+| UX | No commands needed for bans | Command-only |
+| Features | Takedowns, auto-suspension | Basic moderation |
+| Recommended | **Yes** | For existing deployments |
 
-## Installation
+## Draupnir (Recommended)
 
-### Docker
+**[Draupnir](https://github.com/the-draupnir-project/Draupnir)** is a drop-in replacement for Mjolnir with significant improvements.
 
+### Why Draupnir?
+
+- **No commands needed** - Ban in your client, Draupnir prompts to add to ban list
+- **Instant response** - Doesn't wait for homeserver data
+- **Room state caching** - Fast startup even with many rooms
+- **Active development** - v2.3.0 (May 2025) with major features
+
+### New in v2.3.0 (2025)
+
+- **Takedowns** - Stronger than bans for illegal content
+- **Auto-suspension** - Automatically suspend matching users
+- **Block invitations** - Preemptively block invites from bad actors
+- **synapse-http-antispam** - Modern Synapse integration
+
+### Installation
+
+**Docker (Recommended):**
 ```yaml title="docker-compose.yml"
-version: '3'
 services:
-  mjolnir:
-    image: matrixdotorg/mjolnir:latest
+  draupnir:
+    image: gnuxie/draupnir:latest
     restart: unless-stopped
     volumes:
-      - ./mjolnir-data:/data
+      - ./draupnir-data:/data
 ```
 
-### npm
-
+**From Source:**
 ```bash
-npm install -g mjolnir
-mjolnir
+git clone https://github.com/the-draupnir-project/Draupnir.git
+cd Draupnir
+npm install
+npm run build
 ```
 
-## Setup
+### Quick Setup
 
-### 1. Create Bot Account
+1. **Create bot account**: `@draupnir:yourserver.com`
+2. **Create control room** (private, unencrypted)
+3. **Invite bot and give admin** (power level 100)
+4. **Configure** `config/production.yaml`:
 
-Create a Matrix account for Mjolnir:
-```
-@mjolnir:example.com
-```
-
-### 2. Configure
-
-```yaml title="config/production.yaml"
-homeserverUrl: "https://matrix.example.com"
+```yaml
+homeserverUrl: "https://matrix.yourserver.com"
 accessToken: "your-bot-access-token"
-
-managementRoom: "#mjolnir-management:example.com"
-
-protectedRooms:
-  - "#room1:example.com"
-  - "#room2:example.com"
-
-# Enable protections
-protections:
-  - FirstMessageIsImage
-  - BasicFloodingProtection
-
-# Admin users
-admins:
-  - "@admin:example.com"
+managementRoom: "!controlroomid:yourserver.com"
 ```
 
-### 3. Create Management Room
+5. **Start Draupnir**: `docker compose up -d`
 
-1. Create a new room
-2. Invite the bot
-3. Give bot admin (PL 100)
-4. Set as management room in config
-
-### 4. Start Mjolnir
-
-```bash
-docker compose up -d
-# or
-mjolnir --config config/production.yaml
+6. **Create your first ban list**:
+```
+!draupnir list create my-coc code-of-conduct-ban-list
 ```
 
-## Commands
+### Key Commands
 
-### User Moderation
+```
+# Moderation
+!draupnir ban @user:server reason
+!draupnir unban @user:server
+!draupnir kick @user:server reason
+!draupnir redact @user:server [limit]
 
-| Command | Description |
-|---------|-------------|
-| `!mjolnir ban <user> [reason]` | Ban user from protected rooms |
-| `!mjolnir unban <user>` | Unban user |
-| `!mjolnir kick <user> [reason]` | Kick user |
-| `!mjolnir redact <user> [limit]` | Remove user's messages |
-| `!mjolnir mute <user>` | Mute user |
-| `!mjolnir unmute <user>` | Unmute user |
+# Rooms
+!draupnir rooms add #room:server
+!draupnir rooms remove #room:server
+!draupnir rooms
 
-### Room Management
+# Ban Lists
+!draupnir list create <shortcode>
+!draupnir watch <listroom>
+!draupnir unwatch <listroom>
 
-| Command | Description |
-|---------|-------------|
-| `!mjolnir rooms add <room>` | Add protected room |
-| `!mjolnir rooms remove <room>` | Remove protected room |
-| `!mjolnir rooms` | List protected rooms |
+# Server ACLs
+!draupnir ban server badserver.com
+!draupnir unban server badserver.com
 
-### Ban Lists
+# Protections
+!draupnir enable FirstMessageIsImage
+!draupnir disable BasicFloodingProtection
+!draupnir protections
+```
 
-| Command | Description |
-|---------|-------------|
-| `!mjolnir list create <shortcode>` | Create ban list |
-| `!mjolnir watch <room>` | Subscribe to ban list |
-| `!mjolnir unwatch <room>` | Unsubscribe |
+### Distributed Moderation
 
-### Server ACLs
+Subscribe to community-curated ban lists:
+```
+!draupnir watch #matrix-org-coc-bl:matrix.org
+```
 
-| Command | Description |
-|---------|-------------|
-| `!mjolnir ban server <server>` | Block entire server |
-| `!mjolnir unban server <server>` | Unblock server |
-
-## Protections
+**Popular lists:**
+- `#matrix-org-coc-bl:matrix.org` - Matrix.org CoC violations
+- `#community-moderation-effort-bl:neko.dev` - CME list
 
 ### Built-in Protections
 
@@ -129,110 +124,131 @@ mjolnir --config config/production.yaml
 | `BasicFloodingProtection` | Rate limit messages |
 | `WordList` | Block messages with banned words |
 | `MessageIsVoice` | Block voice messages |
-| `MessageIsMedia` | Block media messages |
+| `JoinWaveShortCircuit` | Stop join floods |
 
-### Enabling Protections
-
+**Enable protections:**
 ```
-!mjolnir enable FirstMessageIsImage
+!draupnir enable FirstMessageIsImage
+!draupnir config set BasicFloodingProtection.maxPerMinute 10
+```
+
+### Synapse Integration
+
+For server-wide protection, use synapse-http-antispam (replaces legacy module):
+
+```yaml
+# homeserver.yaml
+modules:
+  - module: synapse_http_antispam.HTTPAntispam
+    config:
+      base_url: http://draupnir:8080
+```
+
+### Migration from Mjolnir
+
+Migration is seamless:
+1. Replace Docker image: `gnuxie/draupnir:latest`
+2. Restart
+3. That's it - configuration is compatible
+
+---
+
+## Mjolnir (Legacy)
+
+If you have an existing Mjolnir deployment, it will continue to work, but consider migrating to Draupnir.
+
+### Docker
+
+```yaml title="docker-compose.yml"
+services:
+  mjolnir:
+    image: matrixdotorg/mjolnir:latest
+    restart: unless-stopped
+    volumes:
+      - ./mjolnir-data:/data
+```
+
+### Configuration
+
+```yaml title="config/production.yaml"
+homeserverUrl: "https://matrix.example.com"
+accessToken: "your-bot-access-token"
+managementRoom: "#mjolnir-management:example.com"
+
+protectedRooms:
+  - "#room1:example.com"
+  - "#room2:example.com"
+
+protections:
+  - FirstMessageIsImage
+  - BasicFloodingProtection
+
+admins:
+  - "@admin:example.com"
+```
+
+### Commands
+
+Mjolnir uses `!mjolnir` prefix instead of `!draupnir`:
+```
+!mjolnir ban @user:server reason
+!mjolnir watch #banlist:server
 !mjolnir enable BasicFloodingProtection
 ```
 
-### Configuring
+---
 
-```
-!mjolnir config set BasicFloodingProtection.maxPerMinute 10
-```
+## Best Practices
 
-## Ban Lists
+### Room Setup
 
-### Using Community Lists
+1. **Control room**: Private, unencrypted, trusted admins only
+2. **Bot power level**: Always 100 in protected rooms
+3. **Separate ban lists**: By severity or category
 
-Subscribe to shared ban lists:
+### Security
 
-```
-!mjolnir watch #matrix-org-coc-bl:matrix.org
-```
+- Keep control room invite-only
+- Limit admin list
+- Audit mod actions regularly
+- Use strong access tokens
 
-Popular ban lists:
-- `#matrix-org-coc-bl:matrix.org` - Matrix.org CoC violations
-- `#community-moderation-effort-bl:neko.dev` - CME list
+### Performance
 
-### Creating Your Own
+- Start with Draupnir for better performance
+- Use room state backing store
+- Consider workers for large deployments
 
-```
-!mjolnir list create mylist
-# Creates #mylist-bl:example.com
-```
-
-Share with other servers for collaborative moderation.
-
-## Advanced Usage
-
-### Synapse Module
-
-For server-wide protection, install the Synapse module:
-
-```python
-modules:
-  - module: mjolnir.AntiSpam
-    config:
-      block_invites: true
-      block_messages: true
-      ban_lists:
-        - "#mylist-bl:example.com"
-```
-
-This applies rules at the server level, before messages reach rooms.
-
-### Multiple Instances
-
-Run separate Mjolnir instances for different communities:
-- Different protected room sets
-- Different policies
-- Different admin teams
-
-## Draupnir
-
-**Draupnir** is a maintained fork of Mjolnir with improvements:
-
-```bash
-npm install -g draupnir
-```
-
-Additional features:
-- Better performance
-- More protections
-- Active development
-
-Consider Draupnir for new deployments.
+---
 
 ## Troubleshooting
 
-### Bot Can't Ban Users
+### Bot Can't Ban
 
-- Check bot power level (needs 100)
-- Verify room is in protected list
-- Check homeserver logs
+1. Check bot power level (needs 100)
+2. Verify room is protected: `!draupnir rooms`
+3. Check homeserver logs
 
-### Protections Not Triggering
+### Protections Not Working
 
-- Verify protection is enabled
-- Check protection config
-- Review detection criteria
+1. Check if enabled: `!draupnir protections`
+2. Verify configuration
+3. Test with manual trigger
 
 ### Ban List Not Syncing
 
-- Ensure bot has room access
-- Check `!mjolnir status`
-- Verify list room permissions
+1. Check bot has room access
+2. Run `!draupnir status`
+3. Verify list room permissions
+
+---
 
 ## Resources
 
-- [Mjolnir GitHub](https://github.com/matrix-org/mjolnir)
-- [Draupnir GitHub](https://github.com/the-draupnir-project/Draupnir)
-- [Documentation](https://github.com/matrix-org/mjolnir/blob/main/docs/)
-- [Matrix Room](https://matrix.to/#/#mjolnir:matrix.org)
+- **Draupnir**: [github.com/the-draupnir-project/Draupnir](https://github.com/the-draupnir-project/Draupnir)
+- **Mjolnir**: [github.com/matrix-org/mjolnir](https://github.com/matrix-org/mjolnir)
+- **Support**: [#draupnir:matrix.org](https://matrix.to/#/#draupnir:matrix.org)
+- **Docs**: [Draupnir4All](https://docs.draupnir.midnightthoughts.space/)
 
 ---
 

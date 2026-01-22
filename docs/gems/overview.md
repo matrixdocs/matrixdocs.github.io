@@ -1,116 +1,172 @@
 ---
 sidebar_position: 1
 title: Hidden Gems Overview
-description: Discover lesser-known Matrix features and power user tips
+description: Discover lesser-known Matrix features, power tools, and automation
 ---
 
 # Hidden Gems
 
-Welcome to the power user section. Here you'll find lesser-known features, advanced tricks, and the best-kept secrets of the Matrix ecosystem.
+Welcome to the power user section. Transform from a casual Matrix user into a power user with these tools, tips, and techniques.
 
-## What You'll Find Here
+## What You'll Gain
 
-### Power User Tips
+After reading this section, you'll be able to:
 
-Keyboard shortcuts, advanced settings, and productivity hacks that most users don't know about.
+- ⚡ Navigate Matrix at lightning speed with keyboard shortcuts
+- 🤖 Automate workflows with bots and integrations
+- 🛠️ Use admin tools to manage servers like a pro
+- 🔐 Master encryption and security features
+- 🎯 Discover clients with unique superpowers
 
-### Lesser-Known Clients
+## Quick Start Guide
 
-Discover niche clients with unique features that might be perfect for your workflow.
-
-### Advanced Features
-
-Deep dives into features that go beyond the basics - custom widgets, integrations, and automation.
-
-### Self-Hosting Tips
-
-Optimization tricks, monitoring setups, and configuration gems for homeserver admins.
-
-## Quick Gems
-
-### Element Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl/Cmd + K` | Jump to room (fuzzy search) |
-| `Ctrl/Cmd + Shift + U` | Upload file |
-| `Ctrl/Cmd + Shift + E` | Toggle emoji picker |
-| `Alt + ↑/↓` | Jump between unread rooms |
-| `↑` (in empty input) | Edit last message |
-
-### Secret Room Settings
-
-Some powerful room settings are hidden in advanced options:
-
-1. **Room Settings → Advanced**
-2. **Show** → Internal room ID, state events
-3. **Developer tools** → View/edit raw events
-
-### Matrix URI Scheme
-
-Deep link directly to rooms, users, and events:
-
-```
-matrix:r/room:example.com          # Room
-matrix:u/user:example.com          # User
-matrix:roomid/!abc:example.com/e/$event  # Specific event
-```
-
-### Command Line in Element
-
-Type `/` to see available commands:
-
-```
-/me         - Send emote
-/nick       - Change display name
-/roomnick   - Room-specific nick
-/myroomavatar - Room-specific avatar
-/devtools   - Open developer tools
-/query      - Start DM with user
-/invite     - Invite user to room
-/topic      - Set room topic
-/roomname   - Set room name
-```
-
-### Labs Features to Enable
-
-In Element, go to **Settings → Labs**:
-
-| Feature | Description |
-|---------|-------------|
-| **Threads** | Organize conversations |
-| **Video rooms** | Persistent video spaces |
-| **Rich text editor** | Better formatting |
-| **Voice broadcast** | One-to-many voice |
-| **Pinned messages** | Pin important content |
-
-## Hidden Features in Clients
-
-### Cinny
-
-- **Custom CSS**: Settings → Appearance → Custom CSS
-- **Keyboard navigation**: Full vim-style navigation
-- **Room search**: `Ctrl+K` with fuzzy matching
-
-### FluffyChat
-
-- **Stories**: Share ephemeral content
-- **Multiple accounts**: Switch between accounts
-- **Offline mode**: Read messages without internet
-
-### Nheko
-
-- **Image previews in terminal**: Works in Kitty/iTerm2
-- **System tray**: Minimize to tray
-- **Video calls**: Native WebRTC support
-
-## Explore More
-
-- [Power User Tips](./power-user-tips) - Productivity secrets
-- [Lesser-Known Clients](./lesser-known-clients) - Hidden client gems
-- [Advanced Features](./advanced-features) - Deep feature dives
-- [Self-Hosting Tips](./self-hosting-tips) - Admin tricks
+| Your Goal | Start Here |
+|-----------|------------|
+| Navigate faster, format better | [Power User Tips](./power-user-tips) |
+| Admin tools, CLI utilities | [Power Tools](./power-tools) |
+| Bots, webhooks, CI/CD | [Automation](./automation) |
+| Try unique clients | [Lesser-Known Clients](./lesser-known-clients) |
+| Server optimization | [Self-Hosting Tips](./self-hosting-tips) |
 
 ---
 
-*"The best features are the ones you discover yourself."*
+## Power Tools Preview
+
+### For Server Admins
+
+| Tool | What It Does |
+|------|--------------|
+| **[synadm](https://github.com/JOJ0/synadm)** | CLI Swiss Army knife for Synapse |
+| **[synapse-admin](https://github.com/Awesome-Technologies/synapse-admin)** | Web-based admin UI |
+| **[Draupnir](https://github.com/the-draupnir-project/Draupnir)** | Next-gen moderation (Mjolnir successor) |
+
+### For Automation
+
+| Tool | What It Does |
+|------|--------------|
+| **[Maubot](https://mau.bot)** | Plugin-based bot system |
+| **[Hookshot](https://github.com/matrix-org/matrix-hookshot)** | GitHub, GitLab, JIRA, RSS integration |
+| **[matrix-commander](https://github.com/8go/matrix-commander)** | Scripting and CLI messaging |
+| **[gomuks](https://github.com/gomuks/gomuks)** | Terminal client with web frontend |
+
+---
+
+## Essential Shortcuts
+
+### Element Web (Must Know)
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + K` | **Quick room switch** |
+| `↑` (empty input) | Edit last message |
+| `Ctrl/Cmd + Shift + U` | Upload file |
+| `Ctrl/Cmd + /` | Show all shortcuts |
+
+### Slash Commands
+
+```
+/me action       - Emote
+/topic text      - Set room topic
+/invite @user    - Invite user
+/op @user 50     - Set power level
+/devtools        - Developer tools
+/shrug           - ¯\_(ツ)_/¯
+```
+
+---
+
+## 2025/2026 New Features
+
+### Threads
+Organize long conversations into threaded replies. Available in Element X, FluffyChat, Cinny.
+
+### Polls
+Create interactive polls in rooms. Native support in most clients.
+
+### Sticky Events (MSC4354)
+Temporary per-user state for live location, call status, and more.
+
+### Element X
+Next-gen mobile with Sliding Sync for instant startup and fast sync.
+
+### Verification Required (April 2026)
+Element will require verified devices for E2EE messages.
+
+---
+
+## Labs Features Worth Enabling
+
+In **Element → Settings → Labs**:
+
+| Feature | Why Enable |
+|---------|------------|
+| Threads | Organize discussions |
+| Video rooms | Persistent video spaces |
+| Rich text editor | Better formatting |
+| Pinned messages | Highlight important content |
+
+---
+
+## Client Superpowers
+
+### SchildiChat
+- Mark as unread (other clients don't have this!)
+- URL previews in encrypted rooms
+- Don't auto-mark as read
+- Swipe between spaces
+
+### FluffyChat
+- Voice messages
+- Location sharing
+- Material You design
+- Polls and threads
+
+### Cinny
+- Custom CSS theming
+- Vim-style navigation
+- Beautiful Discord-like UI
+
+### gomuks
+- Terminal-based
+- New web frontend
+- Power level commands
+- Archive room history to JSON
+
+---
+
+## Quick Automation Ideas
+
+### Send Alerts from Scripts
+```bash
+matrix-commander -m "🚨 Server alert!" -r '!alerts:server'
+```
+
+### Subscribe to RSS Feeds
+```
+!hookshot feed https://blog.example.com/rss
+```
+
+### Get GitHub Notifications
+```
+!hookshot github repo owner/repo
+```
+
+### Schedule Reminders
+```
+!remind me tomorrow at 9am standup meeting
+```
+
+---
+
+## Explore the Guides
+
+1. **[Power User Tips](./power-user-tips)** - Keyboard shortcuts, formatting, navigation
+2. **[Power Tools](./power-tools)** - synadm, Draupnir, Maubot, gomuks
+3. **[Automation](./automation)** - Webhooks, CI/CD, scheduled messages
+4. **[Lesser-Known Clients](./lesser-known-clients)** - Cinny, FluffyChat, Nheko, SchildiChat
+5. **[Advanced Features](./advanced-features)** - Widgets, integrations, deep dives
+6. **[Self-Hosting Tips](./self-hosting-tips)** - Performance, monitoring, optimization
+
+---
+
+*Install the tools. Learn the shortcuts. Automate the boring stuff. Become a Matrix power user.*
