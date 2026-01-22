@@ -1,0 +1,193 @@
+/**
+ * Matrix Docs Theme - Matrix Green Color Scheme
+ */
+
+:root {
+  /* Matrix green primary colors */
+  --ifm-color-primary: #0DBD8B;
+  --ifm-color-primary-dark: #0BA97D;
+  --ifm-color-primary-darker: #0A9F76;
+  --ifm-color-primary-darkest: #088361;
+  --ifm-color-primary-light: #0FD199;
+  --ifm-color-primary-lighter: #10DBA0;
+  --ifm-color-primary-lightest: #2AEAB5;
+
+  /* Code styling */
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(13, 189, 139, 0.1);
+
+  /* Link colors */
+  --ifm-link-color: #0DBD8B;
+
+  /* Navbar */
+  --ifm-navbar-background-color: #ffffff;
+  --ifm-navbar-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+  /* Footer */
+  --ifm-footer-background-color: #1a1a2e;
+
+  /* Typography */
+  --ifm-font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ifm-heading-font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Dark mode - Matrix style */
+[data-theme='dark'] {
+  --ifm-color-primary: #0DBD8B;
+  --ifm-color-primary-dark: #0BA97D;
+  --ifm-color-primary-darker: #0A9F76;
+  --ifm-color-primary-darkest: #088361;
+  --ifm-color-primary-light: #0FD199;
+  --ifm-color-primary-lighter: #10DBA0;
+  --ifm-color-primary-lightest: #2AEAB5;
+
+  --docusaurus-highlighted-code-line-bg: rgba(13, 189, 139, 0.2);
+  --ifm-link-color: #0DBD8B;
+  --ifm-navbar-background-color: #0d0d1a;
+  --ifm-footer-background-color: #0d0d1a;
+  --ifm-background-color: #121225;
+  --ifm-background-surface-color: #1a1a2e;
+}
+
+/* Hero gradient - Matrix green to dark */
+.hero--primary {
+  background: linear-gradient(135deg, #0DBD8B 0%, #088361 50%, #0d0d1a 100%);
+}
+
+[data-theme='dark'] .hero--primary {
+  background: linear-gradient(135deg, #088361 0%, #055640 50%, #0d0d1a 100%);
+}
+
+/* Code blocks */
+.prism-code {
+  border-radius: 8px;
+}
+
+/* Tables */
+table {
+  display: table;
+  width: 100%;
+}
+
+table th {
+  background-color: rgba(13, 189, 139, 0.1);
+}
+
+[data-theme='dark'] table th {
+  background-color: rgba(13, 189, 139, 0.15);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Feature cards */
+.feature-card {
+  background: var(--ifm-background-surface-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(13, 189, 139, 0.2);
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(13, 189, 139, 0.15);
+}
+
+/* Announcement bar */
+.announcementBar {
+  background: linear-gradient(90deg, #0DBD8B, #088361) !important;
+}
+
+/* Button styling */
+.button--primary {
+  background-color: #0DBD8B;
+  border-color: #0DBD8B;
+}
+
+.button--primary:hover {
+  background-color: #0BA97D;
+  border-color: #0BA97D;
+}
+
+/* Sidebar active link */
+.menu__link--active {
+  color: #0DBD8B !important;
+}
+
+/* Custom admonition colors */
+.admonition-tip {
+  border-left-color: #0DBD8B;
+}
+
+.admonition-tip .admonition-heading {
+  color: #0DBD8B;
+}
+
+/* Homepage section styling */
+.homepage-section {
+  padding: 4rem 0;
+}
+
+.homepage-section:nth-child(even) {
+  background-color: var(--ifm-background-surface-color);
+}
+
+/* Stats display */
+.stats-container {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+  margin: 2rem 0;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #0DBD8B;
+}
+
+.stat-label {
+  font-size: 1rem;
+  color: var(--ifm-font-color-secondary);
+}
+
+/* Quick links grid */
+.quick-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+/* Badge styling */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge--green {
+  background-color: rgba(13, 189, 139, 0.2);
+  color: #0DBD8B;
+}
+
+.badge--blue {
+  background-color: rgba(37, 99, 235, 0.2);
+  color: #3B82F6;
+}
+
+.badge--purple {
+  background-color: rgba(139, 92, 246, 0.2);
+  color: #8B5CF6;
+}
