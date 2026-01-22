@@ -194,9 +194,9 @@ certbot certonly --webroot -w /var/www/html \
 
 Choose your path:
 
-- [Docker Deployment](/deployment/docker)
-- [Ansible Deployment](/deployment/ansible)
+- [Docker Deployment](./docker)
+- [Ansible Deployment](./ansible)
 
 ---
 
-*See also: [Server Comparison](/servers/comparison)*
+*See also: [Server Comparison](../servers/comparison)*

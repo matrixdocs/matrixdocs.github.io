@@ -191,4 +191,4 @@ class MyPlugin(Plugin):
 
 ---
 
-*Next: [Mjolnir](/bots/mjolnir) →*
+*Next: [Mjolnir](./mjolnir) →*

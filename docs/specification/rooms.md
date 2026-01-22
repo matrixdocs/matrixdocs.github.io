@@ -174,4 +174,4 @@ Tombstone event:
 
 ---
 
-*Next: [Hidden Gems](/gems/overview) →*
+*Next: [Hidden Gems](../gems/overview) →*

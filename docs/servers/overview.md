@@ -41,9 +41,9 @@ Full control over your data:
 
 | Implementation | Language | Best For |
 |----------------|----------|----------|
-| [**Synapse**](/servers/synapse) | Python | Features, compatibility |
-| [**Dendrite**](/servers/dendrite) | Go | Efficiency, scaling |
-| [**Conduit**](/servers/conduit) | Rust | Simplicity, performance |
+| [**Synapse**](./synapse) | Python | Features, compatibility |
+| [**Dendrite**](./dendrite) | Go | Efficiency, scaling |
+| [**Conduit**](./conduit) | Rust | Simplicity, performance |
 
 ## Quick Comparison
 
@@ -210,11 +210,11 @@ Key metrics to watch:
 
 ## Next Steps
 
-- [Synapse Setup Guide](/servers/synapse)
-- [Dendrite Setup Guide](/servers/dendrite)
-- [Conduit Setup Guide](/servers/conduit)
-- [Server Comparison](/servers/comparison)
+- [Synapse Setup Guide](./synapse)
+- [Dendrite Setup Guide](./dendrite)
+- [Conduit Setup Guide](./conduit)
+- [Server Comparison](./comparison)
 
 ---
 
-*Continue: [Synapse](/servers/synapse) | [Dendrite](/servers/dendrite) | [Conduit](/servers/conduit)*
+*Continue: [Synapse](./synapse) | [Dendrite](./dendrite) | [Conduit](./conduit)*

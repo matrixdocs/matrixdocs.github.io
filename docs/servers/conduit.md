@@ -379,4 +379,4 @@ Compared to Synapse/Dendrite:
 
 ---
 
-*Next: [Server Comparison](/servers/comparison) →*
+*Next: [Server Comparison](./comparison) →*

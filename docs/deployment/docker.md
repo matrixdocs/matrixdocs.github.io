@@ -339,4 +339,4 @@ curl https://federationtester.matrix.org/api/report?server_name=example.com
 
 ---
 
-*Next: [Ansible Deployment](/deployment/ansible) →*
+*Next: [Ansible Deployment](./ansible) →*

@@ -240,4 +240,4 @@ curl -X PUT -H "Authorization: Bearer $TOKEN" \
 
 ---
 
-*Next: [Self-Hosting Tips](/gems/self-hosting-tips) →*
+*Next: [Self-Hosting Tips](./self-hosting-tips) →*

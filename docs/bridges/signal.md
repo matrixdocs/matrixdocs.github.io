@@ -147,4 +147,4 @@ Signal has rate limits for new accounts. Use an established account.
 
 ---
 
-*Next: [WhatsApp Bridge](/bridges/whatsapp) →*
+*Next: [WhatsApp Bridge](./whatsapp) →*

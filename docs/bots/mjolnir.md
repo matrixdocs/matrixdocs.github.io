@@ -236,4 +236,4 @@ Consider Draupnir for new deployments.
 
 ---
 
-*Next: [Hookshot](/bots/hookshot) →*
+*Next: [Hookshot](./hookshot) →*

@@ -163,10 +163,10 @@ Space: "My Community"
 
 ## Next Steps
 
-- [Quick Start](/getting-started/quick-start) - Get your first Matrix account
-- [Clients](/clients/overview) - Choose your Matrix client
-- [Specification](/specification/overview) - Deep dive into the protocol
+- [Quick Start](./quick-start) - Get your first Matrix account
+- [Clients](../clients/overview) - Choose your Matrix client
+- [Specification](../specification/overview) - Deep dive into the protocol
 
 ---
 
-*Next: [Quick Start](/getting-started/quick-start) →*
+*Next: [Quick Start](./quick-start) →*

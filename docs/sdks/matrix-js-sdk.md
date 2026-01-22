@@ -206,4 +206,4 @@ await client.sendStateEvent(spaceId, "m.space.child", {
 
 ---
 
-*Next: [matrix-rust-sdk](/sdks/matrix-rust-sdk) →*
+*Next: [matrix-rust-sdk](./matrix-rust-sdk) →*

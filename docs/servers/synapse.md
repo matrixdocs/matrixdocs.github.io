@@ -383,4 +383,4 @@ journalctl -u matrix-synapse -f
 
 ---
 
-*Next: [Dendrite](/servers/dendrite) →*
+*Next: [Dendrite](./dendrite) →*

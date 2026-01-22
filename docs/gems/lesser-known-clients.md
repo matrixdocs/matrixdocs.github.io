@@ -209,4 +209,4 @@ When trying new clients:
 
 ---
 
-*Next: [Advanced Features](/gems/advanced-features) →*
+*Next: [Advanced Features](./advanced-features) →*

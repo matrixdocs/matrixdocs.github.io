@@ -57,9 +57,9 @@ Matrix IDs follow the format `@localpart:server.name`. The server part tells you
 
 Ready to dive in? Here's your path:
 
-1. **[Core Concepts](/getting-started/concepts)** - Understand how Matrix works
-2. **[Quick Start](/getting-started/quick-start)** - Get chatting in minutes
-3. **[Your First Room](/getting-started/your-first-room)** - Create and manage rooms
+1. **[Core Concepts](./concepts)** - Understand how Matrix works
+2. **[Quick Start](./quick-start)** - Get chatting in minutes
+3. **[Your First Room](./your-first-room)** - Create and manage rooms
 
 ## External Resources
 
@@ -70,4 +70,4 @@ Ready to dive in? Here's your path:
 
 ---
 
-*Next: [Core Concepts](/getting-started/concepts) →*
+*Next: [Core Concepts](./concepts) →*

@@ -288,4 +288,4 @@ curl https://federationtester.matrix.org/api/report?server_name=example.com
 
 ---
 
-*See also: [Docker Deployment](/deployment/docker) | [Deployment Overview](/deployment/overview)*
+*See also: [Docker Deployment](./docker) | [Deployment Overview](./overview)*

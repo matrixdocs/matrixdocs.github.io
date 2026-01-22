@@ -279,4 +279,4 @@ flatpak install flathub org.kde.neochat
 
 ---
 
-*Next: [Client Comparison](/clients/comparison) →*
+*Next: [Client Comparison](./comparison) →*

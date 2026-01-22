@@ -259,4 +259,4 @@ Change to your own Dimension or other integration manager.
 
 ---
 
-*Next: [Alternative Clients](/clients/alternatives) →*
+*Next: [Alternative Clients](./alternatives) →*

@@ -169,4 +169,4 @@ Try **Cinny** - the interface will feel familiar and comfortable.
 
 ---
 
-*Continue: [Element Deep Dive](/clients/element) | [Alternative Clients](/clients/alternatives)*
+*Continue: [Element Deep Dive](./element) | [Alternative Clients](./alternatives)*

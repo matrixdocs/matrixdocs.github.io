@@ -40,7 +40,7 @@ Connect external services:
 
 | Framework | Language | Complexity | Best For |
 |-----------|----------|------------|----------|
-| [Maubot](/bots/maubot) | Python | Medium | Plugin ecosystem |
+| [Maubot](./maubot) | Python | Medium | Plugin ecosystem |
 | [matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk) | TypeScript | Low | Quick bots |
 | [mautrix](https://github.com/mautrix/python) | Python | Low | Simple bots |
 | [matrix-nio](https://github.com/matrix-nio/matrix-nio) | Python | Low | Async bots |
@@ -146,11 +146,11 @@ Invite to any room to use.
 
 ## Getting Started
 
-1. **[Maubot](/bots/maubot)** - Most versatile, plugin-based
-2. **[Mjolnir](/bots/mjolnir)** - Essential for moderation
-3. **[Hookshot](/bots/hookshot)** - GitHub/GitLab integration
-4. **[Building Bots](/bots/building-bots)** - Create your own
+1. **[Maubot](./maubot)** - Most versatile, plugin-based
+2. **[Mjolnir](./mjolnir)** - Essential for moderation
+3. **[Hookshot](./hookshot)** - GitHub/GitLab integration
+4. **[Building Bots](./building-bots)** - Create your own
 
 ---
 
-*Continue: [Maubot](/bots/maubot) | [Mjolnir](/bots/mjolnir) | [Hookshot](/bots/hookshot)*
+*Continue: [Maubot](./maubot) | [Mjolnir](./mjolnir) | [Hookshot](./hookshot)*

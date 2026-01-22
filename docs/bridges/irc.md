@@ -160,4 +160,4 @@ For larger deployments, consider [matrix-appservice-irc](https://github.com/matr
 
 ---
 
-*Next: [Signal Bridge](/bridges/signal) →*
+*Next: [Signal Bridge](./signal) →*

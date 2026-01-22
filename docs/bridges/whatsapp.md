@@ -174,4 +174,4 @@ New accounts face restrictions:
 
 ---
 
-*Next: [Bots Overview](/bots/overview) →*
+*Next: [Bots Overview](../bots/overview) →*

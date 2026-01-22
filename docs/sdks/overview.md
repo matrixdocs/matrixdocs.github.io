@@ -12,9 +12,9 @@ Build Matrix applications with official and community SDKs.
 
 | SDK | Language | Maintainer | E2EE | Best For |
 |-----|----------|------------|------|----------|
-| [matrix-js-sdk](/sdks/matrix-js-sdk) | JavaScript | Element | ✅ | Web apps, Element |
-| [matrix-rust-sdk](/sdks/matrix-rust-sdk) | Rust | Element | ✅ | High performance, mobile |
-| [matrix-python-sdk](/sdks/matrix-python-sdk) | Python | Community | ✅ | Scripts, bots |
+| [matrix-js-sdk](./matrix-js-sdk) | JavaScript | Element | ✅ | Web apps, Element |
+| [matrix-rust-sdk](./matrix-rust-sdk) | Rust | Element | ✅ | High performance, mobile |
+| [matrix-python-sdk](./matrix-python-sdk) | Python | Community | ✅ | Scripts, bots |
 | matrix-nio | Python | Community | ✅ | Async bots |
 | matrix-bot-sdk | TypeScript | Community | ✅ | Node.js bots |
 | mautrix-python | Python | Tulir | ✅ | Bridges, bots |
@@ -132,4 +132,4 @@ async fn main() -> anyhow::Result<()> {
 
 ---
 
-*Continue: [matrix-js-sdk](/sdks/matrix-js-sdk) | [matrix-rust-sdk](/sdks/matrix-rust-sdk) | [matrix-python-sdk](/sdks/matrix-python-sdk)*
+*Continue: [matrix-js-sdk](./matrix-js-sdk) | [matrix-rust-sdk](./matrix-rust-sdk) | [matrix-python-sdk](./matrix-python-sdk)*

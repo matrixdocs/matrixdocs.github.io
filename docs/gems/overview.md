@@ -106,10 +106,10 @@ In Element, go to **Settings → Labs**:
 
 ## Explore More
 
-- [Power User Tips](/gems/power-user-tips) - Productivity secrets
-- [Lesser-Known Clients](/gems/lesser-known-clients) - Hidden client gems
-- [Advanced Features](/gems/advanced-features) - Deep feature dives
-- [Self-Hosting Tips](/gems/self-hosting-tips) - Admin tricks
+- [Power User Tips](./power-user-tips) - Productivity secrets
+- [Lesser-Known Clients](./lesser-known-clients) - Hidden client gems
+- [Advanced Features](./advanced-features) - Deep feature dives
+- [Self-Hosting Tips](./self-hosting-tips) - Admin tricks
 
 ---
 

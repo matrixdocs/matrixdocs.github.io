@@ -255,4 +255,4 @@ telegram:
 
 ---
 
-*Next: [Slack Bridge](/bridges/slack) →*
+*Next: [Slack Bridge](./slack) →*

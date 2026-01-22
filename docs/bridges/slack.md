@@ -153,4 +153,4 @@ Re-login with `!slack login` or get a new token.
 
 ---
 
-*Next: [IRC Bridge](/bridges/irc) →*
+*Next: [IRC Bridge](./irc) →*

@@ -200,4 +200,4 @@ Need all features? → Element
 
 ---
 
-*Next: [Servers Overview](/servers/overview) →*
+*Next: [Servers Overview](../servers/overview) →*

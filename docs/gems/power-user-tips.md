@@ -237,4 +237,4 @@ def send_matrix_message(room, message):
 
 ---
 
-*Next: [Lesser-Known Clients](/gems/lesser-known-clients) →*
+*Next: [Lesser-Known Clients](./lesser-known-clients) →*

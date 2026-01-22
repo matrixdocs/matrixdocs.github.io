@@ -227,4 +227,4 @@ Sometimes rooms need to be upgraded (new room version):
 
 ---
 
-*Next: [Clients Overview](/clients/overview) →*
+*Next: [Clients Overview](../clients/overview) →*

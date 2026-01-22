@@ -250,4 +250,4 @@ bridge:
 
 ---
 
-*Next: [Telegram Bridge](/bridges/telegram) →*
+*Next: [Telegram Bridge](./telegram) →*

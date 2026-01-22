@@ -14,9 +14,9 @@ The specification is divided into several APIs:
 
 | API | Purpose |
 |-----|---------|
-| [Client-Server](/specification/client-server) | Client ↔ Homeserver |
-| [Server-Server](/specification/server-server) | Homeserver ↔ Homeserver (Federation) |
-| [Application Service](/specification/events) | Bridges & bots |
+| [Client-Server](./client-server) | Client ↔ Homeserver |
+| [Server-Server](./server-server) | Homeserver ↔ Homeserver (Federation) |
+| [Application Service](./events) | Bridges & bots |
 | [Identity Service](https://spec.matrix.org/latest/identity-service-api/) | 3PID lookup |
 | [Push Gateway](https://spec.matrix.org/latest/push-gateway-api/) | Push notifications |
 
@@ -122,4 +122,4 @@ Events have defined schemas:
 
 ---
 
-*Continue: [Client-Server API](/specification/client-server) | [Server-Server API](/specification/server-server)*
+*Continue: [Client-Server API](./client-server) | [Server-Server API](./server-server)*

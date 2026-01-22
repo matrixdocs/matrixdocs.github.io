@@ -151,4 +151,4 @@ await client.send_message(room_id, content)
 
 ---
 
-*Next: [Specification Overview](/specification/overview) →*
+*Next: [Specification Overview](../specification/overview) →*

@@ -163,4 +163,4 @@ client.login("user", "password")
 
 ---
 
-*Next: [matrix-python-sdk](/sdks/matrix-python-sdk) →*
+*Next: [matrix-python-sdk](./matrix-python-sdk) →*

@@ -127,9 +127,9 @@ Master these for faster navigation:
 
 Now that you're set up:
 
-1. **[Create Your First Room](/getting-started/your-first-room)** - Learn room management
-2. **[Explore Clients](/clients/overview)** - Try different Matrix apps
-3. **[Hidden Gems](/gems/overview)** - Discover power user features
+1. **[Create Your First Room](./your-first-room)** - Learn room management
+2. **[Explore Clients](../clients/overview)** - Try different Matrix apps
+3. **[Hidden Gems](../gems/overview)** - Discover power user features
 
 ## Troubleshooting
 
@@ -153,4 +153,4 @@ Now that you're set up:
 
 ---
 
-*Next: [Your First Room](/getting-started/your-first-room) →*
+*Next: [Your First Room](./your-first-room) →*

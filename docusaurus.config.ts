@@ -57,7 +57,6 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           editUrl: 'https://github.com/matrixdocs/matrixdocs.github.io/tree/main/',
-          routeBasePath: '/',
         },
         blog: false,
         theme: {
@@ -110,17 +109,17 @@ const config: Config = {
       },
       items: [
         {
-          to: '/getting-started/introduction',
+          to: '/docs/getting-started/introduction',
           label: 'Getting Started',
           position: 'left',
         },
         {
-          to: '/clients/overview',
+          to: '/docs/clients/overview',
           label: 'Clients',
           position: 'left',
         },
         {
-          to: '/servers/overview',
+          to: '/docs/servers/overview',
           label: 'Servers',
           position: 'left',
         },
@@ -129,11 +128,11 @@ const config: Config = {
           label: 'Ecosystem',
           position: 'left',
           items: [
-            {label: 'Bridges', to: '/bridges/overview'},
-            {label: 'Bots & Integrations', to: '/bots/overview'},
-            {label: 'SDKs & Libraries', to: '/sdks/overview'},
+            {label: 'Bridges', to: '/docs/bridges/overview'},
+            {label: 'Bots & Integrations', to: '/docs/bots/overview'},
+            {label: 'SDKs & Libraries', to: '/docs/sdks/overview'},
             {type: 'html', value: '<hr style="margin: 0.5rem 0;">'},
-            {label: 'Hidden Gems', to: '/gems/overview'},
+            {label: 'Hidden Gems', to: '/docs/gems/overview'},
           ],
         },
         {
@@ -141,12 +140,12 @@ const config: Config = {
           label: 'Resources',
           position: 'left',
           items: [
-            {label: 'Specification', to: '/specification/overview'},
-            {label: 'Deployment', to: '/deployment/overview'},
+            {label: 'Specification', to: '/docs/specification/overview'},
+            {label: 'Deployment', to: '/docs/deployment/overview'},
             {type: 'html', value: '<hr style="margin: 0.5rem 0;">'},
-            {label: 'Security & Privacy', to: '/security/overview'},
-            {label: 'Troubleshooting', to: '/troubleshooting/overview'},
-            {label: 'Community', to: '/community/overview'},
+            {label: 'Security & Privacy', to: '/docs/security/overview'},
+            {label: 'Troubleshooting', to: '/docs/troubleshooting/overview'},
+            {label: 'Community', to: '/docs/community/overview'},
           ],
         },
         {
@@ -163,33 +162,33 @@ const config: Config = {
         {
           title: 'Learn',
           items: [
-            {label: 'Getting Started', to: '/getting-started/introduction'},
-            {label: 'Core Concepts', to: '/getting-started/concepts'},
-            {label: 'Hidden Gems', to: '/gems/overview'},
+            {label: 'Getting Started', to: '/docs/getting-started/introduction'},
+            {label: 'Core Concepts', to: '/docs/getting-started/concepts'},
+            {label: 'Hidden Gems', to: '/docs/gems/overview'},
           ],
         },
         {
           title: 'Ecosystem',
           items: [
-            {label: 'Clients', to: '/clients/overview'},
-            {label: 'Servers', to: '/servers/overview'},
-            {label: 'Bridges', to: '/bridges/overview'},
-            {label: 'Bots', to: '/bots/overview'},
+            {label: 'Clients', to: '/docs/clients/overview'},
+            {label: 'Servers', to: '/docs/servers/overview'},
+            {label: 'Bridges', to: '/docs/bridges/overview'},
+            {label: 'Bots', to: '/docs/bots/overview'},
           ],
         },
         {
           title: 'Resources',
           items: [
-            {label: 'Deployment', to: '/deployment/overview'},
-            {label: 'Security', to: '/security/overview'},
-            {label: 'Troubleshooting', to: '/troubleshooting/overview'},
-            {label: 'Specification', to: '/specification/overview'},
+            {label: 'Deployment', to: '/docs/deployment/overview'},
+            {label: 'Security', to: '/docs/security/overview'},
+            {label: 'Troubleshooting', to: '/docs/troubleshooting/overview'},
+            {label: 'Specification', to: '/docs/specification/overview'},
           ],
         },
         {
           title: 'Community',
           items: [
-            {label: 'Community & Resources', to: '/community/overview'},
+            {label: 'Community & Resources', to: '/docs/community/overview'},
             {label: 'Matrix.org', href: 'https://matrix.org'},
             {label: 'Element', href: 'https://element.io'},
             {label: 'GitHub', href: 'https://github.com/matrixdocs/matrixdocs.github.io'},

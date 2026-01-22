@@ -238,4 +238,4 @@ Access configuration via Element's integrations panel.
 
 ---
 
-*Next: [Building Bots](/bots/building-bots) →*
+*Next: [Building Bots](./building-bots) →*

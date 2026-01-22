@@ -203,4 +203,4 @@ Redacted events have content removed:
 
 ---
 
-*Next: [Rooms](/specification/rooms) →*
+*Next: [Rooms](./rooms) →*

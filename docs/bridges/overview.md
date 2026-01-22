@@ -62,12 +62,12 @@ Features:
 
 | Platform | Bridge | Puppeting | Status |
 |----------|--------|-----------|--------|
-| [Discord](/bridges/discord) | mautrix-discord | ✅ | Stable |
-| [Telegram](/bridges/telegram) | mautrix-telegram | ✅ | Stable |
-| [Slack](/bridges/slack) | mautrix-slack | ✅ | Stable |
-| [IRC](/bridges/irc) | Heisenbridge | Partial | Stable |
-| [Signal](/bridges/signal) | mautrix-signal | ✅ | Stable |
-| [WhatsApp](/bridges/whatsapp) | mautrix-whatsapp | ✅ | Stable |
+| [Discord](./discord) | mautrix-discord | ✅ | Stable |
+| [Telegram](./telegram) | mautrix-telegram | ✅ | Stable |
+| [Slack](./slack) | mautrix-slack | ✅ | Stable |
+| [IRC](./irc) | Heisenbridge | Partial | Stable |
+| [Signal](./signal) | mautrix-signal | ✅ | Stable |
+| [WhatsApp](./whatsapp) | mautrix-whatsapp | ✅ | Stable |
 | iMessage | mautrix-imessage | ✅ | macOS only |
 | Instagram | mautrix-instagram | ✅ | Stable |
 | Facebook | mautrix-facebook | ✅ | Stable |
@@ -272,9 +272,9 @@ If messages appear twice:
 ## Next Steps
 
 Choose a bridge to set up:
-- [Discord Bridge](/bridges/discord)
-- [Telegram Bridge](/bridges/telegram)
-- [Slack Bridge](/bridges/slack)
-- [IRC Bridge](/bridges/irc)
-- [Signal Bridge](/bridges/signal)
-- [WhatsApp Bridge](/bridges/whatsapp)
+- [Discord Bridge](./discord)
+- [Telegram Bridge](./telegram)
+- [Slack Bridge](./slack)
+- [IRC Bridge](./irc)
+- [Signal Bridge](./signal)
+- [WhatsApp Bridge](./whatsapp)

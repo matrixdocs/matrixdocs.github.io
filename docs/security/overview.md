@@ -205,4 +205,4 @@ Found a vulnerability?
 
 ---
 
-*Next: [Account Security](/security/account) →*
+*Next: [Account Security](./account) →*

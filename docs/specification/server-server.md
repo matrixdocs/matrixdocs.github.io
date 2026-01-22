@@ -127,4 +127,4 @@ https://federationtester.matrix.org/api/report?server_name=example.com
 
 ---
 
-*Next: [Events](/specification/events) →*
+*Next: [Events](./events) →*

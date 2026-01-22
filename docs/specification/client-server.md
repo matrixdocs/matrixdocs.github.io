@@ -178,4 +178,4 @@ Wait `retry_after_ms` before retrying.
 
 ---
 
-*Next: [Server-Server API](/specification/server-server) →*
+*Next: [Server-Server API](./server-server) →*
