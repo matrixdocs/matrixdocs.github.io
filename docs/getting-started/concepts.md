@@ -15,13 +15,17 @@ Matrix is a **federated network** of homeservers. Think of it like email:
 - But you can email anyone on any provider
 - Matrix works the same way for messaging
 
-```
-┌─────────────────┐         ┌─────────────────┐
-│  matrix.org     │◄───────►│  example.com    │
-│  homeserver     │  federate│  homeserver     │
-│                 │         │                 │
-│  @alice:matrix.org        │  @bob:example.com
-└─────────────────┘         └─────────────────┘
+```mermaid
+flowchart LR
+    subgraph HS1["matrix.org homeserver"]
+        Alice["@alice:matrix.org"]
+    end
+
+    subgraph HS2["example.com homeserver"]
+        Bob["@bob:example.com"]
+    end
+
+    HS1 <-->|"federate"| HS2
 ```
 
 ## Matrix IDs

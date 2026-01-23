@@ -14,14 +14,16 @@ Matrix is designed with security in mind. Understanding these features helps you
 
 Matrix uses the **Olm** and **Megolm** cryptographic protocols:
 
-```
-Alice's Device          Matrix Server           Bob's Device
-     │                       │                       │
-     │──── Encrypted ────────►───── Encrypted ─────►│
-     │      Message          │       Message         │
-     │                       │                       │
-     │   (Server cannot      │    (Server cannot     │
-     │    read content)      │     read content)     │
+```mermaid
+sequenceDiagram
+    participant Alice as Alice's Device
+    participant Server as Matrix Server
+    participant Bob as Bob's Device
+
+    Alice->>Server: Encrypted Message
+    Note over Server: Cannot read content
+    Server->>Bob: Encrypted Message
+    Note over Bob: Decrypts with keys
 ```
 
 - **Olm**: For 1:1 device-to-device encryption

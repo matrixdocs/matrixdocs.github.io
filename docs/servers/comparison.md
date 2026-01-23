@@ -171,22 +171,27 @@ Score each factor (1-5) based on your needs:
 
 ## Quick Decision Guide
 
-```
-Need all features? → Synapse
-├── Enterprise/compliance? → Synapse
-├── Large scale (1000+ users)? → Synapse + workers
-└── Bridges critical? → Synapse
+```mermaid
+flowchart TD
+    Start["Choose a Server"] --> Q1{"Need all features?"}
 
-Want efficiency + features? → Dendrite
-├── Medium scale (100-1000)? → Dendrite
-├── Lower resource usage? → Dendrite
-└── Modern codebase? → Dendrite
+    Q1 -->|Yes| Synapse["Synapse"]
+    Q1 -->|No| Q2{"Want efficiency<br/>+ features?"}
 
-Want simplicity? → Conduit
-├── Personal use? → Conduit
-├── Minimal resources? → Conduit
-├── Quick setup? → Conduit
-└── Learning Matrix? → Conduit
+    Q2 -->|Yes| Dendrite["Dendrite"]
+    Q2 -->|No| Conduit["Conduit"]
+
+    Synapse --> S1["Enterprise/compliance"]
+    Synapse --> S2["Large scale (1000+ users)"]
+    Synapse --> S3["Bridges critical"]
+
+    Dendrite --> D1["Medium scale (100-1000)"]
+    Dendrite --> D2["Lower resource usage"]
+    Dendrite --> D3["Modern codebase"]
+
+    Conduit --> C1["Personal use"]
+    Conduit --> C2["Minimal resources"]
+    Conduit --> C3["Quick setup / Learning"]
 ```
 
 ## Hosting Options

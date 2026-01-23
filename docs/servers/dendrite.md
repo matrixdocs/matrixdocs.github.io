@@ -249,22 +249,14 @@ curl -X POST "http://localhost:8008/_synapse/admin/v1/register" \
 
 For larger deployments, run Dendrite as separate services:
 
-```
-┌─────────────────────────────────────────────────┐
-│                   Load Balancer                  │
-└─────────────┬───────────────────┬───────────────┘
-              │                   │
-      ┌───────▼────────┐ ┌───────▼────────┐
-      │  Client API    │ │ Federation API │
-      └───────┬────────┘ └───────┬────────┘
-              │                   │
-      ┌───────▼───────────────────▼───────┐
-      │            JetStream NATS          │
-      └───────────────────────────────────┘
-              │
-      ┌───────▼───────┐
-      │  PostgreSQL   │
-      └───────────────┘
+```mermaid
+flowchart TB
+    LB["Load Balancer"]
+    LB --> ClientAPI["Client API"]
+    LB --> FedAPI["Federation API"]
+    ClientAPI --> NATS["JetStream NATS"]
+    FedAPI --> NATS
+    NATS --> PG["PostgreSQL"]
 ```
 
 Services available:

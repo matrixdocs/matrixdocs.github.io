@@ -12,11 +12,9 @@ Bridges let you connect Matrix to other messaging platforms, creating a unified 
 
 A bridge is a program that connects Matrix rooms to external services:
 
-```
-┌─────────────┐         ┌──────────┐         ┌─────────────┐
-│   Matrix    │◄───────►│  Bridge  │◄───────►│  Discord    │
-│   Room      │         │          │         │  Channel    │
-└─────────────┘         └──────────┘         └─────────────┘
+```mermaid
+flowchart LR
+    Matrix["Matrix<br/>Room"] <--> Bridge["Bridge"] <--> Discord["Discord<br/>Channel"]
 ```
 
 Messages flow both ways - Matrix users see Discord messages and vice versa.
