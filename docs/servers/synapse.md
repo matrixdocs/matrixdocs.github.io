@@ -159,7 +159,8 @@ max_upload_size: 50M
 New rooms use room version 12 by default since Synapse 1.162 (see `default_room_version` in the [config manual](https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html#default_room_version)). To validate a config without starting the server:
 
 ```bash
-python -m synapse.config -c homeserver.yaml
+python -m synapse.config -c homeserver.yaml                              # pip install
+docker compose exec synapse python -m synapse.config -c /data/homeserver.yaml   # Docker
 ```
 
 ### URL previews
@@ -287,7 +288,7 @@ matrix_authentication_service:
 
 With MAS enabled:
 
-- Synapse refuses to start if `enable_registration`, `enable_registration_captcha`, password login or password auth providers are configured.
+- Synapse refuses to start if any of these are also configured: `enable_registration`, `enable_registration_captcha`, `password_config.enabled: true` (password login is off by default with MAS), password auth providers, SSO providers (OIDC, SAML, CAS, JWT), `user_consent`, or session and token lifetimes. Remove them first.
 - Synapse's admin API refuses to create users (since 1.163).
 - You manage users with `mas-cli`, for example `mas-cli manage register-user`. For a Synapse admin token, use `mas-cli manage issue-compatibility-token <username> <device_id> --yes-i-want-to-grant-synapse-admin-privileges` (see the [MAS CLI reference](https://element-hq.github.io/matrix-authentication-service/reference/cli/manage.html)).
 - MAS needs PostgreSQL.
@@ -300,7 +301,7 @@ Synapse has served native Simplified Sliding Sync (MSC4186) by default since 1.1
 
 ## Calls: Element Call and MatrixRTC
 
-Element Call uses MatrixRTC with a [LiveKit](https://github.com/livekit/livekit) SFU and the [MatrixRTC Authorization Service](https://github.com/element-hq/lk-jwt-service) (`lk-jwt-service`), not TURN. Synapse tells clients about the SFU through `matrix_rtc` (see the [config manual](https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html#matrix_rtc)). Since 1.161, `url` (the SFU WebSocket URL) is preferred. `livekit_service_url` is deprecated, but keep listing it for older clients:
+Element Call uses MatrixRTC with a [LiveKit](https://github.com/livekit/livekit) SFU and the [MatrixRTC Authorization Service](https://github.com/element-hq/lk-jwt-service) (`lk-jwt-service`), not TURN. Synapse tells clients about the SFU through `matrix_rtc` (see the [config manual](https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html#matrix_rtc)). Since 1.161, `url` (the SFU WebSocket URL) is preferred. Clients that use `url` reach lk-jwt-service through Synapse, so lk-jwt-service must be registered with Synapse as an application service (see its [README](https://github.com/element-hq/lk-jwt-service#readme)). `livekit_service_url` is deprecated, but keep listing it for older clients:
 
 ```yaml title="homeserver.yaml"
 matrix_rtc:
@@ -349,6 +350,7 @@ worker_name: generic_worker1
 worker_listeners:
   - type: http
     port: 8083
+    bind_addresses: ['127.0.0.1']   # only the reverse proxy should reach workers
     x_forwarded: true
     resources:
       - names: [client, federation]
@@ -402,7 +404,7 @@ Synapse ships a Grafana dashboard in [`contrib/grafana`](https://github.com/elem
 
 Back up three things:
 
-1. **The database:** `pg_dump -Fc -U synapse synapse > synapse.dump`. With Docker Compose: `docker compose exec db pg_dump -Fc -U synapse synapse > synapse.dump`.
+1. **The database:** `pg_dump -Fc -U synapse synapse > synapse.dump`. With Docker Compose: `docker compose exec -T db pg_dump -Fc -U synapse synapse > synapse.dump` (`-T` stops a terminal from corrupting the binary dump).
 2. **The media store** (`media_store_path`).
 3. **The config and signing key:** `homeserver.yaml` and `example.com.signing.key`.
 

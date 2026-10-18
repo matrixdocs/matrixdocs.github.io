@@ -160,7 +160,7 @@ Cleanup options:
 - Purge cached remote media: `POST /_synapse/admin/v1/purge_media_cache?before_ts=<ms>` ([media admin API](https://element-hq.github.io/synapse/latest/admin_api/media_admin_api.html)).
 - Delete old local media: `POST /_synapse/admin/v1/media/delete?before_ts=<ms>`. This deletes files users uploaded, so use it with care.
 - Expire media automatically with `media_retention` (see [Synapse: media retention](../servers/synapse#media-retention)).
-- Compress room state with [`synapse_auto_compressor`](https://github.com/matrix-org/rust-synapse-compress-state).
+- Compress room state with [`synapse_auto_compressor`](https://github.com/matrix-org/rust-synapse-compress-state). It rewrites database tables, so back up first.
 
 Call the admin API from the host (`http://localhost:8008`), not through the public proxy.
 
@@ -177,7 +177,7 @@ If you deployed with the ESS Community Helm chart before version 25.12.2, your s
 3. Check that the bridge can reach the homeserver address in its config, and that the homeserver can reach the bridge (inside Docker, use container names, not `localhost`).
 4. Message the bridge bot and ask for help (`help` in mautrix bridges).
 
-Under MAS, bridges with encryption need Synapse 1.141 or later and MSC4190 support in the bridge (for mautrix bridges, `encryption.msc4190`).
+Under MAS, bridges that use encryption need MSC4190 support in the bridge (for mautrix bridges, `encryption.msc4190: true`). Synapse before 1.141 also needs `io.element.msc4190: true` in the bridge's registration file; 1.141 and later do not.
 
 ### Messages not bridging
 
@@ -221,7 +221,7 @@ Element Call uses MatrixRTC with a LiveKit SFU, not TURN. Check:
 
 ### Legacy 1:1 calls (TURN)
 
-1. Check the TURN server: `turn_uris` and `turn_shared_secret` in Synapse, and the same secret in coturn.
+1. Check the TURN server: `turn_uris` and `turn_shared_secret` (or `turn_shared_secret_path`) in Synapse, and the same secret as `static-auth-secret` in coturn.
 2. Firewall: 3478 and 5349 (TCP and UDP), and the relay range 49152–65535 (UDP), which is coturn's default.
 3. Check browser camera and microphone permissions.
 

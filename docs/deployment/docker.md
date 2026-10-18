@@ -72,7 +72,7 @@ services:
       - matrix
 
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2.11.7-alpine
     restart: unless-stopped
     ports:
       - "80:80"
@@ -195,7 +195,7 @@ element.example.com {
 mautrix bridges run as separate containers, and each must be registered with Synapse as an application service. Follow the [mautrix Docker setup guide](https://docs.mau.fi/bridges/general/docker-setup.html). In outline:
 
 1. Run the bridge image once with `/data` mounted; it writes a `config.yaml`.
-2. Edit the config: homeserver address `http://synapse:8008`, your domain, a database, and permissions.
+2. Edit the config: homeserver address `http://synapse:8008`, your domain, a database, and permissions. Set `appservice.address: http://mautrix-telegram:29317` and `appservice.hostname: 0.0.0.0`. The generated default of `127.0.0.1` listens only inside the bridge container, so Synapse can't reach it. Don't publish the bridge port on the host.
 3. Run it again; it writes `registration.yaml`.
 4. Copy the registration into Synapse's data directory and list it in `homeserver.yaml`, then restart Synapse.
 5. Start the bridge on the `matrix` network.
@@ -207,7 +207,7 @@ app_service_config_files:
 
 ```yaml title="docker-compose.yml (add under services)"
   mautrix-telegram:
-    image: dock.mau.dev/mautrix/telegram:latest   # pin a release tag in production
+    image: dock.mau.dev/mautrix/telegram:v0.2610.0   # release of 2026-10-16
     restart: unless-stopped
     volumes:
       - ./mautrix-telegram:/data
@@ -215,7 +215,7 @@ app_service_config_files:
       - matrix
 ```
 
-The mautrix-telegram image is now the Go (bridgev2) bridge; see its [docs](https://docs.mau.fi/bridges/go/telegram/index.html). On `dock.mau.dev`, `:latest` follows the latest commit, not the latest release.
+The mautrix-telegram image is now the Go (bridgev2) bridge; see its [docs](https://docs.mau.fi/bridges/go/telegram/index.html). On `dock.mau.dev`, `:latest` follows the latest commit, not the latest release, so pin a release tag.
 
 :::warning
 A registration file contains the `as_token` and `hs_token`, which let the bridge act as any user in its namespace. Keep these files private.
@@ -281,7 +281,7 @@ total-quota=1200
 
 If you add TLS (`tls-listening-port=5349`), also set `cert=` and `pkey=` and use `turns:` URIs. Open 3478 and 5349 (TCP and UDP) and the relay range 49152–65535 (UDP).
 
-Then tell Synapse about it. `turn_shared_secret_path` keeps the secret out of `homeserver.yaml`:
+Then tell Synapse about it. `turn_shared_secret_path` points at a file in `synapse-data/` that holds the same value as coturn's `static-auth-secret`, which keeps the secret out of `homeserver.yaml`:
 
 ```yaml title="homeserver.yaml"
 turn_uris:
@@ -339,7 +339,7 @@ scrape_configs:
 
 ```yaml title="docker-compose.yml (add under services)"
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.15.0
     restart: unless-stopped
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -347,8 +347,9 @@ scrape_configs:
       - matrix
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.2.4
     restart: unless-stopped
+    env_file: ./grafana.env     # GF_SECURITY_ADMIN_PASSWORD=...; otherwise the login is admin/admin
     ports:
       - "127.0.0.1:3000:3000"
     networks:
