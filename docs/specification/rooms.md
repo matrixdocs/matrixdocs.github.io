@@ -110,7 +110,7 @@ Room version 12 (spec v1.16, 2025-09) came out of the 2025 "Project Hydra" secur
 - **Creators** (the create event's `sender` plus `additional_creators`) have unlimited power level. They are not listed in `m.room.power_levels` and cannot be demoted, kicked or banned by anyone, including power level 100 admins and moderation bots.
 - **State resolution v2.1** fixes state resets. See [Server-Server API](./server-server#room-state-resolution).
 
-The power level for sending `m.room.tombstone` (upgrading the room) must be explicitly higher than `state_default`, for example 150, so ordinary admins can't upgrade the room by default.
+When a server creates a v12 room, the power level it sets for `m.room.tombstone` (upgrading the room) must be higher than `state_default`. Synapse uses 150, so power level 100 admins can't upgrade the room by default.
 
 ## Room upgrades
 

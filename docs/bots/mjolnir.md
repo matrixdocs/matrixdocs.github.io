@@ -14,7 +14,7 @@ Matrix moderation bots watch a set of rooms, apply shared **policy lists** (ban 
 | Bot | Language | Release | Notes |
 |-----|----------|---------|-------|
 | [Draupnir](#draupnir) | TypeScript | 3.2.0 (2026-10-14) | Most features; started as a Mjolnir fork. The default choice. |
-| [Mjolnir](#mjolnir) | TypeScript | 2.0.1 (2026-10-15) | The original, maintained again by Matrix.org |
+| [Mjolnir](#mjolnir) | TypeScript | 2.0.1 (2026-10-15) | The original, still maintained by Matrix.org |
 | [Meowlnir](#meowlnir) | Go | 0.2609.0 (2026-09-16) | Not a fork; tuned for Synapse; can also act as a policy server |
 
 All three read the same policy event types (`m.policy.rule.user`, `m.policy.rule.room`, `m.policy.rule.server`), so policy lists are shared between them.
@@ -25,7 +25,7 @@ A moderation bot can ban, kick and redact in every protected room. With Synapse 
 
 ## Permissions in protected rooms
 
-The bot needs the room's `ban`, `kick` and `redact` power levels (50 by default) and, to apply server bans, permission to send `m.room.server_acl` (state default, 50). In room version 12, room creators have unlimited power: no bot can ban or demote a creator ([room v12](https://spec.matrix.org/v1.19/rooms/v12/)).
+The bot needs the room's `ban`, `kick` and `redact` power levels (50 by default) and, to apply server bans, permission to send `m.room.server_acl`. Synapse sets that to 100 in the rooms it creates, so a bot that should apply server ACLs usually needs power level 100. In room version 12, room creators have unlimited power: no bot can ban or demote a creator ([room v12](https://spec.matrix.org/v1.19/rooms/v12/)).
 
 ## Draupnir
 
@@ -37,7 +37,7 @@ Draupnir 3.0.0 (2026-04-02) made breaking changes: the repository is now a monor
 
 1. Create a Matrix account for the bot and get an access token.
 2. Copy [`config/default.yaml`](https://github.com/the-draupnir-project/Draupnir/blob/v3.2.0/config/default.yaml) to your data directory and set at least `homeserverUrl`, `rawHomeserverUrl`, `accessToken` and `initialManager` (your own user ID). Draupnir creates a management room and invites you.
-3. Run it. The project recommends its GHCR image (`ghcr.io/the-draupnir-project/draupnir`); the Docker Hub image is published in parallel:
+3. Run it. The Draupnir docs name GHCR (`ghcr.io/the-draupnir-project/draupnir:v3.2.0`) as the recommended registry and Docker Hub (`gnuxie/draupnir`) as the legacy mirror; both carry the same version tags. With the Docker Hub image:
 
 ```bash
 docker run --rm -it --name=draupnir \
@@ -59,7 +59,7 @@ Commands go in the management room, prefixed with `!draupnir`. These come from D
 | `!draupnir list create <shortcode> <alias-localpart>` | Create a policy list room |
 | `!draupnir watch <room>` / `unwatch <room>` | Subscribe to someone else's policy list |
 | `!draupnir rooms add <room>` / `rooms remove <room>` | Protect or unprotect a room |
-| `!draupnir ban <user-or-server> [list] [reason]` | Add a ban policy; a server name bans the whole server |
+| `!draupnir ban <user-room-or-server> [list] [reason]` | Add a ban policy; a server name bans the whole server |
 | `!draupnir unban <entity>` | Remove a ban policy |
 | `!draupnir kick <user> [reason] --room <room>` | Kick a user (from all protected rooms if `--room` is omitted) |
 | `!draupnir redact <user-or-event> [reason] --room <room> --limit <n>` | Redact messages; keywords are optional |

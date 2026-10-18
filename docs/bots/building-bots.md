@@ -35,7 +35,7 @@ register_new_matrix_user -c /etc/matrix-synapse/homeserver.yaml \
 
 Then log the bot in once with the SDK and **save the access token and device ID**. Reuse them on every start (for example nio's `restore_login(user_id, device_id, access_token)`), so the bot keeps one device and its encryption keys.
 
-**On a server using MAS** (matrix.org, Element Server Suite and others), Synapse's user and login admin APIs are disabled. Create the account through MAS (its admin API, CLI or Element Admin) and give the bot a **personal access token** ("personal session"). See [MAS: personal sessions](https://element-hq.github.io/matrix-authentication-service/topics/authorization.html#personal-sessions-personal-access-tokens).
+**On a server using MAS** (matrix.org, Element Server Suite and others), Synapse's shared-secret registration API is disabled, so `register_new_matrix_user` doesn't work, and so are the password-reset, set-admin and login-as-user admin APIs. Create the account through MAS (its admin API, CLI or Element Admin) and give the bot a **personal access token** ("personal session"). See [MAS: personal sessions](https://element-hq.github.io/matrix-authentication-service/topics/authorization.html#personal-sessions-personal-access-tokens).
 
 :::warning
 A bot's access token is as powerful as its password. Keep it in a secret store or an environment variable, never in a repository or a chat room. If it leaks, log the session out from the server. Give the bot only the power levels it needs.
@@ -58,7 +58,7 @@ A maubot plugin is the shortest path: see [Writing a plugin](./maubot#writing-a-
 
 ## TypeScript with matrix-bot-sdk
 
-[matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk) 0.8.0 requires Node.js 22 or later. Element maintains a fork, [`@vector-im/matrix-bot-sdk`](https://github.com/element-hq/matrix-bot-sdk), which Hookshot, Draupnir and matrix-appservice-bridge use.
+[matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk) 0.8.0 requires Node.js 22 or later. Element maintains a fork, [`@vector-im/matrix-bot-sdk`](https://github.com/element-hq/matrix-bot-sdk) (0.10.1-element.0, Node.js 24 or later), which Hookshot, Draupnir and matrix-appservice-bridge use.
 
 ```bash
 npm install matrix-bot-sdk
@@ -87,7 +87,7 @@ await client.start();
 
 ## E2EE and cross-signing
 
-Since spec v1.18 (MSC4153), clients SHOULD NOT send encrypted to-device messages, including room keys, to devices that are not cross-signed, and SHOULD NOT display messages sent from them ([spec v1.19, recommended client behaviour](https://spec.matrix.org/v1.19/client-server-api/#recommended-client-behaviour)). Element has announced it will enforce this by default; the date has moved more than once.
+Since spec v1.18 (MSC4153), clients SHOULD NOT send encrypted to-device messages, including room keys, to devices that are not cross-signed, and SHOULD NOT display messages sent from them ([spec v1.19, recommended client behaviour](https://spec.matrix.org/v1.19/client-server-api/#recommended-client-behaviour)). The Foundation [said in 2025-11](https://matrix.org/blog/2025/11/exclude-insecure-devices/) that Element would apply this by default from April 2026; as of 2026-10, Element's [device verification help page](https://docs.element.io/latest/element-support/device-verification/how-to-verify-devices/) says the rollout is postponed and will be announced a month ahead.
 
 For bots this means:
 
@@ -133,7 +133,7 @@ Points to know:
 - Bind the appservice listener to localhost or an internal network. Only the homeserver needs to reach it. Anyone with `hs_token` can push fake events; anyone with `as_token` can act as every user in the namespace.
 - Spec v1.17 lets appservices create and manage devices for their users without the legacy login API (MSC4190) and act as a specific device (MSC4326). Bridges need these on servers using MAS. See [device management](https://spec.matrix.org/v1.19/application-service-api/#device-management).
 
-Don't write the HTTP handling yourself. Use [matrix-appservice-bridge](https://github.com/matrix-org/matrix-appservice-bridge) (TypeScript), the `Appservice` class in matrix-bot-sdk, or [mautrix-go's bridgev2](https://docs.mau.fi/bridges/go/) framework.
+Don't write the HTTP handling yourself. Use [matrix-appservice-bridge](https://github.com/matrix-org/matrix-appservice-bridge) (TypeScript), the `Appservice` class in matrix-bot-sdk, or [mautrix-go's bridgev2](https://github.com/mautrix/go/tree/main/bridgev2) framework.
 
 ## Testing
 
@@ -146,7 +146,14 @@ docker run -it --rm -v "$PWD/synapse-data:/data" \
   matrixdotorg/synapse:v1.163.0 generate
 ```
 
-Then start it with the same volume, create accounts with `register_new_matrix_user` inside the container, and point your bot at `http://localhost:8008`. Use a test server like this only on your own machine.
+Then start it with the same volume, bound to localhost only:
+
+```bash
+docker run -d --name synapse -v "$PWD/synapse-data:/data" \
+  -p 127.0.0.1:8008:8008 matrixdotorg/synapse:v1.163.0
+```
+
+Create accounts with `docker exec -it synapse register_new_matrix_user -c /data/homeserver.yaml http://localhost:8008` and point your bot at `http://localhost:8008`. Use a test server like this only on your own machine.
 
 ## Resources
 

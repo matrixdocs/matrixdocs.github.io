@@ -29,7 +29,7 @@ The official docs are at [matrix-org.github.io/matrix-hookshot](https://matrix-o
 
 ## Installation
 
-Hookshot needs admin access to a homeserver, because it registers as an appservice. The Docker image is `ghcr.io/matrix-org/matrix-hookshot`. The old `halfshot/matrix-hookshot` image on Docker Hub is no longer maintained.
+Hookshot is an appservice, so a homeserver admin has to register it. The Docker image is `ghcr.io/matrix-org/matrix-hookshot`. The old `halfshot/matrix-hookshot` image on Docker Hub is no longer maintained.
 
 ```yaml title="docker-compose.yml"
 services:
@@ -78,7 +78,11 @@ listeners:
       - widgets
 
 permissions:
-  - actor: example.org
+  - actor: example.org            # everyone on your server
+    services:
+      - service: "*"
+        level: manageConnections
+  - actor: "@you:example.org"     # one bridge admin
     services:
       - service: "*"
         level: admin
@@ -144,7 +148,7 @@ Invite the bot (for example `@hookshot:example.org`) to the room and give it pow
 | `!hookshot jira list project` / `jira remove project <url>` | List or remove Jira connections |
 | `!hookshot webhook <name> [liveDuration]` | Create an inbound webhook; the bot replies with its URL |
 | `!hookshot webhook list` / `webhook remove <name>` | List or remove webhooks |
-| `!hookshot outbound-hook <name> <url>` | Create an outbound webhook |
+| `!hookshot outbound-hook <name> <url>` | Create an outbound webhook (needs `generic.outbound: true`) |
 | `!hookshot feed <url> [label] [template]` | Subscribe to an RSS/Atom feed |
 | `!hookshot feed list` / `feed remove <url>` | List or remove feeds |
 | `!hookshot figma file <url>` | Connect a Figma file |

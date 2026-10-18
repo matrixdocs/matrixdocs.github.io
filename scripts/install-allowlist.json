@@ -19,6 +19,7 @@
     "docker:ghcr.io/matrix-org/matrix-hookshot": "matrix-org/matrix-hookshot official image (per docs/setup.md); checked 2026-10-18",
     "docker:matrixdotorg/mjolnir": "matrix-org/mjolnir; pushed 2026-10-15; checked 2026-10-18",
     "docker:gnuxie/draupnir": "the-draupnir-project/Draupnir; pushed 2026-10-14; checked 2026-10-18",
+    "docker:ghcr.io/the-draupnir-project/draupnir": "the-draupnir-project/Draupnir (recommended registry per docs setup_docker.md); tags v3.1.0, v3.2.0; checked 2026-10-18",
     "docker:hif1/heisenbridge": "hifi/heisenbridge; pushed 2025-10-04; checked 2026-10-18",
     "docker:ghcr.io/t2bot/matrix-media-repo": "t2bot/matrix-media-repo; checked 2026-10-18",
     "docker:ghcr.io/etkecc/synapse-admin": "etkecc/ketesa (formerly etkecc/synapse-admin); checked 2026-10-18",

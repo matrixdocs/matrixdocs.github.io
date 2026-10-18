@@ -11,7 +11,7 @@ verified_with: "matrix-js-sdk 44.0.0 (type-checked with tsc), spec v1.19"
 
 The Matrix client-server SDK for JavaScript and TypeScript, maintained by Element and used by Element Web. It runs in browsers and in Node.js.
 
-As of 2026-10 the current release is **44.0.0** (2026-10-13). It is published as an ES module (`"type": "module"`) and declares Node.js 22 or later. Major versions arrive every month or two, so pin a version and read the [release notes](https://github.com/matrix-org/matrix-js-sdk/releases) when upgrading.
+As of 2026-10 the current release is **44.0.0** (2026-10-13). It is published as an ES module (`"type": "module"`) and declares Node.js 22 or later. Major versions are frequent but irregular (six between 2025-10 and 2026-10), so pin a version and read the [release notes](https://github.com/matrix-org/matrix-js-sdk/releases) when upgrading.
 
 ```bash
 npm install matrix-js-sdk
@@ -73,7 +73,7 @@ Notes:
 
 - `client.login()` and `loginWithPassword()` are deprecated in v44. Use `loginRequest()` and create a new client with the returned credentials, as above.
 - Without a persistent crypto store, each start needs a new device (a new login). Browsers get persistence through IndexedDB.
-- The legacy crypto stack (`initCrypto()`, `LocalStorageCryptoStore`) was removed in v37 (2025-02). Rust crypto via `initRustCrypto()` is the only E2EE path.
+- The legacy crypto stack, including `initCrypto()`, was removed in v37 (2025-02). Rust crypto via `initRustCrypto()` is the only E2EE path. The old crypto store classes (`LocalStorageCryptoStore` and others) are still exported, but only to migrate old data.
 
 ## OAuth 2.0 login
 

@@ -63,8 +63,8 @@ Notes:
 
 When servers see different branches of a room's history, **state resolution** decides the room's state. Room versions 2–11 use state resolution v2. It:
 
-1. splits state into unconflicted and conflicted parts;
-2. orders conflicted *power events* (power levels, join rules, bans and kicks) by a reverse topological power ordering, and applies them with iterative auth checks;
+1. splits state into unconflicted and conflicted parts, and adds the *auth difference* (auth events not shared by every branch) to the conflicted set;
+2. orders the conflicted *power events* (power levels, join rules, bans and kicks) by a reverse topological power ordering, and applies them with iterative auth checks;
 3. orders the remaining conflicted events by their position relative to the resolved power-levels "mainline", and applies them the same way;
 4. re-applies the unconflicted state on top.
 

@@ -121,7 +121,7 @@ Pass `store_path` to `AsyncClient` so keys survive restarts. matrix-nio 0.26.0 h
 pip install mautrix
 ```
 
-mautrix-python is the library under [maubot](../bots/maubot). The mautrix bridges have moved to Go, but the Python library is still released.
+mautrix-python is the library under [maubot](../bots/maubot). Most mautrix bridges have moved to Go, but the Python library is still released.
 
 ### A minimal client
 
@@ -147,7 +147,7 @@ async def main() -> None:
     @client.on(EventType.ROOM_MESSAGE)
     async def handler(evt: MessageEvent) -> None:
         if evt.sender != client.mxid and evt.content.body == "!ping":
-            await client.send_text(evt.room_id, "pong")
+            await client.send_notice(evt.room_id, "pong")
 
     await client.start(None)  # runs until stopped
 

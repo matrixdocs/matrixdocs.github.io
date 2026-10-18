@@ -11,7 +11,7 @@ verified_with: "maubot 0.6.0 (example-config.yaml, mbc CLI and plugin loader rea
 
 [maubot](https://github.com/maubot/maubot) is a plugin-based bot system written in Python on top of [mautrix-python](../sdks/matrix-python-sdk#mautrix-python). One maubot server hosts many bot accounts ("clients") and many plugin instances, managed through a web UI.
 
-As of 2026-10 the current release is **0.6.0** (2025-11-17). It added room v12 creator handling and verification with a recovery key. The official documentation is at [docs.mau.fi/maubot](https://docs.mau.fi/maubot/).
+As of 2026-10 the current release is **0.6.0** (2025-11-17). It added verification with a recovery key and room v12 creator power when checking power levels after a room upgrade. The official documentation is at [docs.mau.fi/maubot](https://docs.mau.fi/maubot/).
 
 ## Concepts
 
@@ -148,7 +148,7 @@ maubot 0.6.0 ships pytest fixtures in `maubot.testing` (`maubot_test_bot`, `maub
 
 ## Encryption
 
-maubot supports E2EE for clients that have a device ID. Set `crypto_db_pickle_key` before first start and keep the crypto database. Since 0.6.0 you can verify a bot's device with a recovery key, which gives it cross-signing, as encrypted rooms increasingly require ([spec](https://spec.matrix.org/v1.19/client-server-api/#recommended-client-behaviour)).
+maubot supports E2EE for clients that have a device ID. Set `crypto_db_pickle_key` before first start and keep the crypto database. Since 0.6.0 you can verify a bot's device with a recovery key, which gives it cross-signing, as encrypted rooms increasingly require ([spec](https://spec.matrix.org/v1.19/client-server-api/#recommended-client-behaviour)). The account needs cross-signing and a recovery key first; one way is to log in to the bot account once with Element and set up recovery there.
 
 ## Standalone mode
 
