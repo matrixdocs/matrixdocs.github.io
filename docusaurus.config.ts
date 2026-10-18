@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Matrix Docs',
-  tagline: 'The definitive Matrix protocol developer resource - from beginner to power user',
+  tagline: 'An independent, unofficial guide to the Matrix protocol and its ecosystem',
   favicon: 'img/favicon.ico',
 
   future: {
@@ -13,6 +13,9 @@ const config: Config = {
 
   markdown: {
     mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: 'throw',
+    },
   },
   themes: ['@docusaurus/theme-mermaid'],
 
@@ -22,8 +25,8 @@ const config: Config = {
   projectName: 'matrixdocs.github.io',
   trailingSlash: false,
 
-  onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: 'throw',
+  onBrokenAnchors: 'throw',
 
   i18n: {
     defaultLocale: 'en',
@@ -46,10 +49,10 @@ const config: Config = {
         '@type': 'WebSite',
         name: 'Matrix Docs',
         url: 'https://matrixdocs.github.io',
-        description: 'The definitive Matrix protocol developer resource - comprehensive guides, hidden gems, and power user tips',
+        description: 'An independent, unofficial guide to the Matrix protocol and its ecosystem. Not affiliated with the Matrix.org Foundation or Element.',
         publisher: {
           '@type': 'Organization',
-          name: 'Matrix Docs Community',
+          name: 'matrixdocs contributors',
         },
       }),
     },
@@ -78,7 +81,7 @@ const config: Config = {
     metadata: [
       // Basic meta
       {name: 'keywords', content: 'matrix, protocol, decentralized, chat, element, synapse, federation, bridges, bots, encryption, e2ee'},
-      {name: 'author', content: 'Matrix Docs Community'},
+      {name: 'author', content: 'matrixdocs contributors'},
       {name: 'robots', content: 'index, follow'},
       // Open Graph
       {property: 'og:type', content: 'website'},
@@ -86,8 +89,6 @@ const config: Config = {
       {property: 'og:locale', content: 'en_US'},
       // Twitter Card
       {name: 'twitter:card', content: 'summary_large_image'},
-      {name: 'twitter:site', content: '@matrixdotorg'},
-      {name: 'twitter:creator', content: '@matrixdotorg'},
     ],
 
     colorMode: {
@@ -97,11 +98,11 @@ const config: Config = {
     },
 
     announcementBar: {
-      id: 'contribute',
-      content: 'Help improve these docs! <a href="https://github.com/matrixdocs/matrixdocs.github.io">Contribute on GitHub</a>',
-      backgroundColor: '#0DBD8B',
-      textColor: '#fff',
-      isCloseable: true,
+      id: 'unofficial-2026-10',
+      content: 'Unofficial, independent guide, not affiliated with the Matrix.org Foundation or Element. First drafted with AI in January 2026 and now being verified page by page against <a href="https://spec.matrix.org/v1.19/">spec v1.19</a> and <a href="https://element-hq.github.io/synapse/latest/">Synapse 1.163</a>. When in doubt, the official docs win. <a href="/docs/about">About this site</a>',
+      backgroundColor: '#fff3cd',
+      textColor: '#3d2e00',
+      isCloseable: false,
     },
 
     navbar: {
@@ -200,7 +201,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Matrix Docs Community. Built with Docusaurus.`,
+      copyright: `Unofficial and independent: not affiliated with or endorsed by the Matrix.org Foundation or Element. Matrix is a trademark of The Matrix.org Foundation C.I.C. Built with Docusaurus.`,
     },
 
     prism: {
