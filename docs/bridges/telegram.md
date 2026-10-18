@@ -14,7 +14,7 @@ verified_with: "mautrix-telegram v26.10 (v0.2610.0), mautrix-go v0.32.0, docs.ma
 The bridge was **rewritten in Go on bridgev2 in v26.04 (2026-04-16)**. Guides written for the old Python bridge (`relaybot` sections, `telegram.bot_token`, `!tg ping`, `{userid}` templates, the `puppeting`/`full` permission levels) no longer apply.
 
 :::warning
-A Telegram login gives the bridge full access to your account. Telegram is known to ban suspicious accounts, and a brand-new account using a third-party client counts as suspicious; an established account is fine ([docs](https://docs.mau.fi/bridges/go/telegram/authentication.html)). Telegram chats are not end-to-end encrypted, and the bridge operator can read everything bridged.
+A Telegram login gives the bridge full access to your account. Telegram is known to ban suspicious accounts, and a brand-new account using a third-party client counts as suspicious; an established account is fine ([docs](https://docs.mau.fi/bridges/go/telegram/authentication.html)). Normal Telegram chats are not end-to-end encrypted, and the bridge operator can read everything bridged.
 :::
 
 Full documentation: [docs.mau.fi/bridges/go/telegram](https://docs.mau.fi/bridges/go/telegram/).
@@ -94,7 +94,7 @@ To let Matrix users who haven't logged in talk in a Telegram group:
 
 1. Set `bridge.relay.enabled: true` and give those users at least `relay` permission.
 2. From a **dedicated Matrix account** (not your main one), run `login bot <token>` (or log in a normal Telegram account).
-3. In the bridged room, run `!tg set-relay`.
+3. In the bridged room, run `!tg set-relay` from that account. With the default `bridge.relay.admin_only: true` it needs `admin` permission in `bridge.permissions`.
 
 To let others bridge chats through the relay without being bridge admins, add its login ID (from `list-logins`) to `bridge.relay.default_relays`. Basic groups can't be shared between several Matrix users, so upgrade them with `!tg upgrade` if you mix relayed and logged-in users. See [relay mode](https://docs.mau.fi/bridges/general/relay-mode.html).
 

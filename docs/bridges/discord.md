@@ -44,7 +44,14 @@ docker run --rm -v "$(pwd)":/data:z dock.mau.dev/mautrix/discord:v0.7.7
 docker run --rm -v "$(pwd)":/data:z dock.mau.dev/mautrix/discord:v0.7.7
 ```
 
-Add `registration.yaml` to Synapse's `app_service_config_files`, restart Synapse, and start the bridge with `--restart unless-stopped`.
+Add `registration.yaml` to Synapse's `app_service_config_files` and restart Synapse. Then start the bridge on the same Docker network as Synapse (here `synapsenet`):
+
+```bash
+docker run -d --name mautrix-discord --restart unless-stopped --network synapsenet \
+  -v "$(pwd)":/data:z dock.mau.dev/mautrix/discord:v0.7.7
+```
+
+Discord's config already listens on `0.0.0.0:29334`. Don't publish that port; only the homeserver needs to reach it.
 
 ## Configuration
 

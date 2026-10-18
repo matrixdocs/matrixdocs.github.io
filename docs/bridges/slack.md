@@ -12,7 +12,7 @@ verified_with: "mautrix-slack v26.10 (v0.2610.0), mautrix-go v0.32.0, docs.mau.f
 [mautrix-slack](https://github.com/mautrix/slack) is a puppeting bridge between Matrix and Slack, built on bridgev2. As of 2026-10-18 the latest release is **v26.10 (git tag `v0.2610.0`, 2026-10-16)**.
 
 :::note matrix-appservice-slack is gone
-The older `matrix-appservice-slack` is archived, and the bridge matrix.org ran with it was shut down on 2026-01-14 ([announcement](https://matrix.org/blog/2025/11/removing-slack-bridge/)). Use mautrix-slack.
+The older `matrix-appservice-slack` is archived, and its [README](https://github.com/matrix-org/matrix-appservice-slack) says the matrix.org instance was decommissioned on 2026-01-14 ([announcement](https://matrix.org/blog/2025/11/removing-slack-bridge/)). Use mautrix-slack.
 :::
 
 :::warning
@@ -63,7 +63,7 @@ After login, the bridge bridges recent chats automatically (depending on `conver
 
 1. Create a Slack app from the [app manifest in the repo](https://github.com/mautrix/slack/blob/main/app-manifest.yaml), create an app-level token (`xapp-`), and install the app in your workspace to get a bot token (`xoxb-`).
 2. From a **dedicated Matrix account**, send `login app` and provide both tokens.
-3. Enable `bridge.relay.enabled` and run `!slack set-relay` in the rooms where non-logged-in Matrix users should be relayed through the app.
+3. Enable `bridge.relay.enabled` and, from that account, run `!slack set-relay` in the rooms where non-logged-in Matrix users should be relayed through the app. With the default `bridge.relay.admin_only: true` the account needs `admin` permission, or its login ID must be in `bridge.relay.default_relays`.
 
 Using a dedicated account matters: the user who ran `login app` is bridged with the app's profile instead of their own ([docs](https://docs.mau.fi/bridges/go/slack/authentication.html)).
 
@@ -73,7 +73,7 @@ The bot also offers `login email` (added in v26.08). It may require a CAPTCHA, w
 
 ## Using the bridge
 
-Channels you are in appear as portal rooms after login. Use the shared bridgev2 commands (see the [overview](./overview#commands-bridgev2)): `start-chat` to DM a Slack user, `search` to find users, `bridge <chat ID>` to link an existing Matrix room, and `logout`. Run `help` for the full list. Slack threads are bridged as Matrix threads, and Matrix replies become Slack thread replies.
+Channels you are in appear as portal rooms after login. Use the shared bridgev2 commands (see the [overview](./overview#commands-bridgev2)): `start-chat` to DM a Slack user, `search` to find users, `bridge <chat ID>` to link an existing Matrix room, and `logout <login ID>` (IDs from `list-logins`). Run `help` for the full list. Slack threads are bridged as Matrix threads, and Matrix replies become Slack thread replies.
 
 ## Troubleshooting
 

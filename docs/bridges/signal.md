@@ -49,7 +49,7 @@ network:
 3. Send `login` to the bot and scan the QR code it sends.
 4. If backfill is enabled, Signal asks whether to transfer message history. Choose either option.
 
-If you transferred history, recent chats are created and backfilled. Otherwise chats appear as new messages arrive. To unlink, send `logout` (or remove the device in Signal).
+If you transferred history, recent chats are created and backfilled. Otherwise chats appear as new messages arrive. To unlink, send `logout <login ID>` (get the ID from `list-logins`), or remove the device in Signal.
 
 The bridge can only be a **linked** (secondary) device. Registering a new primary Signal account through the bridge is no longer supported; use an official app, or [signal-cli](https://docs.mau.fi/bridges/go/signal/authentication.html) as described in the docs.
 
