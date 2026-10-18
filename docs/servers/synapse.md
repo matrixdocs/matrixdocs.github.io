@@ -288,12 +288,12 @@ matrix_authentication_service:
 
 With MAS enabled:
 
-- Synapse refuses to start if any of these are also configured: `enable_registration`, `enable_registration_captcha`, `password_config.enabled: true` (password login is off by default with MAS), password auth providers, SSO providers (OIDC, SAML, CAS, JWT), `user_consent`, or session and token lifetimes. Remove them first.
+- Synapse refuses to start if any of these are also configured: `enable_registration`, `enable_registration_captcha`, `password_config.enabled` set to `true` or `only_for_reauth` (password login is off by default with MAS), password auth providers, SSO providers (OIDC, SAML, CAS, JWT), `user_consent`, `login_via_existing_session.enabled`, `enable_3pid_changes`, or session and token lifetimes. Remove them first.
 - Synapse's admin API refuses to create users (since 1.163).
 - You manage users with `mas-cli`, for example `mas-cli manage register-user`. For a Synapse admin token, use `mas-cli manage issue-compatibility-token <username> <device_id> --yes-i-want-to-grant-synapse-admin-privileges` (see the [MAS CLI reference](https://element-hq.github.io/matrix-authentication-service/reference/cli/manage.html)).
 - MAS needs PostgreSQL.
 
-Read the [MAS migration guide](https://element-hq.github.io/matrix-authentication-service/setup/migration.html) before moving an existing server. For example, SAML, LDAP and custom password providers are not migrated directly.
+For a full walkthrough (install, reverse proxy, migration and checks), see [Matrix Authentication Service (MAS)](./mas). Read the [MAS migration guide](https://element-hq.github.io/matrix-authentication-service/setup/migration.html) before moving an existing server. For example, SAML, LDAP and custom password providers are not migrated directly.
 
 ## Sliding sync and Element X
 
