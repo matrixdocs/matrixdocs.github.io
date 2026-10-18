@@ -166,7 +166,7 @@ for (const file of walk(DOCS).sort()) {
     if (!inCode) return;
     const inst = [
       /\b(?:npm (?:install|i|add)|yarn add|pnpm add)\s+((?:-{1,2}[\w-]+\s+)*)([^\s|&;]+(?:\s+[^\s|&;-][^\s|&;]*)*)/g,
-      /\bpip3? install\s+((?:-{1,2}[\w-]+\s+)*)([^\s|&;]+(?:\s+[^\s|&;-][^\s|&;]*)*)/g,
+      /\b(?:pip3?|pipx) install\s+((?:-{1,2}[\w-]+\s+)*)([^\s|&;]+(?:\s+[^\s|&;-][^\s|&;]*)*)/g,
       /\bcargo (?:add|install)\s+((?:-{1,2}[\w-]+\s+)*)([^\s|&;]+(?:\s+[^\s|&;-][^\s|&;]*)*)/g,
     ];
     const eco = ['npm', 'pypi', 'crates'];
