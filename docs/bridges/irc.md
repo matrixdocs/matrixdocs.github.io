@@ -22,17 +22,17 @@ Other options:
 Libera.Chat has had no official Matrix bridge since 2023 ([Libera news](https://libera.chat/news/official-matrix-bridge-farewell)), so to reach Libera from Matrix you run your own bridge.
 
 :::warning Heisenbridge does not support encryption
-If your homeserver creates rooms encrypted by default, Heisenbridge can't read your commands. On Synapse, leave `encryption_enabled_by_default_for_room_type` at `off` (other rooms can still be encrypted by choice). Also note that bridge admins can read stored IRC passwords and channel keys.
+If your homeserver creates rooms encrypted by default, Heisenbridge can't read your commands. On Synapse, leave `encryption_enabled_by_default_for_room_type` at `off` (other rooms can still be encrypted by choice). Also note that Heisenbridge stores each network's settings, including SASL passwords, as the bridge bot's room account data on the homeserver, so anyone with admin or database access to the homeserver can read them.
 :::
 
 ## Setup with Docker
 
-Images are on Docker Hub as `hif1/heisenbridge`. Each release is tagged `x.y.z`, `x.y` and `x`; `latest` follows the master branch, so pin a release.
+Images are on Docker Hub as `hif1/heisenbridge`. Each release is tagged `x.y.z`, `x.y` and `x`; `latest` follows the master branch, so pin the full release tag.
 
 **1. Generate the registration file.** The `url` in it must be an address the homeserver can reach. By default it is `http://127.0.0.1:9898`, which is wrong inside Docker, so pass `-l`/`-p`:
 
 ```bash
-docker run --rm -v "$(pwd)":/data hif1/heisenbridge:1.15 \
+docker run --rm -v "$(pwd)":/data hif1/heisenbridge:1.15.4 \
   -c /data/heisenbridge.yaml --generate -l heisenbridge -p 9898
 ```
 
@@ -60,7 +60,7 @@ namespaces:
 ```yaml title="docker-compose.yml"
 services:
   heisenbridge:
-    image: hif1/heisenbridge:1.15
+    image: hif1/heisenbridge:1.15.4
     restart: unless-stopped
     command: -c /data/heisenbridge.yaml -p 9898 -o @you:example.com http://synapse:8008
     volumes:
@@ -80,7 +80,7 @@ ADDNETWORK libera                               # admin only
 ADDSERVER libera irc.libera.chat 6697 --tls     # admin only; default port is 6667 without TLS
 NETWORKS                                        # list networks
 OPEN libera                                     # open a network room
-QUIT                                            # disconnect from all networks and remove your settings
+QUIT                                            # disconnect, then leave all your network, channel and PM rooms
 ```
 
 **In the network room:**
@@ -100,22 +100,22 @@ Use `NICKSERV identify <password>` (alias `NS`) if the network has no SASL, or `
 
 ## Plumbing a room (relay mode)
 
-To connect an existing Matrix room to an IRC channel through a single IRC connection, run this in the network room:
+To connect an existing Matrix room to an IRC channel through a single IRC connection, a bridge admin runs this in the network room (other users get "Plumbing is currently reserved for admins only"):
 
 ```
 PLUMB !roomid:example.com #channel
 ```
 
-The bridge joins the Matrix room and relays everyone's messages to the IRC channel through your connection.
+The bridge joins the Matrix room and relays everyone's messages to the IRC channel through your connection. `UNPLUMB` undoes it.
 
 ## Member sync
 
-How IRC users appear in Matrix is set per channel room with `SYNC`:
+How IRC users appear in Matrix is set with `SYNC`. A bridge admin sets the bridge-wide default in the DM with the bridge (control room), and anyone can override it for one channel by running `SYNC` in that channel room.
 
 | Option | Behaviour |
 |--------|-----------|
 | `SYNC --full` | Members are fully synchronised |
-| `SYNC --half` | Members are added when they join or talk |
+| `SYNC --half` | Members are added when they join or talk (default) |
 | `SYNC --lazy` | Members are added only when they talk |
 
 ## Troubleshooting

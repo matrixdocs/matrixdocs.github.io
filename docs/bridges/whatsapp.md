@@ -19,9 +19,8 @@ Full documentation: [docs.mau.fi/bridges/go/whatsapp](https://docs.mau.fi/bridge
 
 ## Requirements
 
-- WhatsApp on a phone (a physical or virtual phone works).
+- WhatsApp on a phone. mautrix says a virtual phone works, but emulators raise the ban risk (see the warning above).
 - The phone must come online at least every two weeks, or WhatsApp disconnects linked devices. The bridge warns you after 12 days without data from the phone.
-- WhatsApp allows up to four linked devices; the bridge uses one.
 
 ## Setup
 
@@ -54,7 +53,7 @@ Open a DM with `@whatsappbot:example.com`. Details: [authentication](https://doc
 - **Pairing code:** send `login phone`, send your number in international format when asked, then in WhatsApp choose "Link with a phone number instead" and enter the 8-character code.
 - **Passkey:** WhatsApp may ask some users for extra passkey verification. Follow the bot's instructions (they use browser devtools) or use [mautrix-manager](https://github.com/mautrix/manager).
 
-The bridge starts creating portals about a minute after login. To log out, send `logout`.
+The bridge starts creating portals about a minute after login. To log out, send `logout <login ID>` (get the ID from `list-logins`).
 
 ## Commands
 
@@ -78,7 +77,7 @@ To add a WhatsApp user to a bridged group, invite their ghost user in Matrix, or
 
 ## EU third-party chats
 
-Under the EU Digital Markets Act, WhatsApp opened "third-party chats" in Europe in Nov 2025, starting with BirdyChat and Haiket and without group chats ([Meta, 2025-11](https://about.fb.com/news/2025/11/messaging-interoperability-whatsapp-enables-third-party-chats-for-users-in-europe/)). This is a separate, official interop programme; mautrix-whatsapp does not use it.
+Under the EU Digital Markets Act, Meta announced in Nov 2025 that WhatsApp "third-party chats" would roll out in Europe, starting with BirdyChat and Haiket, with group chats to follow later ([Meta, 2025-11-14](https://about.fb.com/news/2025/11/messaging-interoperability-whatsapp-enables-third-party-chats-for-users-in-europe/)). This is a separate, official interop programme; mautrix-whatsapp does not use it.
 
 ## Resources
 

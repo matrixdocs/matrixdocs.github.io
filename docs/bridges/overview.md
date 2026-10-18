@@ -19,7 +19,7 @@ flowchart LR
 Most bridges are [application services](https://spec.matrix.org/v1.19/application-service-api/). The homeserver registers them, pushes events to them over HTTP, and lets them control a namespace of "ghost" users such as `@telegram_12345:example.com`.
 
 :::warning Bridges hold real power
-A bridge's appservice token can act as any user in its namespace, and a puppeting bridge stores your login session for the remote network. The bridge, and whoever runs it, sees every bridged message in plaintext, even in encrypted rooms. Only use bridges run by someone you trust. Keep `as_token`, `hs_token` and double-puppet tokens secret, and limit who may log in with the `permissions` section of the bridge config.
+A bridge's appservice token can act as any user in its namespace, and a puppeting bridge stores your login session for the remote network. The bridge, and whoever runs it, sees every bridged message in plaintext, even in encrypted rooms. Only use bridges run by someone you trust. Keep `as_token` and `hs_token` secret, and limit who may log in with the `permissions` section of the bridge config. The double-puppet `as_token` (below) is more powerful still: it can act as **every** user on your server, so treat it like an admin password.
 :::
 
 ## Bridge types
@@ -50,11 +50,11 @@ double_puppet:
     example.com: "as_token:<as_token from your doublepuppet registration>"
 ```
 
-Follow the [double puppeting guide](https://docs.mau.fi/bridges/general/double-puppeting.html) to create the registration. The legacy mautrix-discord bridge uses `bridge.login_shared_secret_map` with the same `as_token:` value.
+Follow the [double puppeting guide](https://docs.mau.fi/bridges/general/double-puppeting.html) to create the registration. Its user namespace is `@.*:example\.com` (non-exclusive), which is why the token can act as any local user. The legacy mautrix-discord bridge uses `bridge.login_shared_secret_map` with the same `as_token:` value.
 
 ### Relay mode
 
-Users who haven't logged in to the bridge can still talk through a designated "relay" login; their messages appear on the remote side prefixed with their name. In bridgev2 bridges you set `bridge.relay.enabled: true`, log in with a dedicated Matrix account, and run `set-relay` in the room ([relay mode docs](https://docs.mau.fi/bridges/general/relay-mode.html)). Discord uses webhooks instead (see the [Discord page](./discord)).
+Users who haven't logged in to the bridge can still talk through a designated "relay" login; their messages appear on the remote side prefixed with their name. In bridgev2 bridges you set `bridge.relay.enabled: true`, log in with a dedicated Matrix account, and run `set-relay` in the room ([relay mode docs](https://docs.mau.fi/bridges/general/relay-mode.html)). `bridge.relay.admin_only` defaults to `true`, so the account running `set-relay` needs `admin` permission, unless its login ID is listed in `bridge.relay.default_relays`. Discord uses webhooks instead (see the [Discord page](./discord)).
 
 ### Portal and plumbed rooms
 
@@ -74,7 +74,7 @@ Versions are the latest GitHub release. mautrix bridges have used calendar versi
 | Telegram | [mautrix-telegram](./telegram) | v26.10 | Active; rewritten in Go (bridgev2) in v26.04 |
 | Slack | [mautrix-slack](./slack) | v26.10 | Active, bridgev2 |
 | Discord | [mautrix-discord](./discord) | v0.7.7 (2026-08-16) | Active, still the legacy architecture |
-| Messenger / Instagram | [mautrix-meta](https://github.com/mautrix/meta) | v26.10 | Active; Instagram is a separate binary since Jul 2026 |
+| Messenger / Instagram | [mautrix-meta](https://github.com/mautrix/meta) | v26.10 | Active. Since v26.08 Instagram needs the separate `mautrix-instagram` binary from the same repo (image `dock.mau.dev/mautrix/meta:ig-v26.10`) |
 | Google Messages | [mautrix-gmessages](https://github.com/mautrix/gmessages) | v26.10 | Active |
 | Google Voice | [mautrix-gvoice](https://github.com/mautrix/gvoice) | v26.05 | Active |
 | X / Twitter | [mautrix-twitter](https://github.com/mautrix/twitter) | v26.09 | Active |
@@ -92,8 +92,8 @@ Versions are the latest GitHub release. mautrix bridges have used calendar versi
 
 | Project | Status |
 |---------|--------|
-| matrix-appservice-slack | Archived; the matrix.org instance was shut down 2026-01-14 ([announcement](https://matrix.org/blog/2025/11/removing-slack-bridge/)). Use mautrix-slack. |
-| mautrix-facebook, mautrix-instagram (Python) | Archived in 2024; replaced by mautrix-meta. |
+| matrix-appservice-slack | Archived; its [README](https://github.com/matrix-org/matrix-appservice-slack) says the matrix.org instance was decommissioned on 2026-01-14 ([announcement](https://matrix.org/blog/2025/11/removing-slack-bridge/)). Use mautrix-slack. |
+| mautrix/facebook, mautrix/instagram repos (Python) | Archived in 2024; replaced by mautrix-meta (and its Go `mautrix-instagram` binary). |
 | beeper/linkedin (Python) | Archived; replaced by mautrix-linkedin. |
 | signald | Does not work with current Signal servers; mautrix-signal dropped it in Feb 2024. |
 | matrix-appservice-discord | No release since v4.0.0 (2023-09); effectively unmaintained. Use mautrix-discord. |
@@ -113,7 +113,7 @@ If your account is on a homeserver you don't run (matrix.org, for example), you 
 
 The authoritative instructions are [docs.mau.fi: Go bridge setup](https://docs.mau.fi/bridges/go/setup.html) and [Docker setup](https://docs.mau.fi/bridges/general/docker-setup.html). In outline:
 
-1. **Requirements:** a homeserver with appservice support, and PostgreSQL 16 or newer, with a separate database for each bridge (sharing the Postgres server is fine). Synapse is the best-supported homeserver; mautrix calls Dendrite "not a supported environment".
+1. **Requirements:** a homeserver with appservice support, and PostgreSQL 16 or newer, with a separate database for each bridge (sharing the Postgres server is fine). Synapse is the best-supported homeserver; mautrix calls Dendrite "not a supported environment" ([registering appservices](https://docs.mau.fi/bridges/general/registering-appservices.html)).
 2. **Get the binary** from the bridge's GitHub releases (or build with `./build.sh`), or use the Docker image `dock.mau.dev/mautrix/<bridge>:<version>`. Pin a release tag: `:latest` follows the main branch, not the latest release.
 3. **Generate a config:** `./mautrix-<bridge> -e` writes an example `config.yaml`. Discord is legacy and has no `-e`, so copy its `example-config.yaml` instead. The Docker image writes the config on first start.
 4. **Edit the config** (see below).
@@ -128,13 +128,15 @@ services:
     restart: unless-stopped
     volumes:
       - ./mautrix-whatsapp:/data
+    # Put it on the same Docker network as Synapse. Don't publish the port:
+    # only the homeserver needs to reach it.
 ```
 
-Inside Docker, `localhost` is the container itself. Point `homeserver.address` and `appservice.address` at container names on a shared network (e.g. `http://synapse:8008` and `http://mautrix-whatsapp:29318`).
+Inside Docker, `localhost` is the container itself. Point `homeserver.address` and `appservice.address` at container names on a shared network (e.g. `http://synapse:8008` and `http://mautrix-whatsapp:29318`), and set `appservice.hostname: 0.0.0.0` so the bridge listens on the container's network interface. The generated config defaults to `127.0.0.1`, which the homeserver can't reach from another container.
 
 ### The bridgev2 config layout
 
-Every mautrix bridge except Discord and iMessage now uses the bridgev2 layout. The shared sections come from mautrix-go, and network-specific settings live under `network:`. These are the keys most people change:
+Every mautrix bridge except Discord, iMessage and Google Chat now uses the bridgev2 layout. The shared sections come from mautrix-go, and network-specific settings live under `network:`. These are the keys most people change:
 
 ```yaml title="config.yaml (bridgev2)"
 # Key names from mautrix/go v0.32.0 bridgev2/matrix/mxmain/example-config.yaml
@@ -144,6 +146,8 @@ homeserver:
   domain: example.com               # your server name
 appservice:
   address: http://mautrix-whatsapp:29318   # how the homeserver reaches the bridge
+  hostname: 0.0.0.0                 # where the bridge listens; 0.0.0.0 in Docker, default 127.0.0.1
+  port: 29318
 database:
   type: postgres
   uri: postgres://mautrix:password@postgres/mautrix_whatsapp?sslmode=disable
@@ -184,12 +188,12 @@ Talk to the bridge bot in a DM (the "management room", where no prefix is needed
 | Command | Purpose |
 |---------|---------|
 | `login [flow]` | Log in to the remote network |
-| `logout`, `list-logins`, `relogin` | Manage logins |
+| `list-logins`, `logout <login ID>`, `relogin <login ID>` | Manage logins (`logout` needs the ID from `list-logins`) |
 | `start-chat` / `pm` | Start a DM with a remote user |
 | `create-group` / `create` | Create a remote group for this room |
 | `bridge [login ID] <chat ID>`, `unbridge` | Link or unlink an existing Matrix room |
 | `set-relay`, `unset-relay` | Use your login as the relay for this room |
-| `sync-portal`, `delete-portal` | Resync or delete the current portal |
+| `sync-portal`, `delete-portal` | Resync or delete the current portal (`delete-portal` is admin only) |
 | `search`, `resolve-identifier` | Find remote users |
 
 bridgev2 has no generic `ping` or `sync` command.
@@ -210,7 +214,7 @@ bridgev2 has no generic `ping` or `sync` command.
 
 ### Interoperability under the EU DMA
 
-The EU Digital Markets Act requires designated messengers to open up to third parties. WhatsApp launched third-party chats in the EU in Nov 2025, with BirdyChat and Haiket as the first partners and no group chats yet ([Meta, 2025-11](https://about.fb.com/news/2025/11/messaging-interoperability-whatsapp-enables-third-party-chats-for-users-in-europe/)). No Matrix-based WhatsApp interop has shipped; the bridges above use reverse-engineered client APIs. See also the IETF [MIMI working group](https://datatracker.ietf.org/wg/mimi/about/).
+The EU Digital Markets Act requires designated messengers to open up to third parties. In Nov 2025 Meta announced that WhatsApp third-party chats would roll out across Europe, with BirdyChat and Haiket as the first partners and group chats to follow later ([Meta, 2025-11-14](https://about.fb.com/news/2025/11/messaging-interoperability-whatsapp-enables-third-party-chats-for-users-in-europe/)). No Matrix-based WhatsApp interop has shipped; mautrix-whatsapp uses an unofficial, reverse-engineered WhatsApp Web client instead. See also the IETF [MIMI working group](https://datatracker.ietf.org/wg/mimi/about/).
 
 ### Related
 
