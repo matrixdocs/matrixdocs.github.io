@@ -33,6 +33,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'servers/overview',
         'servers/synapse',
+        'servers/mas',
         'servers/dendrite',
         'servers/conduit',
         'servers/comparison',

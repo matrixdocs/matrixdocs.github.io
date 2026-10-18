@@ -293,7 +293,7 @@ With MAS enabled:
 - You manage users with `mas-cli`, for example `mas-cli manage register-user`. For a Synapse admin token, use `mas-cli manage issue-compatibility-token <username> <device_id> --yes-i-want-to-grant-synapse-admin-privileges` (see the [MAS CLI reference](https://element-hq.github.io/matrix-authentication-service/reference/cli/manage.html)).
 - MAS needs PostgreSQL.
 
-Read the [MAS migration guide](https://element-hq.github.io/matrix-authentication-service/setup/migration.html) before moving an existing server. For example, SAML, LDAP and custom password providers are not migrated directly.
+For a full walkthrough (install, reverse proxy, migration and checks), see [Matrix Authentication Service (MAS)](./mas). Read the [MAS migration guide](https://element-hq.github.io/matrix-authentication-service/setup/migration.html) before moving an existing server. For example, SAML, LDAP and custom password providers are not migrated directly.
 
 ## Sliding sync and Element X
 
