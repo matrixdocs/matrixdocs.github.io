@@ -16,14 +16,15 @@ function HeroSection() {
       <div className={styles.heroContent}>
         <div className={styles.heroTag}>
           <span className={styles.tagIcon}>◆</span>
-          Open Source Documentation
+          Independent · Unofficial
         </div>
         <h1 className={styles.heroTitle}>
           Master the <span className={styles.highlight}>Matrix</span> Protocol
         </h1>
         <p className={styles.heroSubtitle}>
-          The definitive developer resource for decentralized, secure, real-time communication.
-          From beginner to power user.
+          An independent, unofficial guide to the open standard for decentralised, secure,
+          real-time communication. For the normative source, read the{' '}
+          <a href="https://spec.matrix.org/">official specification</a>.
         </p>
         <div className={styles.heroButtons}>
           <Link to="/docs/getting-started/introduction" className={styles.primaryButton}>
@@ -36,18 +37,18 @@ function HeroSection() {
         </div>
         <div className={styles.heroStats}>
           <div className={styles.heroStat}>
-            <span className={styles.statValue}>100M+</span>
-            <span className={styles.statLabel}>Users Worldwide</span>
+            <span className={styles.statValue}>Open</span>
+            <span className={styles.statLabel}>Standard</span>
           </div>
           <div className={styles.statDivider}></div>
           <div className={styles.heroStat}>
-            <span className={styles.statValue}>80K+</span>
-            <span className={styles.statLabel}>Federated Servers</span>
+            <span className={styles.statValue}>Federated</span>
+            <span className={styles.statLabel}>Anyone can run a server</span>
           </div>
           <div className={styles.statDivider}></div>
           <div className={styles.heroStat}>
             <span className={styles.statValue}>E2EE</span>
-            <span className={styles.statLabel}>By Default</span>
+            <span className={styles.statLabel}>Olm/Megolm</span>
           </div>
         </div>
       </div>
@@ -60,7 +61,7 @@ const features = [
   {
     icon: '🔐',
     title: 'End-to-End Encrypted',
-    description: 'Military-grade encryption protects your conversations. Only you and your recipients can read messages.',
+    description: "Olm and Megolm encrypt messages end to end. In encrypted rooms, only participants' devices can read them.",
     link: '/docs/security/overview',
   },
   {
@@ -90,7 +91,7 @@ const features = [
   {
     icon: '📖',
     title: 'Open Standard',
-    description: 'Fully documented protocol specification. No vendor lock-in, complete interoperability guaranteed.',
+    description: 'A public, versioned specification, changed through an open proposal process (MSCs).',
     link: '/docs/specification/overview',
   },
 ];
@@ -126,9 +127,9 @@ function FeaturesSection() {
 // Ecosystem data
 const ecosystemItems = [
   { category: 'Clients', items: ['Element', 'Cinny', 'FluffyChat', 'Nheko', 'SchildiChat'], link: '/docs/clients/overview' },
-  { category: 'Servers', items: ['Synapse', 'Dendrite', 'Conduit', 'Construct'], link: '/docs/servers/overview' },
+  { category: 'Servers', items: ['Synapse', 'Continuwuity', 'Tuwunel', 'Dendrite'], link: '/docs/servers/overview' },
   { category: 'Bridges', items: ['Discord', 'Telegram', 'Slack', 'IRC', 'WhatsApp'], link: '/docs/bridges/overview' },
-  { category: 'SDKs', items: ['matrix-js-sdk', 'matrix-rust-sdk', 'matrix-nio', 'gomuks'], link: '/docs/sdks/overview' },
+  { category: 'SDKs', items: ['matrix-js-sdk', 'matrix-rust-sdk', 'matrix-nio', 'mautrix'], link: '/docs/sdks/overview' },
 ];
 
 function EcosystemSection() {
@@ -139,7 +140,7 @@ function EcosystemSection() {
           <span className={styles.sectionTag}>Ecosystem</span>
           <h2 className={styles.sectionTitle}>A Thriving Open Source Community</h2>
           <p className={styles.sectionSubtitle}>
-            Hundreds of clients, servers, bridges, and tools - all interoperable
+            Clients, servers, bridges and tools built on one open specification
           </p>
         </div>
         <div className={styles.ecosystemGrid}>
@@ -225,14 +226,14 @@ function CTASection() {
       <div className={styles.ctaContent}>
         <h2 className={styles.ctaTitle}>Ready to Get Started?</h2>
         <p className={styles.ctaSubtitle}>
-          Join millions of users communicating securely on the Matrix network
+          Read the guides, then check them against the official spec and project docs
         </p>
         <div className={styles.ctaButtons}>
           <Link to="/docs/getting-started/introduction" className={styles.ctaPrimaryButton}>
             Read the Docs
           </Link>
-          <a href="https://matrix.to/#/#matrixdocs:matrix.org" className={styles.ctaSecondaryButton} target="_blank" rel="noopener noreferrer">
-            Join Our Community
+          <a href="https://github.com/matrixdocs/matrixdocs.github.io/issues" className={styles.ctaSecondaryButton} target="_blank" rel="noopener noreferrer">
+            Report an error
           </a>
         </div>
       </div>
@@ -244,8 +245,8 @@ export default function Home(): React.JSX.Element {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title="Matrix Protocol Documentation"
-      description="The definitive Matrix protocol developer resource - comprehensive guides, tutorials, and documentation for decentralized communication">
+      title="Unofficial Matrix guide"
+      description="An independent, unofficial guide to the Matrix protocol and its ecosystem. Not affiliated with the Matrix.org Foundation or Element.">
       <main className={styles.main}>
         <HeroSection />
         <FeaturesSection />

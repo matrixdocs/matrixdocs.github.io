@@ -1,12 +1,16 @@
 ---
 sidebar_position: 0
 title: Documentation Home
-description: The definitive Matrix protocol developer resource
+description: An independent, unofficial guide to the Matrix protocol and its ecosystem
 ---
 
 # Welcome to Matrix Docs
 
-**The definitive Matrix protocol developer resource** - from beginner to power user.
+An independent, unofficial guide to the Matrix protocol and its ecosystem.
+
+:::caution Unofficial and partly unverified
+This site is not affiliated with the Matrix.org Foundation or Element. It was first drafted with AI in January 2026 and is being verified page by page against [spec v1.19](https://spec.matrix.org/v1.19/) and [Synapse 1.163](https://element-hq.github.io/synapse/latest/). Read [About this site](/docs/about) before relying on it; the official docs always win.
+:::
 
 ## What is Matrix?
 
