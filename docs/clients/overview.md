@@ -1,172 +1,135 @@
 ---
 sidebar_position: 1
 title: Matrix Clients Overview
-description: Discover the wide range of Matrix clients available for every platform
+description: Matrix clients for every platform, and how to choose one
+last_update:
+  date: 2026-10-18
+verified_with: "Element Web 1.12.32, Element X Android 26.09.4, Cinny 4.12.7, FluffyChat 2.10.0 (release notes and repos checked 2026-10-18)"
 ---
 
 # Matrix Clients
 
-Matrix's open protocol means you can choose from dozens of clients. Each offers different features, designs, and platform support.
+Matrix is an open protocol, so you can pick any client and switch later. Your account and rooms live on your homeserver, not in the app. The official list is at [matrix.org/ecosystem/clients](https://matrix.org/ecosystem/clients/).
 
-## The Big Picture
+## Quick picks (as of 2026-10)
 
-| Category | Best For | Top Picks |
-|----------|----------|-----------|
-| **Full-Featured** | Power users, organizations | Element, SchildiChat |
-| **Lightweight** | Speed, low resources | Cinny, Nheko, gomuks |
-| **Mobile-First** | On-the-go messaging | FluffyChat, Element X |
-| **Terminal** | CLI enthusiasts | gomuks, iamb, weechat-matrix |
+| Use case | Clients |
+|----------|---------|
+| **Desktop / browser, full-featured** | Element Web / Desktop |
+| **Mobile** | Element X, FluffyChat |
+| **Lightweight desktop / web** | Cinny, Nheko, Fractal (GNOME), NeoChat (KDE) |
+| **Terminal** | iamb; gomuks terminal (experimental) |
+| **Self-hosted web client with its own backend** | gomuks web |
 
-## Featured Clients
+## Element family
 
-### Element
+Element is developed by Element, the company that also develops Synapse.
 
-The **flagship** Matrix client, developed by Element (formerly New Vector).
+### Element Web / Desktop
 
-- **Platforms**: Web, Desktop, Android, iOS
-- **Best for**: Full Matrix feature support
-- **Website**: [element.io](https://element.io)
+- **Platforms**: browser, Windows, macOS, Linux
+- **Status**: active; Element Web 1.12.32 (2026-10-16)
+- **Strengths**: the most complete feature set: threads, spaces, Element Call video rooms, widgets, developer tools
+- **Weaknesses**: heavy (Electron on desktop); one account at a time
 
-**Pros:**
-- Most complete feature set
-- Regular updates
-- Spaces, threads, VoIP support
-- Enterprise features
+[Element guide →](./element)
 
-**Cons:**
-- Can be resource-heavy
-- Sometimes slow with many rooms
+### Element X (mobile)
 
-### Element X
+- **Platforms**: Android, iOS
+- **Status**: Element's main mobile app, built on matrix-rust-sdk
+- **Strengths**: fast startup through simplified sliding sync; Element Call voice and video; spaces (including creating them since early 2026); OAuth 2.0 login
+- **Limits**: needs a homeserver that supports simplified sliding sync (Synapse does natively). As of 2026-10, Element's [migration FAQ](https://docs.element.io/latest/element-server-suite-pro/migration/classic-to-pro-mobile-apps-faq/) says it still lacks widgets and slash commands. There is no Element X for desktop; use Element Web or Desktop there.
 
-The **next-generation** Element client, rebuilt from scratch using matrix-rust-sdk.
+### Element Classic (old mobile apps)
 
-- **Platforms**: Android, iOS (Desktop coming)
-- **Best for**: Speed and modern UX
-- **Status**: Under active development
+The original Element Android and iOS apps are now called **Element Classic** and get security fixes only. Element's migration FAQ (the only source for these dates found so far) says an in-app banner will push users to Element X from 2026-11-15, and the apps will leave the stores on 2026-12-31. Installed copies keep working. New users should install Element X.
 
-**Pros:**
-- Extremely fast
-- Modern, clean interface
-- Efficient sync
-
-**Cons:**
-- Still missing some features
-- Desktop version not yet available
+## Other clients
 
 ### Cinny
 
-A **Discord-like** Matrix client with a beautiful, modern interface.
+- **Platforms**: web ([app.cinny.in](https://app.cinny.in)), desktop (Tauri)
+- **Status**: active; v4.12.7 (2026-09-15)
+- **Strengths**: clean Discord-like layout, spaces, custom emoji and stickers, voice/video rooms through the Element Call library (since v4.11, 2026-03)
+- **Limits**: no native mobile app (the web app works on phones); thread support is partial
 
-- **Platforms**: Web, Desktop (Electron)
-- **Best for**: Discord refugees, visual appeal
-- **Website**: [cinny.in](https://cinny.in)
-
-**Pros:**
-- Beautiful UI
-- Familiar for Discord users
-- Fast and lightweight
-- Active development
-
-**Cons:**
-- No voice/video calls
-- No mobile app
+[cinny.in](https://cinny.in)
 
 ### FluffyChat
 
-A **cute** and simple Matrix client with great mobile support.
+- **Platforms**: Android, iOS, web, desktop (Flutter)
+- **Status**: very active; v2.10.0 (2026-10-02)
+- **Strengths**: friendly UI, several accounts at once, threads (since v2.3.0), spaces, video calls through MatrixRTC
 
-- **Platforms**: Android, iOS, Web, Linux, macOS, Windows
-- **Best for**: Simplicity, cross-platform
-- **Website**: [fluffychat.im](https://fluffychat.im)
-
-**Pros:**
-- Very user-friendly
-- Works everywhere
-- Good encryption support
-- Stories feature
-
-**Cons:**
-- Less powerful than Element
-- Occasional sync issues
+[fluffychat.im](https://fluffychat.im)
 
 ### SchildiChat
 
-Element **fork** with enhanced features and traditional IM feel.
+SchildiChat's original apps were forks of the old Element apps. Both are being replaced:
 
-- **Platforms**: Web, Desktop, Android
-- **Best for**: Power users who want more than Element
-- **Website**: [schildichat.de](https://schildi.chat)
+- **SchildiChat Next** (Android): a fork of Element X, in beta. [GitHub](https://github.com/SchildiChat/schildichat-android-next)
+- **SchildiChat Revenge** (desktop and Android): a new Kotlin client on matrix-rust-sdk, in beta, keyboard-driven and multi-account. [GitHub](https://github.com/SchildiChat/schildi-revenge)
+- The old **SchildiChat Desktop/Web** is archived, and classic **SchildiChat Android** carries a deprecation notice.
 
-**Pros:**
-- All Element features plus extras
-- Unified chat list option
-- More compact UI options
-- Active development
-
-**Cons:**
-- Slightly behind Element on updates
-- No iOS version
+[schildi.chat](https://schildi.chat)
 
 ### Nheko
 
-A **native** desktop client written in C++/Qt.
+- **Platforms**: Linux, Windows, macOS (Qt/C++)
+- **Status**: maintained, rare releases; v0.12.1 (2025-08-10)
+- **Strengths**: native desktop app, low resource use, E2EE with cross-signing
 
-- **Platforms**: Linux, macOS, Windows
-- **Best for**: Native performance, Linux users
-- **Website**: [nheko.im](https://nheko.im/nheko)
+[nheko-reborn.github.io](https://nheko-reborn.github.io)
 
-**Pros:**
-- Native performance
-- Low resource usage
-- Good Linux integration
-- Video calls support
+### Fractal and NeoChat
 
-**Cons:**
-- Desktop only
-- Smaller feature set
+- **Fractal** is GNOME's client, written in Rust on matrix-rust-sdk (14.1, 2026-07-19).
+- **NeoChat** is KDE's client, shipped with KDE Gear (26.08.2, 2026-10-06).
 
-## Quick Comparison Table
+### gomuks
 
-| Client | Web | Desktop | Android | iOS | E2EE | Spaces | Threads | VoIP |
-|--------|-----|---------|---------|-----|------|--------|---------|------|
-| Element | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Element X | ❌ | 🔄 | ✅ | ✅ | ✅ | ✅ | 🔄 | 🔄 |
-| Cinny | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
-| FluffyChat | ✅ | ✅ | ✅ | ✅ | ✅ | 🔄 | ❌ | ✅ |
-| SchildiChat | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Nheko | ❌ | ✅ | ❌ | ❌ | ✅ | 🔄 | ❌ | ✅ |
+gomuks is now split into a backend and frontends. **gomuks web** is the main frontend, with Electron and Android wrappers; the terminal frontend is still experimental. See [Alternative clients](./alternatives#gomuks).
 
-✅ = Full support | 🔄 = Partial/In progress | ❌ = Not available
+### iamb
 
-## Choosing the Right Client
+A Rust terminal client with Vim-style keys, E2EE, threads and spaces. v0.0.12 (2026-09-20). [iamb.chat](https://iamb.chat)
 
-### For Beginners
+## Feature support
 
-Start with **Element** - it's the most complete and well-documented option.
+This table reflects release notes and documentation checked on 2026-10-18. Clients change quickly; check each project's release notes before relying on a feature.
 
-### For Discord Users
+| Client | E2EE | Threads | Spaces | Voice/Video | Multi-account | Platforms |
+|--------|------|---------|--------|-------------|---------------|-----------|
+| Element Web/Desktop | ✅ | ✅ | ✅ | ✅ (Element Call) | ❌ | Web, desktop |
+| Element X | ✅ | ✅ (may need Labs) | ✅ | ✅ (Element Call) | Android 26.10+ | Android, iOS |
+| Cinny | ✅ | 🔄 partial | ✅ | ✅ (voice/video rooms) | ❌ | Web, desktop |
+| FluffyChat | ✅ | ✅ | ✅ | ✅ (MatrixRTC video calls) | ✅ | Mobile, web, desktop |
+| Nheko | ✅ | 🔄 | ✅ | 🔄 (varies by platform) | 🔄 | Desktop |
+| SchildiChat Revenge | ✅ | 🔄 | ✅ | ❌ | ✅ | Desktop, Android |
 
-Try **Cinny** - the interface will feel familiar and comfortable.
+✅ supported · 🔄 partial or limited · ❌ not supported
 
-### For Privacy-Conscious Users
+## Choosing a client
 
-**FluffyChat** or **Nheko** - both have strong encryption implementations and are community-driven.
+### New to Matrix
+**Element X** on your phone and **Element Web** on your computer. Most help pages assume Element.
 
-### For Power Users
+### Coming from Discord
+**Cinny** has the most familiar layout.
 
-**SchildiChat** or **Element with labs features** - maximum functionality.
+### Desktop users who want a native app
+**Nheko** (Qt), **Fractal** (GNOME) or **NeoChat** (KDE).
 
-### For Developers
+### Several accounts
+**FluffyChat** or **SchildiChat Revenge**. Element Web does not support more than one account.
 
-**gomuks** or **iamb** (terminal) - minimal distractions, keyboard-driven.
+### Terminal
+**iamb**. gomuks terminal exists but is experimental.
 
-## Client Discovery Tools
+## Further resources
 
-- [clients.matrix.org](https://matrix.org/ecosystem/clients/) - Official client list
-- [Are We Matrix Yet?](https://arewematrixyet.com) - Client feature comparison
-- [Can I Matrix?](https://matrix-org.github.io/canitmatrix//clients/) - Feature support checker
-
----
-
-*Continue: [Element Deep Dive](./element) | [Alternative Clients](./alternatives)*
+- [matrix.org/ecosystem/clients](https://matrix.org/ecosystem/clients/): the official client list
+- [Element](./element): using Element in depth
+- [Alternative clients](./alternatives): install details for other clients
+- [Comparison](./comparison): side-by-side tables

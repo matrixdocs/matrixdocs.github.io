@@ -2,18 +2,21 @@
 sidebar_position: 2
 title: Core Concepts
 description: Understand the fundamental concepts of the Matrix protocol
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, Synapse 1.163.0"
 ---
 
 # Core Concepts
 
-Understanding these concepts will help you navigate the Matrix ecosystem like a power user.
+These concepts explain how Matrix behaves, and why clients and servers do what they do.
 
-## The Matrix Network
+## The Matrix network
 
-Matrix is a **federated network** of homeservers. Think of it like email:
+Matrix is a **federated network** of homeservers. Think of email:
 - Your email address is tied to a provider (Gmail, Outlook, etc.)
 - But you can email anyone on any provider
-- Matrix works the same way for messaging
+- Matrix works the same way for chat rooms
 
 ```mermaid
 flowchart LR
@@ -30,7 +33,7 @@ flowchart LR
 
 ## Matrix IDs
 
-Your Matrix ID (MXID) uniquely identifies you across the network:
+Your Matrix ID (MXID) identifies you across the network:
 
 ```
 @username:homeserver.org
@@ -40,34 +43,36 @@ Your Matrix ID (MXID) uniquely identifies you across the network:
 └── @ symbol indicates this is a user
 ```
 
-Other ID types:
-- `!roomid:server.org` - Room ID (internal identifier)
-- `#alias:server.org` - Room alias (human-readable)
-- `+community:server.org` - Legacy community (deprecated)
+Other identifiers:
+- `#alias:server.org`: a room alias, human-readable and changeable
+- `!L58ME6ufiP49v97UIOBIpvWKEgj4912JmECPuDzlvCI`: a room ID, the permanent internal identifier. In [room version 12](https://spec.matrix.org/v1.19/rooms/v12/) (the default in Synapse since 1.162) the room ID is a hash of the room's creation event and has no server name. Rooms created with older versions have IDs like `!abcd1234:server.org`.
+- `$Rqnc-F-dvnEYJTyHq_iKxU2bZ1CI92-kuZq3a5lr5Zg`: an event ID. Since room version 3, event IDs are hashes with no server name.
+
+The old `+community:server.org` "groups" never entered the spec and were removed; Spaces replaced them.
 
 ## Rooms
 
 Rooms are the core unit of communication in Matrix.
 
-### Room Properties
+### Room properties
 
 | Property | Description |
 |----------|-------------|
-| **Room ID** | Unique identifier like `!abcd1234:server.org` |
+| **Room ID** | Permanent identifier, such as `!L58ME6ufiP49v97UIOBIpvWKEgj4912JmECPuDzlvCI` |
 | **Aliases** | Human-readable names like `#matrix:matrix.org` |
 | **State** | Room settings (name, topic, permissions, etc.) |
 | **Timeline** | The ordered list of events (messages) |
 
-### Room Types
+### Room types
 
-- **Direct Messages (DMs)** - 1:1 conversations
-- **Private Rooms** - Invite-only group chats
-- **Public Rooms** - Anyone can join, often listed in room directories
-- **Spaces** - Hierarchical organization of rooms (like Discord servers)
+- **Direct messages (DMs)**: 1:1 or small group conversations
+- **Private rooms**: invite-only group chats
+- **Public rooms**: anyone can join, often listed in room directories
+- **Spaces**: rooms that group other rooms (like Discord servers)
 
 ## Events
 
-Everything in Matrix is an **event**. Events are JSON objects that represent actions:
+Everything in Matrix is an **event**. Events are JSON objects:
 
 ```json
 {
@@ -78,11 +83,11 @@ Everything in Matrix is an **event**. Events are JSON objects that represent act
     "body": "Hello, Matrix!"
   },
   "origin_server_ts": 1234567890123,
-  "event_id": "$eventid:matrix.org"
+  "event_id": "$Rqnc-F-dvnEYJTyHq_iKxU2bZ1CI92-kuZq3a5lr5Zg"
 }
 ```
 
-### Event Types
+### Event types
 
 | Type | Description |
 |------|-------------|
@@ -91,7 +96,7 @@ Everything in Matrix is an **event**. Events are JSON objects that represent act
 | `m.room.name` | Room name changes |
 | `m.room.topic` | Room topic changes |
 | `m.room.power_levels` | Permission changes |
-| `m.room.encryption` | E2EE settings |
+| `m.room.encryption` | Turns on end-to-end encryption |
 
 ## Federation
 
@@ -102,56 +107,60 @@ Federation is how homeservers communicate:
 3. `matrix.org` sends the event to `example.com`
 4. **Bob** on `example.com` receives the message
 
-:::tip Power User Insight
-When you join a room, your homeserver creates a local copy of the room state. This means:
-- Messages are stored on all participating homeservers
-- If one server goes down, the room continues to work
-- Leaving a room removes your homeserver's copy (eventually)
+:::tip
+When you join a room, your homeserver keeps its own copy of the room. This means:
+- Messages are stored on every participating homeserver
+- If one server goes down, the others carry on
+- **Leaving a room does not delete your server's copy.** "Forgetting" a room only hides it from you. Synapse deletes the data only if the admin enables `forget_rooms_on_leave` together with `forgotten_room_retention_period`, or uses the [Delete Room admin API](https://element-hq.github.io/synapse/latest/admin_api/rooms.html#delete-room-api). Other servers in the room keep their copies too.
 :::
 
-## End-to-End Encryption (E2EE)
+## End-to-end encryption (E2EE)
 
-Matrix supports optional E2EE using:
+Element and Element X encrypt DMs and private rooms by default. Two protocols are involved:
 
-- **Olm** - For 1:1 device encryption
-- **Megolm** - For efficient group encryption
+- **Megolm** encrypts room messages, in DMs and group rooms alike. Each message is encrypted once per Megolm session, not once per recipient.
+- **Olm** encrypts the device-to-device ("to-device") channel used to hand each recipient device the Megolm session key.
 
-### How It Works
+### How it works
 
-1. Each device has a unique **device key**
-2. Messages are encrypted for each recipient device
-3. Keys are verified via **cross-signing**
-4. **Key backup** protects against device loss
+1. Each device has its own identity keys.
+2. The sender encrypts a message with the current Megolm session.
+3. The session key goes to each recipient device over Olm.
+4. **Cross-signing** lets you mark your own devices as yours, and other users as verified.
+5. **Key backup**, unlocked with your recovery key, stores session keys on the server (encrypted) so a new device can read old messages.
 
 ### Verification
 
-Users can verify each other to ensure they're talking to the right person:
+To confirm you are talking to the right person or device:
 
-1. **Emoji verification** - Compare emojis on both devices
-2. **QR code scan** - Scan a code on the other device
-3. **Cross-signing** - Your verified devices vouch for each other
+1. **Emoji comparison**: compare the same emoji on both screens
+2. **QR code**: scan a code shown on the other device
+3. **Cross-signing**: once your devices are verified, other people's clients trust them through your identity
 
-## Power Levels
+## Power levels
 
-Rooms have a permission system based on "power levels" (0-100 by default):
+Rooms grant permissions with numeric "power levels". By default, users have 0, moderators 50 and admins 100:
 
-| Level | Typical Role | Capabilities |
+| Level | Typical role | Capabilities |
 |-------|-------------|--------------|
 | 0 | Default | Send messages |
-| 50 | Moderator | Kick users, delete messages |
-| 100 | Admin | Full control, change room settings |
+| 50 | Moderator | Kick and ban users, delete messages |
+| 100 | Admin | Change room settings and permissions |
+| ∞ | Room creator(s), room version 12+ | Everything; cannot be demoted |
+
+In [room version 12](https://spec.matrix.org/v1.19/rooms/v12/), the user who created the room (plus any `additional_creators`) has an infinitely high power level. Creators are not listed in `m.room.power_levels` and cannot be changed after creation. New v12 rooms also set the level needed to upgrade the room (send `m.room.tombstone`) above the other admin actions, typically 150. In older room versions, the creator simply starts at 100.
 
 :::info
-Power levels are completely customizable. A room can use any numbers and define custom thresholds for each action.
+The thresholds are customizable. A room can require any level for each action.
 :::
 
 ## Spaces
 
 Spaces are Matrix's answer to Discord servers or Slack workspaces:
 
-- **Hierarchical** - Spaces can contain rooms and other spaces
-- **Flexible** - A room can belong to multiple spaces
-- **Access Control** - Inherit membership from parent spaces
+- **Hierarchical**: spaces can contain rooms and other spaces
+- **Flexible**: a room can belong to several spaces
+- **Access control**: the `restricted` join rule (room version 8+) lets members of chosen spaces join a room without an invite. Membership is not inherited automatically.
 
 ```
 Space: "My Community"
@@ -165,11 +174,11 @@ Space: "My Community"
     └── #music
 ```
 
-## Next Steps
+## Next steps
 
-- [Quick Start](./quick-start) - Get your first Matrix account
-- [Clients](../clients/overview) - Choose your Matrix client
-- [Specification](../specification/overview) - Deep dive into the protocol
+- [Quick Start](./quick-start): get your first Matrix account
+- [Clients](../clients/overview): choose a Matrix client
+- [Specification](../specification/overview): the protocol in depth
 
 ---
 
