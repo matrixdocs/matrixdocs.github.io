@@ -1,194 +1,162 @@
 ---
 sidebar_position: 2
 title: Maubot
-description: Plugin-based Matrix bot system
+description: Run and write plugin-based Matrix bots with maubot
+last_update:
+  date: 2026-10-18
+verified_with: "maubot 0.6.0 (example-config.yaml, mbc CLI and plugin loader read from the release wheel)"
 ---
 
 # Maubot
 
-Maubot is a plugin-based bot system for Matrix. Install plugins for various features without writing code.
+[maubot](https://github.com/maubot/maubot) is a plugin-based bot system written in Python on top of [mautrix-python](../sdks/matrix-python-sdk#mautrix-python). One maubot server hosts many bot accounts ("clients") and many plugin instances, managed through a web UI.
 
-## Features
+As of 2026-10 the current release is **0.6.0** (2025-11-17). It added room v12 creator handling and verification with a recovery key. The official documentation is at [docs.mau.fi/maubot](https://docs.mau.fi/maubot/).
 
-- **Plugin system** - Add/remove features easily
-- **Web UI** - Manage bots via browser
-- **Multiple instances** - Run many bots from one Maubot
-- **Hot reload** - Update plugins without restart
+## Concepts
+
+| Term | Meaning |
+|------|---------|
+| Client | A Matrix account the server logs in as |
+| Plugin | A `.mbp` archive containing Python code and `maubot.yaml` |
+| Instance | A plugin running as a client, with its own config |
 
 ## Installation
 
-### Docker (Recommended)
+### Docker
 
 ```yaml title="docker-compose.yml"
-version: '3'
 services:
   maubot:
-    image: dock.mau.dev/maubot/maubot:latest
+    image: dock.mau.dev/maubot/maubot:v0.6.0
     restart: unless-stopped
-    ports:
-      - "29316:29316"
     volumes:
-      - ./maubot-data:/data
+      - ./data:/data
+    ports:
+      - "127.0.0.1:29316:29316"
 ```
 
-```bash
-docker compose up -d
-# Access UI at http://localhost:29316/_matrix/maubot/
-```
+The first start writes `data/config.yaml` and exits. Edit it, then start again. The management UI is at `http://localhost:29316/_matrix/maubot/`. Put it behind a reverse proxy with TLS if you need remote access.
 
-### pip Installation
+### Python
 
 ```bash
 pip install maubot
-mbc init
-mbc run
 ```
+
+Copy [`example-config.yaml`](https://github.com/maubot/maubot/blob/master/maubot/example-config.yaml) from the release to `config.yaml`, edit it, and run `python -m maubot`. The `mbc` command is a separate CLI for plugin developers; `mbc init` creates a new *plugin*, not a server.
 
 ## Configuration
 
-```yaml title="config.yaml"
+The keys below come from maubot 0.6.0's `example-config.yaml`:
+
+```yaml title="config.yaml (excerpt)"
+database: sqlite:maubot.db
+# Key used to encrypt E2EE keys in the crypto database. Change it before first start.
+crypto_db_pickle_key: change-me
+crypto_database: default
+
 server:
   hostname: 0.0.0.0
   port: 29316
-  public_url: https://maubot.example.com
-
-database: sqlite:///maubot.db
+  public_url: https://maubot.example.org
 
 homeservers:
-  example.com:
-    url: https://matrix.example.com
+  example.org:
+    url: https://matrix.example.org
+    # registration_shared_secret from Synapse, only needed for `mbc auth --register`
+    secret: null
 
+# Username -> password. Plaintext passwords are bcrypt-hashed on startup.
 admins:
-  admin: "your-password-hash"
+  root: ""
+  admin: a-long-random-password
 ```
 
-Generate password hash:
-```bash
-mbc auth -u admin
-```
+`mbc auth` logs a Matrix account in through the maubot server and prints a token for creating a client. It does not hash admin passwords.
 
-## Using the Web UI
+:::warning
+Anyone with a maubot admin login controls every bot account on that server. Use strong admin passwords, don't expose port 29316 directly, and leave `homeservers.*.secret` empty unless you need `mbc auth --register`.
+:::
 
-1. Go to `http://localhost:29316/_matrix/maubot/`
-2. Login with admin credentials
-3. **Clients** tab → Add bot user credentials
-4. **Plugins** tab → Upload plugins
-5. **Instances** tab → Create bot instances
+## Running a plugin
 
-## Popular Plugins
+1. Find a plugin in the index at [plugins.mau.bot](https://plugins.mau.bot) and download its `.mbp` from the plugin's releases.
+2. In the UI, upload it under **Plugins**.
+3. Under **Clients**, add the bot account (homeserver, user ID, access token, device ID), or create it with `mbc auth`.
+4. Under **Instances**, create an instance that pairs the plugin with the client, then edit its config.
+5. Invite the bot to a room.
 
-### Utility
+## Writing a plugin
 
-| Plugin | Description |
-|--------|-------------|
-| [echo](https://github.com/maubot/echo) | Echo messages back |
-| [dice](https://github.com/maubot/dice) | Roll dice |
-| [reminder](https://github.com/maubot/reminder) | Set reminders |
-| [translate](https://github.com/maubot/translate) | Translate messages |
-
-### Fun
-
-| Plugin | Description |
-|--------|-------------|
-| [xkcd](https://github.com/maubot/xkcd) | XKCD comics |
-| [giphy](https://github.com/maubot/giphy) | GIF search |
-| [urban](https://github.com/maubot/urban) | Urban Dictionary |
-
-### Management
-
-| Plugin | Description |
-|--------|-------------|
-| [welcome](https://github.com/maubot/welcome) | Welcome new users |
-| [reactbot](https://github.com/maubot/reactbot) | Auto-react |
-| [rss](https://github.com/maubot/rss) | RSS feeds |
-| [gitlab](https://github.com/maubot/gitlab) | GitLab notifications |
-
-## Installing Plugins
-
-### From Web UI
-
-1. Download `.mbp` file from plugin repo
-2. Plugins tab → Upload
-3. Create instance with plugin
-
-### From Command Line
-
-```bash
-# Build plugin
-mbc build
-
-# Upload to maubot
-mbc upload -s http://localhost:29316 plugin.mbp
-```
-
-## Creating an Instance
-
-1. **Clients** → Add Matrix account for bot
-2. **Instances** → New Instance
-3. Select plugin, client, primary room
-4. Configure plugin settings
-5. Start instance
-
-## Writing Plugins
-
-### Basic Plugin Structure
-
-```python
-from maubot import Plugin, MessageEvent
-from maubot.handlers import command
-
-class MyPlugin(Plugin):
-    @command.new()
-    async def hello(self, evt: MessageEvent) -> None:
-        await evt.reply("Hello, World!")
-```
-
-### Plugin Metadata
+A plugin needs a `maubot.yaml` and a Python module. `mbc init` scaffolds both. Here is a ping plugin with one config option:
 
 ```yaml title="maubot.yaml"
-maubot: 0.1.0
-id: com.example.myplugin
+id: org.example.ping
 version: 1.0.0
 license: MIT
 modules:
-  - myplugin
-main_class: MyPlugin
+  - ping
+main_class: PingBot
+config: true
+extra_files:
+  - base-config.yaml
 ```
 
-### Building
-
-```bash
-mbc build -o myplugin.mbp
+```yaml title="base-config.yaml"
+reply: pong
 ```
 
-## Configuration for Plugins
+```python title="ping.py"
+from typing import Type
 
-Plugins can have configurable settings:
-
-```python
-from maubot import Plugin
+from maubot import MessageEvent, Plugin
+from maubot.handlers import command
 from mautrix.util.config import BaseProxyConfig, ConfigUpdateHelper
+
 
 class Config(BaseProxyConfig):
     def do_update(self, helper: ConfigUpdateHelper) -> None:
-        helper.copy("greeting")
+        helper.copy("reply")
 
-class MyPlugin(Plugin):
+
+class PingBot(Plugin):
     async def start(self) -> None:
         self.config.load_and_update()
 
-    @command.new()
-    async def greet(self, evt: MessageEvent) -> None:
-        await evt.reply(self.config["greeting"])
+    @classmethod
+    def get_config_class(cls) -> Type[BaseProxyConfig]:
+        return Config
+
+    @command.new("ping", help="Check that the bot is alive")
+    async def ping(self, evt: MessageEvent) -> None:
+        await evt.reply(self.config["reply"])
 ```
+
+Users type `!ping`. Build and upload with:
+
+```bash
+mbc login            # once, to your maubot server
+mbc build --upload   # zips the plugin into an .mbp and uploads it
+```
+
+This plugin was import-tested against maubot 0.6.0. The [plugin development docs](https://docs.mau.fi/maubot/dev/getting-started.html) cover databases, web endpoints and event handlers.
+
+### Testing
+
+maubot 0.6.0 ships pytest fixtures in `maubot.testing` (`maubot_test_bot`, `maubot_plugin`, `maubot_plugin_config` and others), so you can test command handlers without a homeserver.
+
+## Encryption
+
+maubot supports E2EE for clients that have a device ID. Set `crypto_db_pickle_key` before first start and keep the crypto database. Since 0.6.0 you can verify a bot's device with a recovery key, which gives it cross-signing, as encrypted rooms increasingly require ([spec](https://spec.matrix.org/v1.19/client-server-api/#recommended-client-behaviour)).
+
+## Standalone mode
+
+For a single bot without the management UI, maubot has a standalone mode (`python -m maubot.standalone`) that runs one plugin from a config file. The Docker images have matching `-standalone` tags. See [standalone mode](https://docs.mau.fi/maubot/usage/standalone.html).
 
 ## Resources
 
-- [Maubot GitHub](https://github.com/maubot/maubot)
-- [Plugin Repository](https://github.com/maubot)
-- [Documentation](https://docs.mau.fi/maubot/)
-- [Matrix Room](https://matrix.to/#/#maubot:maunium.net)
-
----
-
-*Next: [Mjolnir](./mjolnir) →*
+- [maubot docs](https://docs.mau.fi/maubot/)
+- [Plugin index](https://plugins.mau.bot)
+- [GitHub: maubot/maubot](https://github.com/maubot/maubot)
+- [#maubot:maunium.net](https://matrix.to/#/#maubot:maunium.net)
