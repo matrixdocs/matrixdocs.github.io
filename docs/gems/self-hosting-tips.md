@@ -42,7 +42,7 @@ matrix_authentication_service:
   secret_path: /etc/matrix-synapse/mas_secret
 ```
 
-Migrating an existing server needs PostgreSQL and uses `mas-cli syn2mas`; follow the [MAS documentation](https://element-hq.github.io/matrix-authentication-service/). With MAS enabled, Synapse no longer creates users through its admin API; users are managed in MAS.
+Migrating an existing server needs PostgreSQL and uses `mas-cli syn2mas`; follow the [MAS documentation](https://element-hq.github.io/matrix-authentication-service/). With MAS enabled, users are managed in MAS. Synapse refuses to create users through its admin API and disables its reset-password, server-admin and login-as-user endpoints.
 
 ## Sliding sync
 
@@ -54,7 +54,7 @@ Synapse serves simplified sliding sync (MSC4186) natively and has it on by defau
 
 ### Workers
 
-A single Synapse process is enough for small servers. For larger ones, split load across [workers](https://element-hq.github.io/synapse/latest/workers.html). Since Synapse 1.88 the old `worker_replication_*` settings are gone, and Synapse refuses to start if they are present. The main process and workers now share an `instance_map` and Redis:
+A single Synapse process is enough for small servers. For larger ones, split load across [workers](https://element-hq.github.io/synapse/latest/workers.html). Synapse 1.88 removed `worker_replication_host`, `worker_replication_http_port` and `worker_replication_http_tls`, and Synapse refuses to start if they are present. (`worker_replication_secret` and `worker_replication_secret_path` are still valid.) The main process and workers now share an `instance_map` and Redis:
 
 ```yaml title="homeserver.yaml (shared config)"
 listeners:
@@ -84,6 +84,7 @@ worker_name: generic_worker1
 worker_listeners:
   - type: http
     port: 8083
+    bind_addresses: ['127.0.0.1']   # only the reverse proxy should reach it
     x_forwarded: true
     resources:
       - names: [client, federation]
@@ -198,11 +199,13 @@ enable_registration: true
 registration_requires_token: true
 ```
 
-Create tokens with the [registration tokens admin API](https://element-hq.github.io/synapse/latest/usage/administration/admin_api/registration_tokens.html) or synadm. Email verification on its own doesn't stop spam bots. On MAS-based servers, registration is configured in MAS.
+Create tokens with the [registration tokens admin API](https://element-hq.github.io/synapse/latest/usage/administration/admin_api/registration_tokens.html) or `synadm regtok`. Email verification on its own doesn't stop spam bots. On MAS-based servers, registration is configured in MAS.
 
 ### Rate limiting
 
-```yaml title="homeserver.yaml"
+Synapse rate-limits by default. The values below **are the defaults** from the configuration manual, shown so you can see the structure. Add a block only if you want to change it: lower values are stricter.
+
+```yaml title="homeserver.yaml (defaults shown)"
 rc_message:
   per_second: 0.2
   burst_count: 10
@@ -310,7 +313,7 @@ Don't let a container auto-updater (such as Watchtower, which is archived) upgra
 ### Deployment tools
 
 - [matrix-docker-ansible-deploy](https://github.com/spantaleev/matrix-docker-ansible-deploy): an Ansible playbook covering Synapse and Conduit-family servers, Element Web, bridges, Draupnir, MAS and more. See [Ansible deployment](../deployment/ansible).
-- Element Server Suite Community: Element's Helm chart bundling Synapse, MAS, Element Web and the Element Call backend.
+- [Element Server Suite Community](https://github.com/element-hq/ess-helm): Element's Helm chart for Kubernetes, bundling Synapse, MAS, Element Web and the Element Call backend. Its README aims it at small and mid-sized non-commercial deployments of up to about 100 users.
 
 ---
 

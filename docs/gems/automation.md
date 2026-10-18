@@ -42,7 +42,7 @@ The third-party maubot plugin [maubot-ntfy](https://gitlab.com/999eagle/maubot-n
 ### CI/CD
 
 - **GitHub Actions**: use [Cadair/matrix-notify-action](https://github.com/Cadair/matrix-notify-action) pinned to `@v3`. Example in [Power Tools](./power-tools#github-actions).
-- **GitLab CI**: a `curl` `PUT` to the send-message endpoint. Example in [Power Tools](./power-tools#gitlab-ci).
+- **GitLab CI**: a `curl` `PUT` to the send-message endpoint, run from the job's `after_script`. Example in [Power Tools](./power-tools#gitlab-ci).
 - **Hookshot**: connect a repository and the room receives push, issue, PR and release events:
 
 ```
@@ -86,6 +86,8 @@ The maubot [rss](https://github.com/maubot/rss) plugin does the same if you run 
 ```
 
 For `create`, the first line is the issue title and any further lines become the body.
+
+Both bots answer to `!gh` by default. If you run both in one room, change the maubot plugin's `command_options.prefix` in its config so a command doesn't reach both.
 
 Neither tool can list, review or merge pull requests from chat.
 
@@ -137,15 +139,17 @@ Other people subscribe to a reminder by reacting 👍 to it. After a reminder fi
 !hookshot webhook alerts
 ```
 
-Hookshot replies with a URL built from the `generic.urlPrefix` in its config. POST JSON to it:
+The bot needs permission to send state events in the room (usually moderator). It replies with the webhook URL: the `generic.urlPrefix` from its config followed by a hook ID. POST JSON to it:
 
 ```bash
-curl -X POST "https://hooks.example.org/webhook/<id-from-hookshot>" \
+curl -X POST "https://hooks.example.org/<id-from-hookshot>" \
   -H "Content-Type: application/json" \
   -d '{"text": "Deployment complete"}'
 ```
 
-A `text` key becomes the message body (Markdown is rendered). An `html` key sets the formatted body. Without `text`, Hookshot posts the whole payload.
+A `text` key becomes the message body, and Markdown in it is rendered. An `html` key sets the formatted body, but you must still send `text` as the plain-text fallback. Without `text`, Hookshot posts the whole payload.
+
+Anyone who has the URL can post to the room, so treat it like a password. `!hookshot webhook list` shows a room's hooks, and `!hookshot webhook remove` deletes one.
 
 ### Transformation functions
 
@@ -214,7 +218,7 @@ client.add_event_callback(on_member, RoomMemberEvent)
 # await client.sync_forever(timeout=30000)
 ```
 
-Skip the events from the first sync, or the bot will greet everyone already in the room. See [Building Bots](../bots/building-bots).
+Skip the events from the first sync, or the bot will greet everyone already in the room. As written, this only works in unencrypted rooms. Sending into encrypted rooms needs matrix-nio's E2EE extra and a persistent store, and a maubot plugin handles that for you. See [Building Bots](../bots/building-bots).
 
 ---
 

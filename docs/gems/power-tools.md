@@ -81,6 +81,8 @@ Once it is running, these management-room commands create a policy list and subs
 !draupnir watch #matrix-org-coc-bl:matrix.org
 ```
 
+`watch` first shows a preview of what the list would ban and asks you to confirm.
+
 Support: [#draupnir:matrix.org](https://matrix.to/#/#draupnir:matrix.org)
 
 ### Alternatives
@@ -149,38 +151,40 @@ For inbound webhooks and JavaScript transformation functions, see [Automation](.
 
 [Cadair/matrix-notify-action](https://github.com/Cadair/matrix-notify-action) posts a workflow summary to a room. Pin a release tag (or a commit SHA), not `@main`:
 
-```yaml title=".github/workflows/ci.yml"
-notify:
-  if: always()
-  runs-on: ubuntu-latest
-  needs: [build, test]
-  steps:
-    - uses: Cadair/matrix-notify-action@v3
-      with:
-        matrix_token: ${{ secrets.MATRIX_TOKEN }}
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        homeserver: 'https://matrix.example.org'
-        roomid: '!roomId:example.org'
-        summarise_success: true
+```yaml title=".github/workflows/ci.yml (add to your existing jobs)"
+jobs:
+  # ... your build and test jobs ...
+  notify:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    steps:
+      - uses: Cadair/matrix-notify-action@v3
+        with:
+          matrix_token: ${{ secrets.MATRIX_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          homeserver: 'https://matrix.example.org'
+          roomid: '!roomId:example.org'
+          summarise_success: true
 ```
 
-The input names come from the action's `action.yml` at `v3`.
+The input names come from the action's `action.yml` at `v3`. `homeserver` defaults to `https://matrix.org` if you leave it out.
 
 ### GitLab CI
 
-There is no maintained GitLab integration to recommend, but a plain client-server API call works. Use `PUT` with a transaction ID, as the spec requires:
+Besides Hookshot's GitLab connection, a plain client-server API call from the job works. Use `PUT` with a transaction ID, as the spec requires. Put the call in `after_script` of the job you want to report on. GitLab sets `CI_JOB_STATUS` to `success`, `failed` or `canceled` only there ([predefined variables](https://docs.gitlab.com/ci/variables/predefined_variables/)).
 
 ```yaml title=".gitlab-ci.yml"
-notify_matrix:
-  stage: .post
-  when: always
+deploy:
   script:
+    - ./deploy.sh
+  after_script:
     - |
       curl -sS -X PUT \
-        "https://matrix.example.org/_matrix/client/v3/rooms/$MATRIX_ROOM_ID/send/m.room.message/$CI_PIPELINE_ID-$CI_JOB_ID" \
+        "https://matrix.example.org/_matrix/client/v3/rooms/$MATRIX_ROOM_ID/send/m.room.message/$CI_JOB_ID" \
         -H "Authorization: Bearer $MATRIX_TOKEN" \
         -H "Content-Type: application/json" \
-        -d "{\"msgtype\":\"m.notice\",\"body\":\"$CI_PROJECT_NAME: job $CI_JOB_NAME $CI_JOB_STATUS\"}"
+        -d "{\"msgtype\":\"m.notice\",\"body\":\"$CI_PROJECT_NAME: $CI_JOB_NAME $CI_JOB_STATUS\"}"
 ```
 
 `MATRIX_ROOM_ID` must be URL-encoded (`!` becomes `%21`, `:` becomes `%3A`). Store `MATRIX_TOKEN` as a masked CI variable.
