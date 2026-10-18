@@ -1,209 +1,141 @@
 ---
 sidebar_position: 2
 title: matrix-js-sdk
-description: The official JavaScript SDK for Matrix
+description: The JavaScript/TypeScript Matrix SDK used by Element Web
+last_update:
+  date: 2026-10-18
+verified_with: "matrix-js-sdk 44.0.0 (type-checked with tsc), spec v1.19"
 ---
 
 # matrix-js-sdk
 
-The official JavaScript/TypeScript SDK for Matrix, powering Element Web and other applications.
+The Matrix client-server SDK for JavaScript and TypeScript, maintained by Element and used by Element Web. It runs in browsers and in Node.js.
 
-## Installation
+As of 2026-10 the current release is **44.0.0** (2026-10-13). It is published as an ES module (`"type": "module"`) and declares Node.js 22 or later. Major versions arrive every month or two, so pin a version and read the [release notes](https://github.com/matrix-org/matrix-js-sdk/releases) when upgrading.
 
 ```bash
 npm install matrix-js-sdk
 ```
 
-## Basic Usage
+## A minimal client
 
-### Initialize Client
+This logs in with a password, enables encryption, prints messages and sends one. It was type-checked against matrix-js-sdk 44.0.0 with `tsc --strict`.
 
-```javascript
-import * as sdk from 'matrix-js-sdk';
+```typescript
+import {
+    ClientEvent,
+    EventType,
+    MsgType,
+    RoomEvent,
+    SyncState,
+    createClient,
+} from "matrix-js-sdk";
 
-const client = sdk.createClient({
-    baseUrl: "https://matrix.example.com",
-    accessToken: "your-access-token",
-    userId: "@user:example.com"
+const baseUrl = "https://matrix.example.org";
+
+// 1. Log in to get an access token and device ID (legacy login API).
+const login = await createClient({ baseUrl }).loginRequest({
+    type: "m.login.password",
+    identifier: { type: "m.id.user", user: "alice" },
+    password: process.env.MATRIX_PASSWORD!,
+    initial_device_display_name: "my-app",
 });
+
+// 2. Create the client you'll use, with those credentials.
+const client = createClient({
+    baseUrl,
+    userId: login.user_id,
+    deviceId: login.device_id,
+    accessToken: login.access_token,
+});
+
+// 3. Optional: end-to-end encryption. In a browser, omit the argument to
+//    store keys in IndexedDB. In Node.js the store is in memory only.
+await client.initRustCrypto({ useIndexedDB: false });
+
+client.on(RoomEvent.Timeline, (event, room, toStartOfTimeline) => {
+    if (toStartOfTimeline || event.getType() !== EventType.RoomMessage) return;
+    console.log(`[${room?.name}] ${event.getSender()}: ${event.getContent().body}`);
+});
+
+client.once(ClientEvent.Sync, async (state) => {
+    if (state !== SyncState.Prepared) return;
+    await client.sendMessage("!roomid", {
+        msgtype: MsgType.Text,
+        body: "Hello from matrix-js-sdk",
+    });
+});
+
+await client.startClient({ initialSyncLimit: 10 });
 ```
 
-### Login
+Notes:
 
-```javascript
-const client = sdk.createClient({
-    baseUrl: "https://matrix.example.com"
-});
+- `client.login()` and `loginWithPassword()` are deprecated in v44. Use `loginRequest()` and create a new client with the returned credentials, as above.
+- Without a persistent crypto store, each start needs a new device (a new login). Browsers get persistence through IndexedDB.
+- The legacy crypto stack (`initCrypto()`, `LocalStorageCryptoStore`) was removed in v37 (2025-02). Rust crypto via `initRustCrypto()` is the only E2EE path.
 
-const response = await client.login("m.login.password", {
-    user: "username",
-    password: "password"
-});
+## OAuth 2.0 login
 
-console.log("Logged in:", response.user_id);
+Servers that use Matrix Authentication Service (matrix.org among them) authenticate clients with the [OAuth 2.0 API](https://spec.matrix.org/v1.19/client-server-api/#oauth-20-api). Password login may be unavailable there. In v44, `client.getAuthMetadata()` fetches the server's OAuth metadata, and the exported `OAuth2` class handles dynamic client registration (`OAuth2.registerClient`), the authorization code grant, token refresh and revocation, and the device authorization grant. Element Web is the reference implementation. See the [API docs](https://matrix-org.github.io/matrix-js-sdk/).
+
+## Authenticated media
+
+Since spec v1.11, media is downloaded from `/_matrix/client/v1/media/download/{serverName}/{mediaId}` (and `/thumbnail/...`) with an `Authorization` header. Ask for an authenticated URL and send the token yourself:
+
+```typescript
+const url = client.mxcUrlToHttp(
+    "mxc://example.org/abc123",
+    undefined, undefined, undefined, // width, height, resizeMethod
+    false, // allowDirectLinks
+    true,  // allowRedirects
+    true,  // useAuthentication
+);
+if (url) {
+    const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${client.getAccessToken()}` },
+    });
+}
 ```
 
-### Start Syncing
+In a browser, `<img src>` cannot send that header. The js-sdk README suggests a Service Worker that adds it.
 
-```javascript
-client.startClient({ initialSyncLimit: 10 });
+## Encryption setup and verification
 
-client.once('sync', (state) => {
-    if (state === 'PREPARED') {
-        console.log("Client ready!");
+After `initRustCrypto()`, everything E2EE goes through `client.getCrypto()`:
+
+- `bootstrapSecretStorage()` sets up secret storage (the recovery key).
+- `bootstrapCrossSigning()` creates and uploads cross-signing keys.
+- `requestOwnUserVerification()` and `requestDeviceVerification(userId, deviceId)` start interactive verification.
+
+```typescript
+import { VerificationPhase, VerificationRequestEvent } from "matrix-js-sdk/lib/crypto-api/index.js";
+
+const request = await client.getCrypto()!.requestOwnUserVerification();
+request.on(VerificationRequestEvent.Change, async () => {
+    if (request.phase === VerificationPhase.Ready) {
+        const verifier = await request.startVerification("m.sas.v1");
+        await verifier.verify();
     }
 });
 ```
 
-## Sending Messages
-
-### Text Message
-
-```javascript
-await client.sendMessage(roomId, {
-    msgtype: "m.text",
-    body: "Hello, Matrix!"
-});
-```
-
-### Formatted Message
-
-```javascript
-await client.sendMessage(roomId, {
-    msgtype: "m.text",
-    body: "Hello, **Matrix**!",
-    format: "org.matrix.custom.html",
-    formatted_body: "Hello, <strong>Matrix</strong>!"
-});
-```
-
-### Image
-
-```javascript
-const response = await client.uploadContent(imageFile);
-await client.sendMessage(roomId, {
-    msgtype: "m.image",
-    body: "image.png",
-    url: response.content_uri,
-    info: {
-        mimetype: "image/png",
-        size: imageFile.size,
-        w: 800,
-        h: 600
-    }
-});
-```
-
-## Event Handling
-
-### Room Messages
-
-```javascript
-client.on("Room.timeline", (event, room, toStartOfTimeline) => {
-    if (event.getType() !== "m.room.message") return;
-
-    const content = event.getContent();
-    console.log(`${event.getSender()}: ${content.body}`);
-});
-```
-
-### Room Membership
-
-```javascript
-client.on("RoomMember.membership", (event, member) => {
-    if (member.membership === "join") {
-        console.log(`${member.name} joined ${member.roomId}`);
-    }
-});
-```
-
-## Room Operations
-
-### Create Room
-
-```javascript
-const response = await client.createRoom({
-    name: "My Room",
-    topic: "Discussion room",
-    preset: "private_chat",
-    invite: ["@friend:example.com"]
-});
-```
-
-### Join Room
-
-```javascript
-await client.joinRoom("#room:example.com");
-// or by ID
-await client.joinRoom("!roomid:example.com");
-```
-
-### Invite User
-
-```javascript
-await client.invite(roomId, "@user:example.com");
-```
-
-## End-to-End Encryption
-
-### Enable E2EE
-
-```javascript
-import { LocalStorageCryptoStore } from 'matrix-js-sdk';
-
-const client = sdk.createClient({
-    baseUrl: "https://matrix.example.com",
-    accessToken: "token",
-    userId: "@user:example.com",
-    deviceId: "DEVICE_ID",
-    cryptoStore: new LocalStorageCryptoStore(localStorage)
-});
-
-await client.initCrypto();
-client.startClient();
-```
-
-### Device Verification
-
-```javascript
-const verificationRequest = await client.requestVerification(userId);
-
-verificationRequest.on("change", () => {
-    if (verificationRequest.phase === "ready") {
-        // Start verification
-        verificationRequest.startVerification("m.sas.v1");
-    }
-});
-```
+The [E2EE section of the README](https://github.com/matrix-org/matrix-js-sdk#end-to-end-encryption-support) covers the secret-storage and cross-signing callbacks in full. Cross-signing matters: since spec v1.18, other clients should not share room keys with devices that are not cross-signed.
 
 ## Spaces
 
-### Create Space
+A space is a room created with `creation_content.type = "m.space"`. Children are linked with `m.space.child` state events:
 
-```javascript
-const space = await client.createRoom({
-    name: "My Space",
-    preset: "private_chat",
-    creation_content: {
-        type: "m.space"
-    }
+```typescript
+const { room_id: spaceId } = await client.createRoom({
+    name: "My space",
+    creation_content: { type: "m.space" },
 });
-```
-
-### Add Room to Space
-
-```javascript
-await client.sendStateEvent(spaceId, "m.space.child", {
-    via: ["example.com"]
-}, roomId);
+await client.sendStateEvent(spaceId, EventType.SpaceChild, { via: ["example.org"] }, "!child-room-id");
 ```
 
 ## Resources
 
-- [GitHub](https://github.com/matrix-org/matrix-js-sdk)
-- [API Documentation](https://matrix-org.github.io/matrix-js-sdk/)
-- [TypeDoc](https://matrix-org.github.io/matrix-js-sdk/modules.html)
-
----
-
-*Next: [matrix-rust-sdk](./matrix-rust-sdk) →*
+- [GitHub: matrix-org/matrix-js-sdk](https://github.com/matrix-org/matrix-js-sdk)
+- [API reference](https://matrix-org.github.io/matrix-js-sdk/)
+- [Node.js example app](https://github.com/matrix-org/matrix-js-sdk/tree/develop/examples/node)

@@ -1,465 +1,216 @@
 ---
 sidebar_position: 4
 title: Hookshot
-description: GitHub, GitLab, and webhook integration for Matrix
+description: Bridge GitHub, GitLab, Jira, OpenProject, Figma, RSS feeds and webhooks into Matrix rooms
+last_update:
+  date: 2026-10-18
+verified_with: "matrix-hookshot 7.5.0 (config.sample.yml, registration.sample.yml, docs/ and src/Connections at the 7.5.0 tag)"
 ---
 
 # Hookshot
 
-Hookshot bridges Matrix to development tools: GitHub, GitLab, JIRA, webhooks, and more. It's the go-to solution for DevOps and development team chat integration.
+[matrix-hookshot](https://github.com/matrix-org/matrix-hookshot) is a Matrix.org appservice that connects rooms to development tools and the web. As of 2026-10 the current release is **7.5.0** (2026-09-22). It runs on Node.js 24, supports encrypted rooms (stable since 2025) and works in room version 12.
 
-## Why Hookshot?
+The official docs are at [matrix-org.github.io/matrix-hookshot](https://matrix-org.github.io/matrix-hookshot/latest/). This page summarises them; check there for options not shown.
 
-- **Bidirectional** - Not just notifications, but commands back to Git
-- **E2EE Support** - Works in encrypted rooms (stable since 2025)
-- **Widget UI** - Configure without commands
-- **Self-hostable** - Full control over your data
-- **Active development** - Node 24 support, Matrix v12 rooms
+## What it connects
 
-## Features
-
-| Integration | Receive Events | Send Commands |
-|-------------|----------------|---------------|
-| **GitHub** | Issues, PRs, commits, releases, workflows | Create issues, assign, close, run workflows |
-| **GitLab** | Issues, MRs, pipelines | Create issues, manage MRs |
-| **JIRA** | Issues, transitions | Create/update issues |
-| **Generic Webhooks** | Any JSON payload | — |
-| **RSS/Atom** | Feed updates | — |
-| **Figma** | Comments, updates | — |
-| **OpenProject** | Work packages | Create/manage items |
+| Service | Notifications | Commands in the room |
+|---------|---------------|----------------------|
+| GitHub | Issues, PRs, releases, workflow runs, discussions | Create, assign and close issues; run workflows |
+| GitLab | Issues, merge requests, pushes, tag pushes, releases, wiki | Create and close issues |
+| Jira | Issue events | Create issues |
+| OpenProject | Work package events | Create, close, set priority, assign |
+| Figma | File activity | – |
+| ChallengeHound | Challenge activity | – |
+| RSS/Atom feeds | New items | – |
+| Inbound webhooks | Any HTTP POST, optionally transformed by JavaScript | – |
+| Outbound webhooks | Room events sent to an HTTP URL | – |
 
 ## Installation
 
-### Docker
+Hookshot needs admin access to a homeserver, because it registers as an appservice. The Docker image is `ghcr.io/matrix-org/matrix-hookshot`. The old `halfshot/matrix-hookshot` image on Docker Hub is no longer maintained.
 
 ```yaml title="docker-compose.yml"
-version: '3'
 services:
   hookshot:
-    image: halfshot/matrix-hookshot:latest
+    image: ghcr.io/matrix-org/matrix-hookshot:7.5.0
     restart: unless-stopped
-    ports:
-      - "9000:9000"   # Webhooks
-      - "9001:9001"   # Metrics
-      - "9002:9002"   # Widgets
     volumes:
-      - ./hookshot-data:/data
+      - ./hookshot:/data   # config.yml, registration.yml, passkey.pem
+    ports:
+      - "127.0.0.1:9000:9000"   # webhooks: put your reverse proxy in front
+      - "127.0.0.1:9002:9002"   # widgets (optional)
+    # 9993 (appservice) and 9001 (metrics) are reached by Synapse and
+    # Prometheus over the internal Docker network only.
 ```
+
+:::warning Keep the appservice port private
+The appservice listener (`bridge.port`, 9993 by default) receives events from your homeserver, authenticated by `hs_token`. The Hookshot docs say it should **not** be reachable from the internet and must not share a port with the other listeners. Expose only the webhook (and widget) listener, through a TLS reverse proxy. The `as_token` and `hs_token` let anyone holding them act as the bridge: keep `registration.yml` private.
+:::
 
 ## Configuration
 
+Copy [`config.sample.yml`](https://github.com/matrix-org/matrix-hookshot/blob/7.5.0/config.sample.yml) to `config.yml`. A minimal Docker config, based on the 7.5.0 sample:
+
 ```yaml title="config.yml"
 bridge:
-  domain: example.com
-  url: https://matrix.example.com
-  mediaUrl: https://matrix.example.com
-  port: 9000
-  bindAddress: 0.0.0.0
+  domain: example.org            # your homeserver's server name
+  url: http://synapse:8008       # internal client-server API URL
+  mediaUrl: https://matrix.example.org
+  port: 9993                     # appservice listener, homeserver only
+  bindAddress: 0.0.0.0           # Docker; use 127.0.0.1 outside containers
 
-github:
-  auth:
-    id: YOUR_GITHUB_APP_ID
-    privateKeyFile: /data/github-key.pem
+passFile: /data/passkey.pem      # openssl genpkey -out passkey.pem -outform PEM -algorithm RSA -pkeyopt rsa_keygen_bits:4096
 
-gitlab:
-  instances:
-    gitlab.com:
-      url: https://gitlab.com
+listeners:
+  - port: 9000
+    bindAddress: 0.0.0.0
+    resources:
+      - webhooks
+  - port: 9001
+    bindAddress: 127.0.0.1
+    resources:
+      - metrics
+  - port: 9002
+    bindAddress: 0.0.0.0
+    resources:
+      - widgets
 
-jira:
-  webhook:
-    secret: your-webhook-secret
+permissions:
+  - actor: example.org
+    services:
+      - service: "*"
+        level: admin
 
 generic:
   enabled: true
-  urlPrefix: https://hookshot.example.com/webhook
+  urlPrefix: https://hooks.example.org/webhook/
+  allowJsTransformationFunctions: false
+  enableHttpGet: false
 
 feeds:
   enabled: true
-  pollIntervalSeconds: 300
-
-passFile: /data/passkey.pem
+  pollIntervalSeconds: 600
 ```
 
-### Generate Registration
+Validate it without starting the bridge:
 
 ```bash
-docker run --rm -v $(pwd)/hookshot-data:/data \
-  halfshot/matrix-hookshot:latest \
-  node config/config.schema.json > registration.yml
+docker run --rm -v "$PWD/hookshot/config.yml:/config.yml" \
+  ghcr.io/matrix-org/matrix-hookshot:7.5.0 node config/Config.js /config.yml
 ```
 
-## GitHub Setup
+**Permissions.** Without a `permissions` block, every user on the bridge's own homeserver has full access. Levels are additive: `commands`, `login`, `notifications`, `manageConnections`, `admin`. Actors can be a user ID, a server name, a room ID or `"*"` (quote user IDs, room IDs and `*`). See [Permissions](https://matrix-org.github.io/matrix-hookshot/latest/setup.html#permissions).
 
-### 1. Create GitHub App
+### Registration
 
-1. Go to **GitHub Settings → Developer settings → GitHub Apps**
-2. Create new app with these settings:
+Copy [`registration.sample.yml`](https://github.com/matrix-org/matrix-hookshot/blob/7.5.0/registration.sample.yml) to `registration.yml`. Replace `as_token` and `hs_token` with long random strings, change `foobar` in the namespaces to your server name, and set `url` to where the homeserver reaches Hookshot (`http://hookshot:9993` in Docker). Then add the file to Synapse's `app_service_config_files` and restart Synapse.
 
-**Basic:**
-- App name: `Matrix Hookshot`
-- Homepage URL: Your Matrix server URL
-- Webhook URL: `https://hookshot.example.com/github`
-- Webhook secret: Generate a strong secret
+```yaml title="registration.yml (excerpt)"
+id: matrix-hookshot
+as_token: GENERATE_A_LONG_RANDOM_STRING
+hs_token: GENERATE_ANOTHER_LONG_RANDOM_STRING
+sender_localpart: hookshot
+url: "http://hookshot:9993"
+rate_limited: false
+receive_ephemeral: true
+namespaces:
+  rooms: []
+  users:
+    - regex: "@_github_.*:example\\.org"
+      exclusive: true
+    - regex: "@_webhooks_.*:example\\.org"
+      exclusive: true
+  aliases:
+    - regex: "#github_.+:example\\.org"
+      exclusive: true
+```
 
-**Permissions (Repository):**
-| Permission | Access |
-|------------|--------|
-| Actions | Read |
-| Contents | Read |
-| Discussions | Read & Write |
-| Issues | Read & Write |
-| Metadata | Read |
-| Projects | Read & Write |
-| Pull requests | Read & Write |
+### Encryption
 
-**Subscribe to events:**
-- Issues, Issue comments
-- Pull requests, PR reviews, PR comments
-- Push, Releases
-- Workflow runs
-- Discussions
+Set `encryption.storagePath` (and a `cache.redisUri`, which encryption requires) to let Hookshot work in encrypted rooms. See [Encryption](https://matrix-org.github.io/matrix-hookshot/latest/advanced/encryption.html).
 
-3. Download the private key after creation
+## Connecting a room
 
-### 2. Configure Hookshot
+Invite the bot (for example `@hookshot:example.org`) to the room and give it power level 50 so it can write connection state. Then run a setup command:
 
-```yaml title="config.yml"
+| Command | Effect |
+|---------|--------|
+| `!hookshot help` | List available commands |
+| `!hookshot github repo <url>` | Connect a GitHub repository (you must be logged in to GitHub) |
+| `!hookshot gitlab project <url>` | Connect a GitLab project |
+| `!hookshot jira project <url>` | Connect a Jira project |
+| `!hookshot jira list project` / `jira remove project <url>` | List or remove Jira connections |
+| `!hookshot webhook <name> [liveDuration]` | Create an inbound webhook; the bot replies with its URL |
+| `!hookshot webhook list` / `webhook remove <name>` | List or remove webhooks |
+| `!hookshot outbound-hook <name> <url>` | Create an outbound webhook |
+| `!hookshot feed <url> [label] [template]` | Subscribe to an RSS/Atom feed |
+| `!hookshot feed list` / `feed remove <url>` | List or remove feeds |
+| `!hookshot figma file <url>` | Connect a Figma file |
+| `!hookshot openproject add <url>` / `openproject remove <url>` | Connect or remove an OpenProject project |
+| `!hookshot challenghound add <url>` | Connect a ChallengeHound challenge (the command is spelled this way in 7.5.0) |
+| `!hookshot setup-widget` | Open the setup widget |
+
+## GitHub
+
+1. Create a [GitHub App](https://github.com/settings/apps/new). Set the **Webhook URL** to your public Hookshot address at `/github/webhook` (the old `/` path is deprecated) and set a webhook secret.
+2. Grant the permissions listed in [Setting up GitHub](https://matrix-org.github.io/matrix-hookshot/latest/setup/github.html): Actions, Contents (read); Discussions, Issues, Projects, Pull requests (read & write); Metadata; Organisation Team Discussions (read & write).
+3. Configure Hookshot. The `oauth` section lets users link their GitHub account (by saying `github login` to the bot in a direct chat), which repository bridging and issue commands need:
+
+```yaml title="config.yml (GitHub section)"
 github:
   auth:
-    id: 12345
+    id: 123456                         # App ID
     privateKeyFile: /data/github-key.pem
   webhook:
-    secret: your-webhook-secret
-  defaultOptions:
-    showIssueRoomLink: true
-  # Optional: GitHub Enterprise
-  # enterpriseUrl: https://github.mycompany.com
-```
-
-### 3. Connect Repository
-
-In a Matrix room:
-```
-!hookshot github repo https://github.com/owner/repo
-```
-
-### GitHub Commands Reference
-
-The default command prefix is `!gh`. All commands work in rooms with a connected repository.
-
-**Issue Management:**
-```bash
-# Create new issue
-!gh create "Bug: Login button broken"
-!gh create "Feature request" --label enhancement
-
-# View issue details
-!gh issue 123
-
-# Close issue
-!gh close 123
-
-# Assign issue
-!gh assign 123 @username
-```
-
-**Pull Request Commands:**
-```bash
-# List open PRs
-!gh prs
-
-# View PR details
-!gh pr 456
-
-# Approve PR (if you have permission)
-!gh approve 456
-```
-
-**Workflow Commands:**
-```bash
-# Run a GitHub Actions workflow
-!gh workflow run deploy.yml
-
-# Run with inputs
-!gh workflow run deploy.yml --input environment=production
-```
-
-**Repository Info:**
-```bash
-# Show connected repo info
-!gh repo
-
-# List recent commits
-!gh commits
-```
-
-### Event Notifications
-
-Configure which events to receive per-room:
-
-| Event | Description |
-|-------|-------------|
-| `issue.created` | New issues |
-| `issue.changed` | Issue updates |
-| `issue.edited` | Issue edits |
-| `issue.labeled` | Label changes |
-| `pull_request.opened` | New PRs |
-| `pull_request.reviewed` | PR reviews |
-| `pull_request.merged` | PR merges |
-| `pull_request.closed` | PR closures |
-| `pull_request.ready_for_review` | Draft → Ready |
-| `push` | New commits |
-| `release` | New releases |
-| `workflow.run.success` | CI passed |
-| `workflow.run.failure` | CI failed |
-| `workflow.run.cancelled` | CI cancelled |
-
-## GitLab Setup
-
-```yaml
-gitlab:
-  instances:
-    gitlab.com:
-      url: https://gitlab.com
-    self-hosted:
-      url: https://gitlab.example.com
-```
-
-Connect in room:
-```
-!hookshot gitlab repo https://gitlab.com/owner/repo
-```
-
-## JIRA Setup
-
-```yaml
-jira:
-  webhook:
-    secret: your-jira-secret
+    secret: THE_WEBHOOK_SECRET
   oauth:
-    client_id: your-client-id
-    client_secret: your-client-secret
+    client_id: Iv1.xxxxxxxx
+    client_secret: xxxxxxxx
+    redirect_uri: https://hooks.example.org/oauth/
 ```
 
-Connect project:
-```
-!hookshot jira project PROJ
-```
+### Commands in a connected repository room
 
-## Generic Webhooks
+The default prefix is `!gh` (configurable per room with `commandPrefix`). Hookshot 7.5.0 implements:
 
-Receive webhooks from any service:
+| Command | Effect |
+|---------|--------|
+| `!gh create <title> [description] [labels]` | Create an issue; labels are comma-separated |
+| `!gh assign [number] [users...]` | Assign an issue (defaults: latest issue, yourself) |
+| `!gh close <number> [comment]` | Close an issue |
+| `!gh workflow run <name> [args] [ref]` | Run an Actions workflow; args as `"key=value,key2='value 2'"` |
 
-### Create Webhook
+Which events are posted is set by `enableHooks` in the connection's room state, for example `issue`, `pull_request`, `release` or `workflow.run`. The [GitHub repository docs](https://matrix-org.github.io/matrix-hookshot/latest/usage/room_configuration/github_repo.html) list every event type and default.
 
-```
-!hookshot webhook new MyService
-```
+## Inbound webhooks
 
-Hookshot provides a URL like:
-```
-https://hookshot.example.com/webhook/abc123
-```
+`!hookshot webhook alerts` creates a webhook and replies with its URL under your `urlPrefix`. POST JSON with a `text` (and optionally `html`) field to post a message:
 
-### Message Templates
-
-Customize how webhooks appear:
-
-```
-!hookshot webhook template MyService "New event: {{data.message}}"
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"text": "Deploy finished"}' \
+  https://hooks.example.org/webhook/<hook-id>
 ```
 
-## RSS Feeds
+To reshape arbitrary payloads, admins can enable `allowJsTransformationFunctions` and set a transformation function in the connection's state. Transformation functions run code supplied by room admins, so only enable them where you trust those admins. See [Webhooks](https://matrix-org.github.io/matrix-hookshot/latest/setup/webhooks.html).
 
-Subscribe to any RSS/Atom feed:
+## Notifications from CI
 
-```
-!hookshot feed add https://blog.example.com/feed.xml
-```
+To post from GitHub Actions or other CI, the simplest route is an inbound Hookshot webhook: store its URL as a CI secret and `curl` it, as above. No Matrix token is needed.
 
-Commands:
-| Command | Description |
-|---------|-------------|
-| `!hookshot feed add <url>` | Subscribe to feed |
-| `!hookshot feed remove <url>` | Unsubscribe |
-| `!hookshot feed list` | List subscriptions |
-
-## Commands Reference
-
-### General
-
-| Command | Description |
-|---------|-------------|
-| `!hookshot help` | Show help |
-| `!hookshot setup` | Initial setup |
-
-### GitHub
-
-| Command | Description |
-|---------|-------------|
-| `!hookshot github repo <url>` | Connect repo |
-| `!hookshot github issue <num>` | Show issue |
-| `!hookshot github create issue` | Create issue |
-
-### GitLab
-
-| Command | Description |
-|---------|-------------|
-| `!hookshot gitlab repo <url>` | Connect repo |
-| `!hookshot gitlab issue <num>` | Show issue |
-
-## Widgets
-
-Hookshot provides widgets for Element:
-
-```yaml
-widgets:
-  enabled: true
-  port: 9002
-  addToRooms: true
-```
-
-Access configuration via Element's integrations panel.
+If you post through the client-server API instead, use a dedicated bot account, not a token copied from your own Element session. On servers using Matrix Authentication Service, use a personal access token for that account. See [Getting a bot account](./building-bots#getting-a-bot-account).
 
 ## Troubleshooting
 
-### Webhooks Not Arriving
-
-1. Check webhook URL is accessible
-2. Verify secrets match
-3. Check GitHub/GitLab webhook logs
-4. Review Hookshot logs
-
-### Can't Connect Repo
-
-- Verify GitHub App is installed on repo
-- Check permissions
-- Ensure bot is in room
-
-## GitHub Actions Integration
-
-Send workflow notifications directly to Matrix without Hookshot using GitHub Actions.
-
-### Matrix Notify Action
-
-The [matrix-notify-action](https://github.com/marketplace/actions/matrix-notify) sends workflow status with per-job reactions.
-
-```yaml title=".github/workflows/ci.yml"
-name: CI
-
-on: [push, pull_request]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm ci
-      - run: npm test
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm run lint
-
-  # This job runs last and reports all results
-  notify:
-    if: always()
-    runs-on: ubuntu-latest
-    needs: [build, test]
-    steps:
-      - uses: Cadair/matrix-notify-action@main
-        with:
-          matrix_token: ${{ secrets.MATRIX_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          homeserver: 'https://matrix.org'
-          roomid: '!yourRoomId:matrix.org'
-          # Optional: ignore certain jobs
-          ignore_pattern: '.*notify.*'
-          # Optional: summarize successes
-          summarise_success: true
-```
-
-**What it sends:**
-- Overall workflow status (✅/❌)
-- Reactions for each job status
-- Links to workflow run
-
-### Simple Matrix Message Action
-
-For simpler notifications:
-
-```yaml title=".github/workflows/notify.yml"
-- name: Notify Matrix
-  uses: s3krit/matrix-message-action@v1
-  with:
-    homeserver: matrix.org
-    token: ${{ secrets.MATRIX_TOKEN }}
-    channel: '!roomId:matrix.org'
-    message: |
-      **Build ${{ github.run_number }}** on `${{ github.ref_name }}`
-      Status: ${{ job.status }}
-      [View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-```
-
-### Get Your Matrix Token
-
-1. Log into Element Web
-2. Settings → Help & About → Access Token (click to reveal)
-3. Add as `MATRIX_TOKEN` secret in GitHub repo settings
-
-### Get Room ID
-
-1. In Element, open room settings
-2. Advanced → Internal room ID
-3. Format: `!randomChars:server.org`
-
----
-
-## CI/CD Best Practices
-
-### Notification Strategy
-
-| Event | Notify? | Why |
-|-------|---------|-----|
-| PR opened | ✅ | Team awareness |
-| PR merged | ✅ | Deploy tracking |
-| Main build failed | ✅ | Critical |
-| Branch build failed | ⚠️ | Only author |
-| Deployment | ✅ | Ops awareness |
-| Security scan | ✅ | Always |
-
-### Separate Rooms
-
-```
-#ci-builds:server      - All builds (high volume)
-#ci-failures:server    - Failures only (alerts)
-#deployments:server    - Production deploys
-#security:server       - Security scan results
-```
-
-### Filtering Noise
-
-**GitHub-side:**
-- Use branch filters in workflow triggers
-- Don't notify on every commit, only PRs/main
-
-**Hookshot-side:**
-- Configure event types per room
-- Use webhook templates to filter
-
----
+- **Bot doesn't join:** check that Synapse loaded `registration.yml` and can reach `bridge.port`, and that the inviter has at least the `login` permission level.
+- **No GitHub events:** check the GitHub App's webhook delivery log, the `/github/webhook` path and the secret.
+- **Config errors:** run the `node config/Config.js` validator shown above.
 
 ## Resources
 
-- [Hookshot GitHub](https://github.com/matrix-org/matrix-hookshot)
-- [Documentation](https://matrix-org.github.io/matrix-hookshot/)
-- [Matrix Room](https://matrix.to/#/#hookshot:half-shot.uk)
-- [matrix-notify-action](https://github.com/Cadair/matrix-notify-action)
-- [matrix-message-action](https://github.com/s3krit/matrix-message-action)
-
----
-
-*Next: [Building Bots](./building-bots) →*
+- [Hookshot documentation](https://matrix-org.github.io/matrix-hookshot/latest/)
+- [GitHub: matrix-org/matrix-hookshot](https://github.com/matrix-org/matrix-hookshot)
+- [Helm chart](https://github.com/matrix-org/matrix-hookshot/tree/main/helm/hookshot)
+- [#hookshot:half-shot.uk](https://matrix.to/#/#hookshot:half-shot.uk)

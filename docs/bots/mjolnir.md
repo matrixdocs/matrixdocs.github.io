@@ -1,255 +1,141 @@
 ---
 sidebar_position: 3
-title: Mjolnir & Draupnir
-description: Moderation bots for Matrix communities
+title: Moderation Bots (Draupnir, Mjolnir, Meowlnir)
+description: Draupnir, Mjolnir and Meowlnir moderation bots, policy lists and policy servers
+last_update:
+  date: 2026-10-18
+verified_with: "Draupnir 3.2.0, Mjolnir 2.0.1, Meowlnir 0.2609.0, synapse-http-antispam 0.5.1, spec v1.19"
 ---
 
-# Mjolnir & Draupnir
+# Moderation bots
 
-Powerful moderation bots for Matrix. **Draupnir is the recommended choice** for new deployments as the actively maintained successor to Mjolnir.
+Matrix moderation bots watch a set of rooms, apply shared **policy lists** (ban lists published as Matrix rooms), and give moderators commands for bans, redactions and server ACLs. Three are maintained as of 2026-10:
 
-## Draupnir vs Mjolnir
+| Bot | Language | Release | Notes |
+|-----|----------|---------|-------|
+| [Draupnir](#draupnir) | TypeScript | 3.2.0 (2026-10-14) | Most features; started as a Mjolnir fork. The default choice. |
+| [Mjolnir](#mjolnir) | TypeScript | 2.0.1 (2026-10-15) | The original, maintained again by Matrix.org |
+| [Meowlnir](#meowlnir) | Go | 0.2609.0 (2026-09-16) | Not a fork; tuned for Synapse; can also act as a policy server |
 
-| Feature | Draupnir | Mjolnir |
-|---------|----------|---------|
-| Status | **Actively maintained** | Legacy (minimal updates) |
-| Performance | Fast (room state caching) | Slower startup |
-| UX | No commands needed for bans | Command-only |
-| Features | Takedowns, auto-suspension | Basic moderation |
-| Recommended | **Yes** | For existing deployments |
+All three read the same policy event types (`m.policy.rule.user`, `m.policy.rule.room`, `m.policy.rule.server`), so policy lists are shared between them.
 
-## Draupnir (Recommended)
+:::warning
+A moderation bot can ban, kick and redact in every protected room. With Synapse admin rights it can also suspend, deactivate and take down rooms server-wide. Use a dedicated account, keep the management room small and trusted (anyone in it can command the bot), and keep the access token secret.
+:::
 
-**[Draupnir](https://github.com/the-draupnir-project/Draupnir)** is a drop-in replacement for Mjolnir with significant improvements.
+## Permissions in protected rooms
 
-### Why Draupnir?
+The bot needs the room's `ban`, `kick` and `redact` power levels (50 by default) and, to apply server bans, permission to send `m.room.server_acl` (state default, 50). In room version 12, room creators have unlimited power: no bot can ban or demote a creator ([room v12](https://spec.matrix.org/v1.19/rooms/v12/)).
 
-- **No commands needed** - Ban in your client, Draupnir prompts to add to ban list
-- **Instant response** - Doesn't wait for homeserver data
-- **Room state caching** - Fast startup even with many rooms
-- **Active development** - v2.3.0 (May 2025) with major features
+## Draupnir
 
-### New in v2.3.0 (2025)
+Docs: [the-draupnir-project.github.io/draupnir-documentation](https://the-draupnir-project.github.io/draupnir-documentation/). Support: [#draupnir:matrix.org](https://matrix.to/#/#draupnir:matrix.org).
 
-- **Takedowns** - Stronger than bans for illegal content
-- **Auto-suspension** - Automatically suspend matching users
-- **Block invitations** - Preemptively block invites from bad actors
-- **synapse-http-antispam** - Modern Synapse integration
+Draupnir 3.0.0 (2026-04-02) made breaking changes: the repository is now a monorepo, Node.js 24 is required, and the `--draupnir-config` argument is mandatory. Read the [release notes](https://github.com/the-draupnir-project/Draupnir/releases/tag/v3.0.0) before upgrading from 2.x.
 
-### Installation
+### Setup outline
 
-**Docker (Recommended):**
-```yaml title="docker-compose.yml"
-services:
-  draupnir:
-    image: gnuxie/draupnir:latest
-    restart: unless-stopped
-    volumes:
-      - ./draupnir-data:/data
-```
+1. Create a Matrix account for the bot and get an access token.
+2. Copy [`config/default.yaml`](https://github.com/the-draupnir-project/Draupnir/blob/v3.2.0/config/default.yaml) to your data directory and set at least `homeserverUrl`, `rawHomeserverUrl`, `accessToken` and `initialManager` (your own user ID). Draupnir creates a management room and invites you.
+3. Run it. The project recommends its GHCR image (`ghcr.io/the-draupnir-project/draupnir`); the Docker Hub image is published in parallel:
 
-**From Source:**
 ```bash
-git clone https://github.com/the-draupnir-project/Draupnir.git
-cd Draupnir
-npm install
-npm run build
+docker run --rm -it --name=draupnir \
+  -v /var/lib/draupnir:/data \
+  gnuxie/draupnir:v3.2.0 \
+  bot --draupnir-config /data/config/production.yaml
 ```
 
-### Quick Setup
+The first argument `bot` selects bot mode. Draupnir can also run as an appservice that provisions bots for several communities; see the appservice section of the [Draupnir docs](https://the-draupnir-project.github.io/draupnir-documentation/). For other install methods, see the [setup guide](https://the-draupnir-project.github.io/draupnir-documentation/bot/setup).
 
-1. **Create bot account**: `@draupnir:yourserver.com`
-2. **Create control room** (private, unencrypted)
-3. **Invite bot and give admin** (power level 100)
-4. **Configure** `config/production.yaml`:
-
-```yaml
-homeserverUrl: "https://matrix.yourserver.com"
-accessToken: "your-bot-access-token"
-managementRoom: "!controlroomid:yourserver.com"
-```
-
-5. **Start Draupnir**: `docker compose up -d`
-
-6. **Create your first ban list**:
-```
-!draupnir list create my-coc code-of-conduct-ban-list
-```
-
-### Key Commands
-
-```
-# Moderation
-!draupnir ban @user:server reason
-!draupnir unban @user:server
-!draupnir kick @user:server reason
-!draupnir redact @user:server [limit]
-
-# Rooms
-!draupnir rooms add #room:server
-!draupnir rooms remove #room:server
-!draupnir rooms
-
-# Ban Lists
-!draupnir list create <shortcode>
-!draupnir watch <listroom>
-!draupnir unwatch <listroom>
-
-# Server ACLs
-!draupnir ban server badserver.com
-!draupnir unban server badserver.com
-
-# Protections
-!draupnir enable FirstMessageIsImage
-!draupnir disable BasicFloodingProtection
-!draupnir protections
-```
-
-### Distributed Moderation
-
-Subscribe to community-curated ban lists:
-```
-!draupnir watch #matrix-org-coc-bl:matrix.org
-```
-
-**Popular lists:**
-- `#matrix-org-coc-bl:matrix.org` - Matrix.org CoC violations
-- `#community-moderation-effort-bl:neko.dev` - CME list
-
-### Built-in Protections
-
-| Protection | Description |
-|------------|-------------|
-| `FirstMessageIsImage` | Block image-only first messages |
-| `BasicFloodingProtection` | Rate limit messages |
-| `WordList` | Block messages with banned words |
-| `MessageIsVoice` | Block voice messages |
-| `JoinWaveShortCircuit` | Stop join floods |
-
-**Enable protections:**
-```
-!draupnir enable FirstMessageIsImage
-!draupnir config set BasicFloodingProtection.maxPerMinute 10
-```
-
-### Synapse Integration
-
-For server-wide protection, use synapse-http-antispam (replaces legacy module):
-
-```yaml
-# homeserver.yaml
-modules:
-  - module: synapse_http_antispam.HTTPAntispam
-    config:
-      base_url: http://draupnir:8080
-```
-
-### Migration from Mjolnir
-
-Migration is seamless:
-1. Replace Docker image: `gnuxie/draupnir:latest`
-2. Restart
-3. That's it - configuration is compatible
-
----
-
-## Mjolnir (Legacy)
-
-If you have an existing Mjolnir deployment, it will continue to work, but consider migrating to Draupnir.
-
-### Docker
-
-```yaml title="docker-compose.yml"
-services:
-  mjolnir:
-    image: matrixdotorg/mjolnir:latest
-    restart: unless-stopped
-    volumes:
-      - ./mjolnir-data:/data
-```
-
-### Configuration
-
-```yaml title="config/production.yaml"
-homeserverUrl: "https://matrix.example.com"
-accessToken: "your-bot-access-token"
-managementRoom: "#mjolnir-management:example.com"
-
-protectedRooms:
-  - "#room1:example.com"
-  - "#room2:example.com"
-
-protections:
-  - FirstMessageIsImage
-  - BasicFloodingProtection
-
-admins:
-  - "@admin:example.com"
-```
+Leave the management room **unencrypted**; the Draupnir docs advise against encrypting it.
 
 ### Commands
 
-Mjolnir uses `!mjolnir` prefix instead of `!draupnir`:
+Commands go in the management room, prefixed with `!draupnir`. These come from Draupnir 3.2.0's command table; run `!draupnir help` for the full list.
+
+| Command | Purpose |
+|---------|---------|
+| `!draupnir list create <shortcode> <alias-localpart>` | Create a policy list room |
+| `!draupnir watch <room>` / `unwatch <room>` | Subscribe to someone else's policy list |
+| `!draupnir rooms add <room>` / `rooms remove <room>` | Protect or unprotect a room |
+| `!draupnir ban <user-or-server> [list] [reason]` | Add a ban policy; a server name bans the whole server |
+| `!draupnir unban <entity>` | Remove a ban policy |
+| `!draupnir kick <user> [reason] --room <room>` | Kick a user (from all protected rooms if `--room` is omitted) |
+| `!draupnir redact <user-or-event> [reason] --room <room> --limit <n>` | Redact messages; keywords are optional |
+| `!draupnir takedown <entity> [list]` | Add a takedown policy (rooms, users, servers) |
+| `!draupnir protections` / `protections enable <name>` / `protections disable <name>` | List and toggle protections |
+| `!draupnir status` | Show status |
+
+Server-admin commands such as `suspend`, `unrestrict` and `deactivate` need the bot account to be a Synapse admin.
+
+### Server-wide protection with synapse-http-antispam
+
+Draupnir can block invites and joins across a whole Synapse server through the [synapse-http-antispam](https://github.com/maunium/synapse-http-antispam) module (latest release 0.5.1, 2026-08-13). Install the `synapse-http-antispam` package into Synapse's Python environment as its README describes, then configure it in `homeserver.yaml`. This block follows the module's README and the [Draupnir guide](https://the-draupnir-project.github.io/draupnir-documentation/bot/synapse-http-antispam):
+
+```yaml title="homeserver.yaml"
+modules:
+  - module: synapse_http_antispam.HTTPAntispam
+    config:
+      base_url: http://draupnir:8080/api/1/spam_check
+      authorization: LONG_RANDOM_SECRET   # must match Draupnir's web.synapseHTTPAntispam.authorization
+      do_ping: true
+      enabled_callbacks:
+        - user_may_invite
+        - user_may_join_room
+      fail_open:
+        user_may_invite: true
+        user_may_join_room: true
 ```
-!mjolnir ban @user:server reason
-!mjolnir watch #banlist:server
-!mjolnir enable BasicFloodingProtection
+
+And in Draupnir's config:
+
+```yaml title="Draupnir production.yaml (excerpt)"
+web:
+  enabled: true
+  port: 8080
+  address: 0.0.0.0   # reachable by Synapse only; don't publish this port
+  synapseHTTPAntispam:
+    enabled: true
+    authorization: LONG_RANDOM_SECRET
 ```
 
----
+Why each part matters:
 
-## Best Practices
+- Without `enabled_callbacks`, the module calls Draupnir for **every** spam-check callback, and Draupnir implements only these two.
+- The module **fails closed** by default: if Draupnir is down, invites and joins are rejected server-wide. `fail_open` keeps the server usable.
+- `authorization` is sent as a bearer token so only Synapse can call the endpoint.
 
-### Room Setup
+## Mjolnir
 
-1. **Control room**: Private, unencrypted, trusted admins only
-2. **Bot power level**: Always 100 in protected rooms
-3. **Separate ban lists**: By severity or category
+[Mjolnir](https://github.com/matrix-org/mjolnir) is the original Matrix.org moderation bot. It had releases through 2024–2026 and 2.0.0 shipped on 2026-10-15. Version 2 removed the multi-tenant "Mjolnir for all" appservice and batches admin redactions.
 
-### Security
+- Commands use the `!mjolnir` prefix. The README's quick start is `!mjolnir list create COC code-of-conduct-ban-list`, then `!mjolnir default COC`.
+- Image: `matrixdotorg/mjolnir:v2.0.1`.
+- Configuration: [`config/default.yaml`](https://github.com/matrix-org/mjolnir/blob/v2.0.1/config/default.yaml). Protections are enabled by command, not listed in config. Authority comes from membership of the management room; there is no `admins` list.
+- [Setup docs](https://github.com/matrix-org/mjolnir/blob/v2.0.1/docs/setup.md) and [moderator's guide](https://github.com/matrix-org/mjolnir/blob/v2.0.1/docs/moderators.md).
 
-- Keep control room invite-only
-- Limit admin list
-- Audit mod actions regularly
-- Use strong access tokens
+Moving from Mjolnir to Draupnir is possible (Draupnir reads Mjolnir's policy lists), but the configs differ. Follow the Draupnir setup guide rather than reusing a Mjolnir config as is.
 
-### Performance
+## Meowlnir
 
-- Start with Draupnir for better performance
-- Use room state backing store
-- Consider workers for large deployments
+[Meowlnir](https://github.com/maunium/meowlnir) is a moderation bot written in Go by the mautrix author. It is optimised for Synapse and uses the same synapse-http-antispam module for server-wide invite blocking. It can also act as a policy server. A hosted version is offered at [Asgard.Chat](https://asgard.chat/).
 
----
+Documentation: [docs.mau.fi/meowlnir](https://docs.mau.fi/meowlnir/) (setup, configuration, [invite blocking](https://docs.mau.fi/meowlnir/invite-blocking.html)).
 
-## Troubleshooting
+## Policy servers
 
-### Bot Can't Ban
+Spec v1.18 added **policy servers** (MSC4284). A room can name a policy server in its state, and homeservers ask it to sign events before accepting them, so spam can be refused before it reaches the room. See the spec: [client-server](https://spec.matrix.org/v1.19/client-server-api/#policy-servers) and [server-server](https://spec.matrix.org/v1.19/server-server-api/#policy-servers).
 
-1. Check bot power level (needs 100)
-2. Verify room is protected: `!draupnir rooms`
-3. Check homeserver logs
+The Matrix.org Foundation's implementation is [policyserv](https://github.com/matrix-org/policyserv) (1.7.0, 2026-06-11). Policy servers work alongside moderation bots, not instead of them.
 
-### Protections Not Working
-
-1. Check if enabled: `!draupnir protections`
-2. Verify configuration
-3. Test with manual trigger
-
-### Ban List Not Syncing
-
-1. Check bot has room access
-2. Run `!draupnir status`
-3. Verify list room permissions
-
----
+:::info Coming next
+policyserv 1.8.0 is at release-candidate stage, and spec `main` adds an `m.policy` room type for policy-list rooms (MSC3784), expected in a release after v1.19. Sources: [policyserv releases](https://github.com/matrix-org/policyserv/releases), [matrix-spec](https://github.com/matrix-org/matrix-spec).
+:::
 
 ## Resources
 
-- **Draupnir**: [github.com/the-draupnir-project/Draupnir](https://github.com/the-draupnir-project/Draupnir)
-- **Mjolnir**: [github.com/matrix-org/mjolnir](https://github.com/matrix-org/mjolnir)
-- **Support**: [#draupnir:matrix.org](https://matrix.to/#/#draupnir:matrix.org)
-- **Docs**: [Draupnir4All](https://docs.draupnir.midnightthoughts.space/)
-
----
-
-*Next: [Hookshot](./hookshot) →*
+- [Draupnir documentation](https://the-draupnir-project.github.io/draupnir-documentation/)
+- [Mjolnir on GitHub](https://github.com/matrix-org/mjolnir)
+- [Meowlnir documentation](https://docs.mau.fi/meowlnir/)
+- [Moderation in the spec: policy lists](https://spec.matrix.org/v1.19/client-server-api/#moderation-policy-lists)
