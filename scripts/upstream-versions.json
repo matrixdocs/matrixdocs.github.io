@@ -1,0 +1,4 @@
+{
+  "matrix-spec": {"repo": "https://github.com/matrix-org/matrix-spec.git", "tag": "v1.19"},
+  "synapse": {"repo": "https://github.com/element-hq/synapse.git", "tag": "v1.163.0"}
+}
