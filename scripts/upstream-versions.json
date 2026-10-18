@@ -1,4 +1,16 @@
 {
   "matrix-spec": {"repo": "https://github.com/matrix-org/matrix-spec.git", "tag": "v1.19"},
-  "synapse": {"repo": "https://github.com/element-hq/synapse.git", "tag": "v1.163.0"}
+  "synapse": {"repo": "https://github.com/element-hq/synapse.git", "tag": "v1.163.0"},
+  "bridges": {
+    "mautrix-go": {"repo": "mautrix/go", "tag": "v0.32.0", "config": "bridgev2/matrix/mxmain/example-config.yaml"},
+    "mautrix-discord": {"repo": "mautrix/discord", "tag": "v0.7.7", "config": "example-config.yaml"},
+    "mautrix-whatsapp": {"repo": "mautrix/whatsapp", "tag": "v0.2610.0", "config": "pkg/connector/example-config.yaml"},
+    "mautrix-signal": {"repo": "mautrix/signal", "tag": "v0.2610.0", "config": "pkg/connector/example-config.yaml"},
+    "mautrix-slack": {"repo": "mautrix/slack", "tag": "v0.2610.0", "config": "pkg/connector/example-config.yaml"},
+    "mautrix-telegram": {"repo": "mautrix/telegram", "tag": "v0.2610.0", "config": "pkg/connector/example-config.yaml"},
+    "mautrix-meta": {"repo": "mautrix/meta", "tag": "v0.2610.0", "config": "pkg/connector/example-config.yaml"},
+    "mautrix-gmessages": {"repo": "mautrix/gmessages", "tag": "v0.2610.0", "config": "pkg/connector/example-config.yaml"},
+    "matrix-appservice-irc": {"repo": "matrix-org/matrix-appservice-irc", "tag": "4.0.0", "config": "config.sample.yaml"},
+    "matrix-hookshot": {"repo": "matrix-org/matrix-hookshot", "tag": "7.5.0", "config": "config.sample.yml"}
+  }
 }

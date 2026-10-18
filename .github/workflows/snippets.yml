@@ -29,3 +29,12 @@ jobs:
           { echo '```'; cat snippets.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           tail -2 snippets.txt
           exit $status
+      - name: Check bridge configs
+        if: success() || failure()
+        run: |
+          set +e
+          npm run --silent check:bridges -- ${{ vars.SNIPPETS_STRICT == '1' && '--strict' || '' }} > bridges.txt
+          status=$?
+          { echo '```'; cat bridges.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          tail -2 bridges.txt
+          exit $status

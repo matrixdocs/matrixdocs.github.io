@@ -1,0 +1,25 @@
+name: Check external links
+
+# Weekly, not on pull requests, so a flaky third-party site never blocks a merge.
+# Settings (exclusions, accepted codes, user agent, retries) are in lychee.toml.
+on:
+  schedule:
+    - cron: '17 6 * * 1'   # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lychee:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          lycheeVersion: v0.24.2
+          args: --config lychee.toml --no-progress 'docs/**/*.md' 'src/**/*.tsx'
+          # The report goes to the job summary; the job fails if any link is broken.
+          jobSummary: true
+          fail: true
