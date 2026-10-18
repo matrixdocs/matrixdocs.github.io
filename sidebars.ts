@@ -45,6 +45,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'deployment/overview',
         'deployment/docker',
+        'deployment/element-call',
         'deployment/ansible',
       ],
     },

@@ -225,7 +225,7 @@ A registration file contains the `as_token` and `hs_token`, which let the bridge
 
 ### Element Call (MatrixRTC)
 
-Element Call needs a LiveKit SFU, the MatrixRTC Authorization Service (`lk-jwt-service`), a `matrix_rtc` entry in `homeserver.yaml`, and some experimental Synapse flags. Follow the [Element Call self-hosting guide](https://github.com/element-hq/element-call/blob/main/docs/self_hosting.md) and [Synapse: Calls](../servers/synapse#calls-element-call-and-matrixrtc). It does not use coturn: LiveKit has its own TURN.
+Element Call needs a LiveKit SFU, the MatrixRTC Authorization Service (`lk-jwt-service`), a `matrix_rtc` entry in `homeserver.yaml`, and some experimental Synapse flags. Follow the [Element Call self-hosting guide](https://github.com/element-hq/element-call/blob/main/docs/self_hosting.md) and [Synapse: Calls](../servers/synapse#calls-element-call-and-matrixrtc). It does not use coturn: LiveKit has its own TURN. [Element Call and LiveKit](./element-call) walks through the whole setup.
 
 ### Legacy calls: coturn
 
