@@ -1,387 +1,137 @@
 ---
 sidebar_position: 3
 title: Dendrite
-description: Deploy the efficient Go-based Matrix homeserver
+description: Dendrite, the Go homeserver, now in maintenance mode
+last_update:
+  date: 2026-10-18
+verified_with: "Dendrite v0.15.2 (element-hq/dendrite), spec v1.19"
 ---
 
 # Dendrite
 
-Dendrite is a second-generation Matrix homeserver written in Go. It's more efficient than Synapse and designed for better horizontal scaling.
+:::warning Maintenance mode
+Dendrite is "currently in maintenance mode, meaning only security fixes are being applied", and its README still calls it **beta** software ([element-hq/dendrite README](https://github.com/element-hq/dendrite#readme)). The latest release is **v0.15.2 (2025-08-15)**. Dendrite does not support Simplified Sliding Sync (MSC4186) or next-gen OIDC auth (MSC3861), so **Element X does not work with it**.
 
-## Why Dendrite?
+For a new server, use [Synapse](./synapse), or a Rust server from the [Conduit family](./conduit) if you want something lighter.
+:::
 
-- **Efficient**: Lower resource usage than Synapse
-- **Scalable**: Microservice architecture
-- **Modern**: Written in Go with clean codebase
-- **Fast**: Quick startup and sync times
+Dendrite is a Matrix homeserver written in Go. It moved from `matrix-org/dendrite` (now archived) to [github.com/element-hq/dendrite](https://github.com/element-hq/dendrite). Its documentation is at [element-hq.github.io/dendrite](https://element-hq.github.io/dendrite/).
 
-## Quick Start with Docker
+## What it is and isn't
 
-```bash
-# Create directories
-mkdir -p dendrite-config dendrite-data
+| | Status (v0.15.2) |
+|---|---|
+| Development | Security fixes only. v0.15.0 (2025-08-12) added room version 12 as part of the coordinated security release |
+| Deployment shape | Single process ("monolith"). The old polylith/microservice mode was removed in 0.12.0 |
+| Scaling | No high-availability or clustering support (README) |
+| Intended size | "small (10s/100s of users) homeserver deployments" (README) |
+| Database | PostgreSQL recommended; SQLite supported |
+| Application services | Supported but "not well tested" ([FAQ](https://github.com/element-hq/dendrite/blob/main/docs/FAQ.md)) |
+| SSO / OIDC / MAS | Not supported |
+| Element X | Not supported (no MSC4186, no MSC3861) |
+| Migration from Synapse | None |
 
-# Generate keys
-docker run --rm -v $(pwd)/dendrite-config:/etc/dendrite \
-  matrixdotorg/dendrite-monolith:latest \
-  generate-keys --private-key /etc/dendrite/matrix_key.pem
+## Running Dendrite with Docker
 
-# Download sample config
-curl -o dendrite-config/dendrite.yaml \
-  https://raw.githubusercontent.com/matrix-org/dendrite/main/dendrite-sample.yaml
+These steps follow the upstream [Docker install guide](https://element-hq.github.io/dendrite/installation/docker/install). The image is `ghcr.io/element-hq/dendrite-monolith` (the older `matrixdotorg/dendrite-monolith` on Docker Hub also has v0.15.2).
 
-# Edit config (set server_name, database, etc.)
-nano dendrite-config/dendrite.yaml
-
-# Run Dendrite
-docker run -d --name dendrite \
-  -v $(pwd)/dendrite-config:/etc/dendrite \
-  -v $(pwd)/dendrite-data:/var/dendrite \
-  -p 8008:8008 \
-  -p 8448:8448 \
-  matrixdotorg/dendrite-monolith:latest
-```
-
-## Docker Compose Setup
-
-```yaml title="docker-compose.yml"
-version: '3.8'
-
-services:
-  dendrite:
-    image: matrixdotorg/dendrite-monolith:latest
-    container_name: dendrite
-    restart: unless-stopped
-    ports:
-      - "8008:8008"
-      - "8448:8448"
-    volumes:
-      - ./config:/etc/dendrite
-      - ./data:/var/dendrite
-    depends_on:
-      - postgres
-
-  postgres:
-    image: postgres:15-alpine
-    container_name: dendrite-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: dendrite
-      POSTGRES_PASSWORD: secretpassword
-      POSTGRES_DB: dendrite
-    volumes:
-      - ./postgres-data:/var/lib/postgresql/data
-```
-
-## Binary Installation
-
-### Download Binary
+Generate the signing key once. Running it again overwrites the key:
 
 ```bash
-# Download latest release
-wget https://github.com/matrix-org/dendrite/releases/latest/download/dendrite-linux-amd64
-
-# Make executable
-chmod +x dendrite-linux-amd64
-mv dendrite-linux-amd64 /usr/local/bin/dendrite
-
-# Generate keys
-/usr/local/bin/dendrite generate-keys --private-key /etc/dendrite/matrix_key.pem
+mkdir -p ./config
+docker run --rm --entrypoint="/usr/bin/generate-keys" \
+  -v "$(pwd)/config:/mnt" \
+  ghcr.io/element-hq/dendrite-monolith:v0.15.2 \
+  -private-key /mnt/matrix_key.pem
 ```
 
-### Build from Source
+Generate a config for your server name and PostgreSQL database:
 
 ```bash
-# Install Go (1.20+)
-git clone https://github.com/matrix-org/dendrite.git
+docker run --rm --entrypoint="/bin/sh" \
+  -v "$(pwd)/config:/mnt" \
+  ghcr.io/element-hq/dendrite-monolith:v0.15.2 \
+  -c "/usr/bin/generate-config \
+    -dir /var/dendrite/ \
+    -db postgres://dendrite:CHANGE_ME@postgres/dendrite?sslmode=disable \
+    -server example.com > /mnt/dendrite.yaml"
+```
+
+Then start it with the upstream [docker-compose.yml](https://github.com/element-hq/dendrite/blob/main/build/docker/docker-compose.yml). That file publishes ports 8008 and 8448 on all interfaces; behind a reverse proxy, change them to `127.0.0.1:8008:8008` and drop 8448 unless you terminate TLS in Dendrite.
+
+## Building from source
+
+There are no prebuilt binaries attached to element-hq releases. Building needs Go 1.23 or later (`go.mod` at v0.15.2 declares `go 1.23.0`):
+
+```bash
+git clone --branch v0.15.2 https://github.com/element-hq/dendrite
 cd dendrite
 go build -o bin/ ./cmd/...
+./bin/generate-keys -private-key matrix_key.pem
 ```
+
+This builds `dendrite` plus helper tools such as `generate-keys`, `generate-config` and `create-account` into `bin/`. See the [manual install guide](https://element-hq.github.io/dendrite/installation/manual/build).
 
 ## Configuration
 
-### dendrite.yaml
+Start from [`dendrite-sample.yaml`](https://github.com/element-hq/dendrite/blob/v0.15.2/dendrite-sample.yaml) or the output of `generate-config`. The file must start with `version: 2`, or Dendrite refuses to start. The keys below are from the v0.15.2 sample config:
 
-```yaml title="dendrite.yaml"
-# Server configuration
+```yaml title="dendrite.yaml (excerpt)"
+version: 2
+
 global:
   server_name: example.com
-  private_key: /etc/dendrite/matrix_key.pem
-
-  # Database configuration
+  private_key: matrix_key.pem
   database:
-    connection_string: postgresql://dendrite:password@localhost/dendrite?sslmode=disable
-    max_open_conns: 90
-    max_idle_conns: 5
-    conn_max_lifetime: -1
-
-  # JetStream for internal messaging
+    connection_string: postgresql://dendrite:CHANGE_ME@localhost/dendrite?sslmode=disable
   jetstream:
-    storage_path: /var/dendrite/jetstream
-    addresses: []
+    storage_path: ./jetstream   # must persist across restarts
 
-  # Federation settings
-  key_validity_period: 168h0m0s
-  disable_federation: false
-
-  # Caching
-  cache:
-    max_size_estimated: 1gb
-    max_age: 1h
-
-# Client API configuration
 client_api:
   registration_disabled: true
   guests_disabled: true
-  registration_shared_secret: "your-secret-here"
+  registration_shared_secret: ""   # set only while you need create-account
 
-# Media API configuration
 media_api:
-  base_path: /var/dendrite/media
-  max_file_size_bytes: 52428800  # 50MB
-  dynamic_thumbnails: true
-
-# Sync API configuration
-sync_api:
-  real_ip_header: X-Forwarded-For
-  search:
-    enabled: true
-    index_path: /var/dendrite/searchindex
-
-# Federation API
-federation_api:
-  send_max_retries: 16
-  disable_tls_validation: false
-  prefer_direct_fetch: false
-
-# User API configuration
-user_api:
-  bcrypt_cost: 10
-
-# MSC settings (experimental features)
-mscs:
-  mscs: []
+  base_path: ./media_store
+  max_file_size_bytes: 10485760
 ```
 
-### PostgreSQL Setup
+Keep `jetstream` on persistent storage. An in-memory JetStream loses queued data on restart and is for tests only.
 
-```sql
--- Single database for monolith
-CREATE USER dendrite WITH PASSWORD 'secretpassword';
-CREATE DATABASE dendrite OWNER dendrite;
-```
+If you enable registration, also set `enable_registration_captcha` and the reCAPTCHA keys in `client_api`; the sample config calls this "HIGHLY RECOMMENDED".
 
-### Nginx Configuration
+## Creating users
 
-```nginx title="/etc/nginx/sites-available/matrix"
-server {
-    listen 443 ssl http2;
-    server_name matrix.example.com;
-
-    ssl_certificate /etc/letsencrypt/live/matrix.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/matrix.example.com/privkey.pem;
-
-    location /_matrix {
-        proxy_pass http://127.0.0.1:8008;
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Host $host;
-        client_max_body_size 50M;
-    }
-}
-
-server {
-    listen 8448 ssl http2;
-    server_name matrix.example.com;
-
-    ssl_certificate /etc/letsencrypt/live/matrix.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/matrix.example.com/privkey.pem;
-
-    location / {
-        proxy_pass http://127.0.0.1:8008;
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Host $host;
-    }
-}
-```
-
-## User Management
-
-### Create Users
+`create-account` is a separate binary. It talks to a running Dendrite and needs `registration_shared_secret` set in `client_api` ([upstream guide](https://element-hq.github.io/dendrite/administration/createusers)). It prompts for the password:
 
 ```bash
-# Create admin user
-/usr/local/bin/dendrite create-account \
-  --config /etc/dendrite/dendrite.yaml \
-  --url http://localhost:8008 \
-  --username admin \
-  --admin
+# From a source build
+./bin/create-account -config /path/to/dendrite.yaml -username alice -admin
 
-# Create regular user
-/usr/local/bin/dendrite create-account \
-  --config /etc/dendrite/dendrite.yaml \
-  --url http://localhost:8008 \
-  --username user
+# In Docker
+docker exec -it CONTAINERNAME /usr/bin/create-account -config /etc/dendrite/dendrite.yaml -username alice -admin
 ```
 
-### Using Shared Secret
-
-Enable in config:
-```yaml
-client_api:
-  registration_shared_secret: "your-long-secret"
-```
-
-Then register via API:
-```bash
-curl -X POST "http://localhost:8008/_synapse/admin/v1/register" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nonce": "'"$(curl -s http://localhost:8008/_synapse/admin/v1/register | jq -r .nonce)"'",
-    "username": "newuser",
-    "password": "password123",
-    "admin": false
-  }'
-```
-
-## Polylith Mode
-
-For larger deployments, run Dendrite as separate services:
-
-```mermaid
-flowchart TB
-    LB["Load Balancer"]
-    LB --> ClientAPI["Client API"]
-    LB --> FedAPI["Federation API"]
-    ClientAPI --> NATS["JetStream NATS"]
-    FedAPI --> NATS
-    NATS --> PG["PostgreSQL"]
-```
-
-Services available:
-- `dendrite-client-api`
-- `dendrite-federation-api`
-- `dendrite-media-api`
-- `dendrite-sync-api`
-- `dendrite-room-api`
-- `dendrite-user-api`
-
-## Performance Tuning
-
-### Memory Settings
-
-```yaml
-global:
-  cache:
-    max_size_estimated: 1gb  # Adjust based on RAM
-    max_age: 1h
-```
-
-### Database Connections
-
-```yaml
-global:
-  database:
-    max_open_conns: 90
-    max_idle_conns: 5
-    conn_max_lifetime: -1
-```
-
-### JetStream Settings
-
-```yaml
-global:
-  jetstream:
-    storage_path: /var/dendrite/jetstream
-    in_memory: false  # Set true for better performance, false for persistence
-```
-
-## Monitoring
-
-### Prometheus Metrics
-
-```yaml
-global:
-  metrics:
-    enabled: true
-    basic_auth:
-      username: metrics
-      password: password
-```
-
-Access at: `http://localhost:8008/metrics`
-
-### Health Endpoint
-
-```bash
-curl http://localhost:8008/health
-```
-
-## Migration from Synapse
-
-Currently, there's no direct migration tool. Options:
-
-1. **Fresh start**: Create new accounts, manually invite to rooms
-2. **Export/Import**: Use Matrix's room export features
-3. **Run both**: Gradual migration with both servers
-
-:::info
-The Dendrite team is working on migration tools. Check [GitHub issues](https://github.com/matrix-org/dendrite/issues) for updates.
+:::warning
+`registration_shared_secret` lets anyone who knows it create admin accounts. Use a long random value, keep it out of version control, and clear it again when you no longer need it.
 :::
 
-## Troubleshooting
+## Reverse proxy
 
-### Common Issues
+Proxy only `/_matrix` to Dendrite. Dendrite's admin endpoints (`/_dendrite/admin/...`) and the shared-secret registration endpoint (`/_synapse/admin/v1/register`) should not be reachable from the internet. Upstream ships an [nginx sample](https://github.com/element-hq/dendrite/blob/main/docs/nginx/dendrite-sample.conf).
 
-**Federation not working:**
-```bash
-# Check federation tester
-curl "https://federationtester.matrix.org/api/report?server_name=example.com"
-```
+For federation, use `.well-known` delegation as described in [Homeservers overview](./overview#well-known-delegation).
 
-**Database errors:**
-- Ensure PostgreSQL is running
-- Check connection string format
-- Verify user permissions
+## Moving away from Dendrite
 
-**High memory usage:**
-- Reduce cache size
-- Check for memory leaks (report to GitHub)
-
-### Logs
-
-```bash
-# Docker logs
-docker logs -f dendrite
-
-# Systemd logs
-journalctl -u dendrite -f
-
-# Increase verbosity
-# In dendrite.yaml:
-logging:
-  - type: std
-    level: debug
-```
-
-## Comparison with Synapse
-
-| Aspect | Dendrite | Synapse |
-|--------|----------|---------|
-| Language | Go | Python |
-| RAM usage | Lower | Higher |
-| CPU usage | Lower | Higher |
-| Features | Most | All |
-| Maturity | Stable | Mature |
-| Scaling | Better | Workers |
-| Docs | Good | Extensive |
+There is no automatic migration from Dendrite to another homeserver. Moving means creating accounts on a new server (ideally with a new server name), rejoining rooms over federation, and accepting that direct messages and encrypted history may not carry over.
 
 ## Resources
 
-- [Official Documentation](https://matrix-org.github.io/dendrite/)
-- [GitHub Repository](https://github.com/matrix-org/dendrite)
-- [Configuration Reference](https://github.com/matrix-org/dendrite/blob/main/dendrite-sample.yaml)
+- [Dendrite repository](https://github.com/element-hq/dendrite)
+- [Dendrite documentation](https://element-hq.github.io/dendrite/)
+- [#dendrite:matrix.org](https://matrix.to/#/#dendrite:matrix.org)
 
 ---
 

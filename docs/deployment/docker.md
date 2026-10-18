@@ -1,57 +1,69 @@
 ---
 sidebar_position: 2
 title: Docker Deployment
-description: Deploy Matrix with Docker and Docker Compose
+description: Deploy Synapse with Docker Compose, Caddy and PostgreSQL
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, Synapse 1.163.0, coturn 4.18.0, Element Web v1.12.32"
 ---
 
 # Docker Deployment
 
-Deploy a complete Matrix setup using Docker Compose.
+This page builds a Synapse server with Docker Compose: Synapse, PostgreSQL, and Caddy as the reverse proxy with automatic TLS. It follows the upstream [Synapse Docker README](https://github.com/element-hq/synapse/blob/develop/docker/README.md) and [reverse proxy guide](https://element-hq.github.io/synapse/latest/reverse_proxy.html).
+
+If you would rather not wire the pieces together yourself, [matrix-docker-ansible-deploy](./ansible) and [ESS Community](https://github.com/element-hq/ess-helm) do it for you.
 
 ## Prerequisites
 
-- Docker Engine 20.10+
-- Docker Compose v2+
-- Domain name with DNS configured
-- Ports 80, 443, 8448 available
+- Docker Engine with the Compose plugin (`docker compose`)
+- A domain, with `example.com` and `matrix.example.com` pointing at the server
+- Ports 80 and 443 open (port 8448 is not needed with `.well-known` delegation)
 
-## Quick Start
-
-### 1. Create Directory Structure
+## 1. Directory and secrets
 
 ```bash
-mkdir -p matrix-server/{synapse-data,postgres-data}
-cd matrix-server
+mkdir -p matrix-server && cd matrix-server
+mkdir synapse-data postgres-data
+# Database password, kept out of the Compose file
+echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" > db.env
+chmod 600 db.env
 ```
 
-### 2. Create Docker Compose File
+## 2. Generate the Synapse config
+
+Use your **server name** (`example.com`), not the subdomain. It is permanent; see [Choose your server name first](../servers/synapse#choose-your-server-name-first).
+
+```bash
+docker run -it --rm \
+  -v "$(pwd)/synapse-data:/data" \
+  -e SYNAPSE_SERVER_NAME=example.com \
+  -e SYNAPSE_REPORT_STATS=no \
+  matrixdotorg/synapse:v1.163.0 generate
+```
+
+## 3. Compose file
 
 ```yaml title="docker-compose.yml"
-version: '3.8'
-
 services:
   synapse:
-    image: matrixdotorg/synapse:latest
-    container_name: synapse
+    image: matrixdotorg/synapse:v1.163.0
     restart: unless-stopped
-    environment:
-      - SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
     volumes:
       - ./synapse-data:/data
+    ports:
+      # Optional: lets you call the admin API from the host. Never drop the 127.0.0.1 prefix.
+      - "127.0.0.1:8008:8008"
     depends_on:
       - postgres
-    ports:
-      - "8008:8008"
     networks:
       - matrix
 
   postgres:
-    image: postgres:15-alpine
-    container_name: synapse-db
+    image: postgres:17-alpine
     restart: unless-stopped
+    env_file: ./db.env
     environment:
       - POSTGRES_USER=synapse
-      - POSTGRES_PASSWORD=CHANGE_ME_TO_SECURE_PASSWORD
       - POSTGRES_DB=synapse
       - POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=C
     volumes:
@@ -61,12 +73,10 @@ services:
 
   caddy:
     image: caddy:2-alpine
-    container_name: caddy
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
-      - "8448:8448"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./caddy-data:/data
@@ -76,45 +86,37 @@ services:
 
 networks:
   matrix:
-    driver: bridge
 ```
 
-### 3. Create Caddyfile
+Caddy reaches Synapse over the `matrix` network, so Synapse needs no public port.
+
+:::warning
+Docker's port publishing bypasses host firewalls such as ufw. A mapping like `"8008:8008"` would expose plain-HTTP Synapse, including the admin API, to the internet.
+:::
+
+## 4. Caddyfile
+
+Proxy only `/_matrix/*` and `/_synapse/client/*`. Do not proxy `/_synapse/*` or `/_synapse/admin/*`.
 
 ```caddyfile title="Caddyfile"
 matrix.example.com {
     reverse_proxy /_matrix/* synapse:8008
-    reverse_proxy /_synapse/* synapse:8008
-}
-
-matrix.example.com:8448 {
-    reverse_proxy synapse:8008
+    reverse_proxy /_synapse/client/* synapse:8008
 }
 
 example.com {
-    handle /.well-known/matrix/server {
-        respond `{"m.server": "matrix.example.com:443"}`
-    }
-    handle /.well-known/matrix/client {
-        header Access-Control-Allow-Origin *
-        respond `{"m.homeserver": {"base_url": "https://matrix.example.com"}}`
-    }
+    header /.well-known/matrix/* Content-Type application/json
+    header /.well-known/matrix/* Access-Control-Allow-Origin *
+    respond /.well-known/matrix/server `{"m.server": "matrix.example.com:443"}`
+    respond /.well-known/matrix/client `{"m.homeserver": {"base_url": "https://matrix.example.com"}}`
 }
 ```
 
-### 4. Generate Synapse Config
+The `.well-known/matrix/server` file sends federation traffic to port 443, so you do not need an 8448 site block.
 
-```bash
-docker run -it --rm \
-  -v $(pwd)/synapse-data:/data \
-  -e SYNAPSE_SERVER_NAME=example.com \
-  -e SYNAPSE_REPORT_STATS=no \
-  matrixdotorg/synapse:latest generate
-```
+## 5. Configure Synapse
 
-### 5. Configure Synapse
-
-Edit `synapse-data/homeserver.yaml`:
+Edit `synapse-data/homeserver.yaml`. Replace the SQLite `database` section and check the listener:
 
 ```yaml title="homeserver.yaml"
 server_name: "example.com"
@@ -124,7 +126,7 @@ database:
   name: psycopg2
   args:
     user: synapse
-    password: CHANGE_ME_TO_SECURE_PASSWORD
+    password: "PASTE_POSTGRES_PASSWORD_FROM_db.env"
     database: synapse
     host: postgres
     cp_min: 5
@@ -142,29 +144,29 @@ listeners:
 enable_registration: false
 ```
 
-### 6. Start Services
+For URL previews, registration tokens, MAS and other options, see [Synapse configuration](../servers/synapse#essential-configuration).
+
+## 6. Start and create an admin
 
 ```bash
 docker compose up -d
+docker compose logs -f synapse     # wait for "Synapse now listening"
+
+# Prompts for the password (keeps it out of shell history)
+docker compose exec synapse register_new_matrix_user \
+  -c /data/homeserver.yaml -a http://localhost:8008
 ```
 
-### 7. Create Admin User
-
-```bash
-docker exec -it synapse register_new_matrix_user \
-  -c /data/homeserver.yaml \
-  -a -u admin http://localhost:8008
-```
+Check federation with the [Matrix Federation Tester](https://federationtester.matrix.org/).
 
 ## Adding Element Web
 
-```yaml title="docker-compose.yml (add to services)"
+```yaml title="docker-compose.yml (add under services)"
   element:
-    image: vectorim/element-web:latest
-    container_name: element
+    image: vectorim/element-web:v1.12.32
     restart: unless-stopped
     volumes:
-      - ./element-config.json:/app/config.json
+      - ./element-config.json:/app/config.json:ro
     networks:
       - matrix
 ```
@@ -176,165 +178,213 @@ docker exec -it synapse register_new_matrix_user \
       "base_url": "https://matrix.example.com",
       "server_name": "example.com"
     }
-  },
-  "brand": "Element",
-  "default_theme": "dark"
+  }
 }
 ```
 
-Add to Caddyfile:
+The image is also published as `ghcr.io/element-hq/element-web`. See the [Element Web config docs](https://github.com/element-hq/element-web/blob/develop/docs/config.md) for other options, and add a Caddy site:
+
 ```caddyfile
 element.example.com {
     reverse_proxy element:80
 }
 ```
 
-## Adding Bridges
+## Adding bridges
 
-### Discord Bridge
+mautrix bridges run as separate containers, and each must be registered with Synapse as an application service. Follow the [mautrix Docker setup guide](https://docs.mau.fi/bridges/general/docker-setup.html). In outline:
 
-```yaml title="docker-compose.yml (add to services)"
-  mautrix-discord:
-    image: dock.mau.dev/mautrix/discord:latest
-    container_name: mautrix-discord
-    restart: unless-stopped
-    volumes:
-      - ./discord-data:/data
-    networks:
-      - matrix
+1. Run the bridge image once with `/data` mounted; it writes a `config.yaml`.
+2. Edit the config: homeserver address `http://synapse:8008`, your domain, a database, and permissions.
+3. Run it again; it writes `registration.yaml`.
+4. Copy the registration into Synapse's data directory and list it in `homeserver.yaml`, then restart Synapse.
+5. Start the bridge on the `matrix` network.
+
+```yaml title="homeserver.yaml"
+app_service_config_files:
+  - /data/telegram-registration.yaml
 ```
 
-### Telegram Bridge
-
-```yaml title="docker-compose.yml (add to services)"
+```yaml title="docker-compose.yml (add under services)"
   mautrix-telegram:
-    image: dock.mau.dev/mautrix/telegram:latest
-    container_name: mautrix-telegram
+    image: dock.mau.dev/mautrix/telegram:latest   # pin a release tag in production
     restart: unless-stopped
     volumes:
-      - ./telegram-data:/data
+      - ./mautrix-telegram:/data
     networks:
       - matrix
 ```
 
-## Adding Coturn (VoIP)
+The mautrix-telegram image is now the Go (bridgev2) bridge; see its [docs](https://docs.mau.fi/bridges/go/telegram/index.html). On `dock.mau.dev`, `:latest` follows the latest commit, not the latest release.
 
-```yaml title="docker-compose.yml (add to services)"
+:::warning
+A registration file contains the `as_token` and `hs_token`, which let the bridge act as any user in its namespace. Keep these files private.
+:::
+
+## Calls
+
+### Element Call (MatrixRTC)
+
+Element Call needs a LiveKit SFU, the MatrixRTC Authorization Service (`lk-jwt-service`), a `matrix_rtc` entry in `homeserver.yaml`, and some experimental Synapse flags. Follow the [Element Call self-hosting guide](https://github.com/element-hq/element-call/blob/main/docs/self_hosting.md) and [Synapse: Calls](../servers/synapse#calls-element-call-and-matrixrtc). It does not use coturn: LiveKit has its own TURN.
+
+### Legacy calls: coturn
+
+coturn is only needed for legacy 1:1 WebRTC calls. This config follows Synapse's [coturn guide](https://element-hq.github.io/synapse/latest/setup/turn/coturn.html), including its recommended `denied-peer-ip` list. Without that list, a TURN server can be used to reach hosts on your internal network.
+
+```yaml title="docker-compose.yml (add under services)"
   coturn:
-    image: coturn/coturn:latest
-    container_name: coturn
+    image: coturn/coturn:4.18.0
     restart: unless-stopped
     network_mode: host
     volumes:
-      - ./turnserver.conf:/etc/coturn/turnserver.conf
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
 ```
 
 ```ini title="turnserver.conf"
-listening-port=3478
-tls-listening-port=5349
-external-ip=YOUR_SERVER_IP
-realm=turn.example.com
-server-name=turn.example.com
-lt-cred-mech
 use-auth-secret
-static-auth-secret=YOUR_TURN_SECRET
+static-auth-secret=LONG_RANDOM_SECRET
+realm=turn.example.com
+external-ip=YOUR_PUBLIC_IP
+
+# VoIP is UDP; do not relay to arbitrary TCP endpoints
+no-tcp-relay
+
+# Never relay to private, loopback, link-local or reserved ranges
+no-multicast-peers
+denied-peer-ip=10.0.0.0-10.255.255.255
+denied-peer-ip=192.168.0.0-192.168.255.255
+denied-peer-ip=172.16.0.0-172.31.255.255
+denied-peer-ip=0.0.0.0-0.255.255.255
+denied-peer-ip=100.64.0.0-100.127.255.255
+denied-peer-ip=127.0.0.0-127.255.255.255
+denied-peer-ip=169.254.0.0-169.254.255.255
+denied-peer-ip=192.0.0.0-192.0.0.255
+denied-peer-ip=192.0.2.0-192.0.2.255
+denied-peer-ip=192.88.99.0-192.88.99.255
+denied-peer-ip=198.18.0.0-198.19.255.255
+denied-peer-ip=198.51.100.0-198.51.100.255
+denied-peer-ip=203.0.113.0-203.0.113.255
+denied-peer-ip=240.0.0.0-255.255.255.255
+denied-peer-ip=::1
+denied-peer-ip=64:ff9b::-64:ff9b::ffff:ffff
+denied-peer-ip=::ffff:0.0.0.0-::ffff:255.255.255.255
+denied-peer-ip=100::-100::ffff:ffff:ffff:ffff
+denied-peer-ip=2001::-2001:1ff:ffff:ffff:ffff:ffff:ffff:ffff
+denied-peer-ip=2002::-2002:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+denied-peer-ip=fc00::-fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+denied-peer-ip=fe80::-febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+
+# Limit relayed streams to reduce DoS risk
+user-quota=12
+total-quota=1200
 ```
 
-Add to Synapse config:
-```yaml
+If you add TLS (`tls-listening-port=5349`), also set `cert=` and `pkey=` and use `turns:` URIs. Open 3478 and 5349 (TCP and UDP) and the relay range 49152–65535 (UDP).
+
+Then tell Synapse about it. `turn_shared_secret_path` keeps the secret out of `homeserver.yaml`:
+
+```yaml title="homeserver.yaml"
 turn_uris:
   - "turn:turn.example.com:3478?transport=udp"
   - "turn:turn.example.com:3478?transport=tcp"
-turn_shared_secret: "YOUR_TURN_SECRET"
-turn_user_lifetime: 86400000
+turn_shared_secret_path: /data/turn_shared_secret
+turn_user_lifetime: 1h
 ```
 
-## Backup Script
+:::warning
+`static-auth-secret` lets anyone who holds it mint TURN credentials. Generate a long random value (for example `openssl rand -hex 32`) and keep it out of version control.
+:::
+
+## Backup script
 
 ```bash title="backup.sh"
 #!/bin/bash
+set -euo pipefail
 DATE=$(date +%Y%m%d)
 BACKUP_DIR=/backups
+cd /path/to/matrix-server
 
-# Stop Synapse for consistent backup
-docker compose stop synapse
+# Database (consistent dump while running)
+docker compose exec -T postgres pg_dump -Fc -U synapse synapse > "$BACKUP_DIR/db_$DATE.dump"
 
-# Backup database
-docker exec synapse-db pg_dump -U synapse synapse | gzip > $BACKUP_DIR/db_$DATE.sql.gz
+# Media, config and signing key
+tar -czf "$BACKUP_DIR/synapse-data_$DATE.tar.gz" synapse-data
 
-# Backup media
-tar -czf $BACKUP_DIR/media_$DATE.tar.gz synapse-data/media_store
-
-# Backup config
-cp synapse-data/homeserver.yaml $BACKUP_DIR/homeserver_$DATE.yaml
-cp synapse-data/*.signing.key $BACKUP_DIR/
-
-# Start Synapse
-docker compose start synapse
-
-# Cleanup old backups (keep 7 days)
-find $BACKUP_DIR -mtime +7 -delete
+# Keep 7 days
+find "$BACKUP_DIR" -mtime +7 -delete
 ```
+
+Test restoring from a backup at least once. Keep an extra offline copy of `synapse-data/example.com.signing.key`.
 
 ## Monitoring
 
-Add Prometheus monitoring:
+Synapse exposes metrics only with both `enable_metrics` and a `metrics` listener. Inside Docker, the listener can bind to all interfaces as long as you do not publish its port:
 
-```yaml title="docker-compose.yml (add to services)"
+```yaml title="homeserver.yaml"
+enable_metrics: true
+listeners:
+  # keep the existing http listener on 8008
+  - port: 9000
+    type: metrics
+    bind_addresses: ['0.0.0.0']   # container-internal; do not publish 9000
+```
+
+```yaml title="prometheus.yml"
+scrape_configs:
+  - job_name: synapse
+    metrics_path: /_synapse/metrics
+    static_configs:
+      - targets: ['synapse:9000']
+```
+
+```yaml title="docker-compose.yml (add under services)"
   prometheus:
     image: prom/prometheus:latest
-    container_name: prometheus
     restart: unless-stopped
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     networks:
       - matrix
 
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     networks:
       - matrix
 ```
 
-Enable metrics in Synapse:
-```yaml
-enable_metrics: true
-```
+Import Synapse's dashboard from [`contrib/grafana`](https://github.com/element-hq/synapse/tree/develop/contrib/grafana). See the [metrics guide](https://element-hq.github.io/synapse/latest/metrics-howto.html).
 
 ## Updating
 
-```bash
-# Pull latest images
-docker compose pull
+Pin image tags and upgrade deliberately:
 
-# Restart with new images
+1. Read the [Synapse upgrade notes](https://element-hq.github.io/synapse/latest/upgrade.html) for every version between yours and the target.
+2. Back up.
+3. Change the tag in `docker-compose.yml`, then:
+
+```bash
+docker compose pull
 docker compose up -d
+docker compose logs -f synapse
 ```
+
+Do not use unattended image auto-updaters for the homeserver: a release can need config changes before it will start.
 
 ## Troubleshooting
 
-### Check Logs
-
 ```bash
+# Logs
 docker compose logs -f synapse
-docker compose logs -f postgres
 docker compose logs -f caddy
-```
 
-### Database Issues
+# Database shell
+docker compose exec postgres psql -U synapse synapse
 
-```bash
-docker exec -it synapse-db psql -U synapse synapse
-```
-
-### Federation Test
-
-```bash
-curl https://federationtester.matrix.org/api/report?server_name=example.com
+# Federation check
+curl "https://federationtester.matrix.org/api/report?server_name=example.com"
 ```
 
 ---
