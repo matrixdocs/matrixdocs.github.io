@@ -95,6 +95,7 @@ const sidebars: SidebarsConfig = {
         'specification/server-server',
         'specification/events',
         'specification/rooms',
+        'specification/room-v12',
       ],
     },
     {
