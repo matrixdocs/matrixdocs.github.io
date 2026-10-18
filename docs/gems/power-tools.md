@@ -1,613 +1,291 @@
 ---
 sidebar_position: 2
 title: Power Tools
-description: Essential tools that unlock Matrix superpowers
+description: Admin CLIs, moderation bots, bot frameworks and command-line clients for Matrix
+last_update:
+  date: 2026-10-18
+verified_with: "Synapse 1.163.0, Element Web 1.12.32, synadm 0.49.2, Hookshot 7.5.0, matrix-commander 8.0.6, Draupnir 3.2.0"
 ---
 
 # Power Tools
 
-These tools transform your Matrix experience from basic chat to a powerful communication platform.
+Tools that go beyond a chat client: admin CLIs and UIs, moderation bots, bot frameworks, CI integrations and command-line clients. Versions are as of 2026-10.
 
-## Admin & Server Tools
+:::warning Admin and bot tokens
+Most tools on this page need a Synapse **admin** access token or a bot account with moderator power. Either one can read, change or delete data across your server or rooms. Use a dedicated account, store the token outside shell history and world-readable files, and revoke it when you no longer need it.
+:::
 
-### synadm - CLI Admin Swiss Army Knife
+## Server administration
 
-**[synadm](https://codeberg.org/synadm/synadm)** is a command-line admin tool for Synapse that makes server administration effortless.
+### synadm
 
-**Note:** synadm has migrated to Codeberg. GitHub repo will be archived.
+[synadm](https://codeberg.org/synadm/synadm) is a command-line client for the [Synapse admin API](https://element-hq.github.io/synapse/latest/usage/administration/admin_api/). Development is on Codeberg (v0.49.2, 2025-10-15); the old `JOJ0/synadm` GitHub repo is archived.
 
-**Installation:**
+Install it with `pipx install synadm`, then run `synadm config` to enter the homeserver URL and an admin token. The commands below exist in v0.49.2; run `synadm <group> <command> --help` for all options.
+
 ```bash
-pipx install synadm
+# Users
+synadm user list --name john                 # filter by name
+synadm user details @alice:example.org
+synadm user modify @alice:example.org --admin
+synadm user modify @spammer:example.org --deactivate
+synadm user password @alice:example.org      # prompts for the new password
+synadm user login @alice:example.org         # token to act as the user (default expiry 24h)
+synadm user shadow-ban @spammer:example.org
+synadm user redact @spammer:example.org -r '!room1:example.org' -r '!room2:example.org'
 
-# First-time setup
-synadm config
-# Enter: homeserver URL, admin access token
+# Rooms
+synadm room list --empty
+synadm room list --name general
+synadm room details '!room:example.org'
+synadm room members '!room:example.org'
+synadm room delete '!room:example.org'
+
+# Media
+synadm media list -u @alice:example.org      # or: synadm user media @alice:example.org
+synadm media purge -d 30                     # purge cached remote media not accessed for 30 days
+synadm media quarantine --help
+
+# Server
+synadm version
+synadm notice send @alice:example.org "Planned maintenance tonight"
 ```
 
-**User Management:**
-```bash
-# List and search users
-synadm user list                      # All users
-synadm user list --name "john"        # Search by name
-synadm user details @user:server      # Full user info
+`user redact` without `-r` redacts the user's events in every room. `room delete` is irreversible.
 
-# Modify users
-synadm user modify @user:server --admin       # Grant admin
-synadm user modify @user:server --deactivate  # Deactivate
-synadm user password @user:server             # Reset password
+Support room: [#synadm:peek-a-boo.at](https://matrix.to/#/#synadm:peek-a-boo.at)
 
-# Get access token to act as user (24h expiry)
-synadm user login @user:server
+### Web admin UIs
 
-# Shadow-ban (user won't know they're banned)
-synadm user shadow-ban @spammer:server
+- [synapse-admin](https://github.com/Awesome-Technologies/synapse-admin) (Awesome Technologies): user, room, media and registration-token management in the browser.
+- [Ketesa](https://github.com/etkecc/ketesa) (etke.cc, v1.5.1, 2026-09-28): the widely used fork, formerly `etkecc/synapse-admin`, now multi-backend.
 
-# Redact all messages from a user (NEW 2025)
-synadm user redact @spammer:server --rooms '!room1:server' '!room2:server'
-```
-
-**Room Management:**
-```bash
-# List rooms with filters
-synadm room list                      # All rooms
-synadm room list --empty              # Empty rooms only (NEW)
-synadm room list --not-empty          # Non-empty rooms
-synadm room list --name "general"     # Search by name
-
-# Room details and members
-synadm room details !roomid:server
-synadm room members !roomid:server
-
-# Cleanup
-synadm room delete !roomid:server     # Delete room
-synadm room purge-empty               # Purge all empty rooms
-```
-
-**Media Management:**
-```bash
-# List media
-synadm media list @user:server        # User's uploads
-synadm media list-remote              # Cached remote media
-
-# Cleanup
-synadm media purge-remote 30          # Purge remote media >30 days
-synadm media delete mxc://server/id   # Delete specific media
-
-# Quarantine (NEW)
-synadm media quarantine -U mxc://server/media-id
-synadm media unquarantine -U mxc://server/media-id
-```
-
-**Server Info:**
-```bash
-synadm version                        # Synapse version
-synadm server-notice send @user:server "Important message"
-```
-
-**Why It's Powerful:** Direct API access without web interfaces. Script server maintenance, automate cleanups, manage users in bulk. Works over SSH, perfect for headless servers.
-
-**Support:** [#synadm:peek-a-boo.at](https://matrix.to/#/#synadm:peek-a-boo.at)
-
-### Synapse Admin UI
-
-**[synapse-admin](https://github.com/Awesome-Technologies/synapse-admin)** provides a web-based admin interface.
-
-**Features:**
-- User management with search and bulk operations
-- Room administration and purging
-- Media management
-- Registration token creation
-- Server statistics
-
-**Quick Deploy:**
-```yaml
-# docker-compose.yml
-synapse-admin:
-  image: ghcr.io/awesome-technologies/synapse-admin:latest
-  ports:
-    - "8080:80"
-```
+Both are static web apps that talk to the admin API with your admin token. Serve them on a private network, behind a VPN, or behind extra authentication; don't publish them on an open port.
 
 ---
 
-## Moderation Tools
+## Moderation
 
-### Draupnir - Next-Gen Moderation
+### Draupnir
 
-**[Draupnir](https://github.com/the-draupnir-project/Draupnir)** is the modern successor to Mjolnir with significant improvements.
+[Draupnir](https://github.com/the-draupnir-project/Draupnir) protects rooms using shared **policy lists** (ban lists stored as Matrix rooms).
 
-**Why Upgrade from Mjolnir:**
-- **No commands needed** - Ban a user in any protected room, Draupnir prompts to add to policy list
-- **Instant response** - No waiting for homeserver data before applying bans
-- **Room state caching** - Fast startup even on slow connections
-- **Active development** - v2.3.0 (May 2025) added major features
+- Latest is v3.2.0 (2026-10-14). v3.0.0 (2026-04-02) was a breaking release: it moved to a monorepo, needs Node 24 and requires the `--draupnir-config` option.
+- v2.3.0 added takedowns, automatic suspension of matching users and support for [synapse-http-antispam](https://github.com/maunium/synapse-http-antispam).
+- Setup needs a bot account (or appservice) and a management room named in its config. Follow the [Draupnir documentation](https://the-draupnir-project.github.io/draupnir-documentation/) rather than inviting the bot ad hoc.
 
-**New in v2.3.0:**
+Once it is running, these management-room commands create a policy list and subscribe to a community one:
+
 ```
-✓ Takedowns - Stronger than bans for illegal content
-✓ Auto-suspension - Automatically suspend matching users
-✓ Block invitations - Preemptively block bad actors
-✓ synapse-http-antispam support
-```
-
-**Quick Setup:**
-```bash
-# Create control room (private, unencrypted)
-# Invite @draupnir:yourserver.com
-# Run initial setup
-!draupnir list create my-coc code-of-conduct-ban-list
-```
-
-**Distributed Moderation:**
-Subscribe to community-curated ban lists:
-```
+!draupnir list create my-coc my-coc-ban-list
 !draupnir watch #matrix-org-coc-bl:matrix.org
 ```
 
-**Support:** [#draupnir:matrix.org](https://matrix.to/#/#draupnir:matrix.org)
+Support: [#draupnir:matrix.org](https://matrix.to/#/#draupnir:matrix.org)
+
+### Alternatives
+
+- [Meowlnir](https://github.com/maunium/meowlnir) (v0.2609.0, 2026-09-16): a newer moderation bot by the mautrix author. It is optimised for Synapse and can act as a policy server.
+- [Mjolnir](https://github.com/matrix-org/mjolnir): the original policy-list bot, still released (v2.0.x, 2026-10). See [Mjolnir](../bots/mjolnir).
 
 ---
 
-## Automation & Bots
+## Bot frameworks
 
-### Maubot - Plugin-Based Bot System
+### Maubot
 
-**[Maubot](https://mau.bot)** lets you run multiple bot functions from a single instance. No coding required for most plugins.
+[Maubot](https://github.com/maubot/maubot) (v0.6.0, 2025-11-17) runs many plugin bots from one instance and has a web UI for managing them. The plugin index is at [plugins.mau.bot](https://plugins.mau.bot/). See also [Maubot](../bots/maubot).
 
-**Requirements:** Linux, Python 3.10+, a Matrix account for the bot
+Plugins worth knowing, taken from that index (last activity as of 2026-10):
 
-**Must-Have Plugins:**
+| Plugin | What it does |
+|--------|--------------|
+| [reminder](https://github.com/maubot/reminder) | One-off reminders: `!remind <date> <message>`; others subscribe with 👍 |
+| [github](https://github.com/maubot/github) | GitHub webhook receiver and issue creation |
+| [rss](https://github.com/maubot/rss) | Posts RSS/Atom feed updates |
+| [dice](https://github.com/maubot/dice) | Dice roller and calculator |
+| [sed](https://github.com/maubot/sed) | `s/typo/fix/` corrections |
+| [reactbot](https://github.com/maubot/reactbot) | Replies to messages that match rules |
+| [translate](https://github.com/maubot/translate) | Google Translate (repo last updated 2024-01) |
+| [antithread](https://github.com/maubot/antithread) | Redacts all messages in threads (last updated 2023) |
+| [GiphyMaubot](https://github.com/TomCasavant/GiphyMaubot) (third-party) | GIF search via Giphy |
+| [maubot-ntfy](https://gitlab.com/999eagle/maubot-ntfy) (third-party) | Subscribes to [ntfy](https://ntfy.sh) topics and posts them to Matrix |
+| [gladia_transcribebot](https://github.com/conan747/gladia_transcribebot) (third-party) | Transcribes voice messages with the Gladia API |
+| [maubot-llm](https://github.com/brokensandals/maubot-llm) (third-party) | Chat with LLMs on OpenAI-compatible servers (last updated 2024-05) |
+| [maubot-token](https://github.com/yoxcu/maubot-token) (third-party) | Manage Synapse registration tokens (last updated 2024-08) |
 
-| Plugin | Function | Power Level |
-|--------|----------|-------------|
-| **[reminder](https://github.com/maubot/reminder)** | Reminders, recurring events, agendas | ⭐⭐⭐ |
-| **[github](https://github.com/maubot/github)** | GitHub webhooks + commands | ⭐⭐⭐ |
-| **[rss](https://github.com/maubot/rss)** | RSS/Atom feed subscriptions | ⭐⭐⭐ |
-| **[ntfy](https://github.com/maubot/ntfy)** | Push notifications via ntfy | ⭐⭐⭐ |
-| **[translate](https://github.com/maubot/translate)** | Google/DeepL translation | ⭐⭐ |
-| **[supportportal](https://github.com/coffeebank/coffee-maubot)** | Support ticket system | ⭐⭐⭐ |
-| **[gladia](https://github.com/maubot/gladia)** | Voice message transcription | ⭐⭐ |
-| **[dice](https://github.com/maubot/dice)** | Dice roller + calculator | ⭐⭐ |
-| **[media](https://github.com/maubot/media)** | Giphy/Tenor GIF search | ⭐⭐ |
-| **[reactbot](https://github.com/maubot/reactbot)** | Auto-reactions & responses | ⭐⭐ |
-| **[sed](https://github.com/maubot/sed)** | s/typo/fix/ corrections | ⭐ |
+Third-party plugins run with the bot's access token. Read the code before installing one.
 
-**AI/LLM Plugins:**
+### Hookshot
+
+[Hookshot](https://github.com/matrix-org/matrix-hookshot) (7.5.0, 2026-09-22) bridges GitHub, GitLab, Jira, RSS/Atom feeds, generic webhooks, OpenProject and Figma into rooms. Full guide: [Hookshot](../bots/hookshot).
+
+Commands in a room connected to a GitHub repository (prefix `!gh`):
+
 ```
-# LLM plugin capabilities:
-- OpenAI (GPT-4, GPT-4o)
-- Anthropic (Claude)
-- Text-to-speech
-- Speech-to-text (Whisper)
-- Image generation (DALL-E)
-```
-
-**Example commands:**
-```
-!ai summarize the last 50 messages
-!ai explain this error: [paste]
-!ai translate to Spanish: Hello world
+!gh create "Login fails on Safari"     Create an issue (optional description and labels)
+!gh assign 123 octocat                 Assign issue 123 to GitHub user(s); defaults to you
+!gh close 123                          Close an issue
+!gh workflow run deploy.yml env=prod   Run a workflow; args as key=value,key2='value 2'
 ```
 
-**Admin Plugins:**
+In a room connected to a GitLab project (prefix `!gl`):
 
-| Plugin | Purpose |
-|--------|---------|
-| **space-admin** | Manage Spaces, bulk user operations |
-| **registration-tokens** | Create/manage Synapse registration tokens |
-| **thread-redact** | Auto-delete thread replies |
-| **welcome** | Welcome messages for new room members |
-
-**Social Media:**
-- Reddit/Instagram/YouTube link previews
-- Twitch live notifications
-- Fediverse feed forwarding
-- Spotify link conversion
-
-**Full Plugin List:** [plugins.mau.bot](https://plugins.mau.bot/)
-
-**Setup Guide:** [coffeebank.github.io/coffee-maubot](https://coffeebank.github.io/coffee-maubot/start/)
-
-### Hookshot - Developer Integrations
-
-**[Hookshot](https://github.com/matrix-org/matrix-hookshot)** connects Matrix to development tools.
-
-**Supported Services:**
-- GitHub (issues, PRs, commits, actions, workflows)
-- GitLab (issues, MRs, pipelines)
-- JIRA (issues, transitions)
-- RSS/Atom feeds
-- Generic webhooks
-- **NEW:** OpenProject support
-
-**GitHub Commands (prefix: `!gh`):**
-```bash
-# Issue management
-!gh create "Bug: Login fails"           # Create issue
-!gh close 123                            # Close issue
-!gh assign 123 @developer               # Assign issue
-
-# Workflows
-!gh workflow run deploy.yml             # Trigger workflow
-!gh workflow run build.yml --input env=prod
-
-# PRs and commits
-!gh prs                                 # List open PRs
-!gh pr 456                              # View PR details
-!gh commits                             # Recent commits
+```
+!gl create "Fix database migration"
+!gl create-confidential "Security issue"
+!gl close 42
 ```
 
-**GitLab Commands (prefix: `!gitlab`):**
-```bash
-!gitlab issue new "Fix database"        # Create issue
-!gitlab issue close 42                  # Close issue
-!gitlab mrs list                        # List merge requests
-!gitlab pipeline status                 # Check CI status
-```
+Hookshot has no commands for listing PRs, approving or merging. You must log in to GitHub or GitLab through the bot before these commands work.
 
-**RSS Feeds:**
-```
-!hookshot feed https://blog.example.com/rss
-```
-
-**Webhook Templates:**
-Write custom JavaScript templates for rich message formatting:
-```javascript
-({
-  body: `**${data.event}**: ${data.message}`,
-  msgtype: data.level === "error" ? "m.notice" : "m.text"
-})
-```
-
-**2025 Updates:**
-- E2E encryption stable in production
-- Secure JIRA Cloud webhooks
-- Node 24 support
-- Matrix v12 room support
-- Follows room upgrades automatically
-
-📖 **[Full Hookshot Guide →](../bots/hookshot)**
+For inbound webhooks and JavaScript transformation functions, see [Automation](./automation#generic-webhooks-with-hookshot).
 
 ---
 
-## Git & CI/CD Integration
+## CI/CD notifications
 
-### GitHub Actions → Matrix
+### GitHub Actions
 
-Send workflow notifications directly from GitHub Actions:
+[Cadair/matrix-notify-action](https://github.com/Cadair/matrix-notify-action) posts a workflow summary to a room. Pin a release tag (or a commit SHA), not `@main`:
 
-**Matrix Notify Action (Recommended):**
 ```yaml title=".github/workflows/ci.yml"
 notify:
   if: always()
   runs-on: ubuntu-latest
-  needs: [build, test, lint]
+  needs: [build, test]
   steps:
-    - uses: Cadair/matrix-notify-action@main
+    - uses: Cadair/matrix-notify-action@v3
       with:
         matrix_token: ${{ secrets.MATRIX_TOKEN }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        homeserver: 'https://matrix.org'
-        roomid: '!roomId:matrix.org'
+        homeserver: 'https://matrix.example.org'
+        roomid: '!roomId:example.org'
         summarise_success: true
 ```
 
-**Features:**
-- Overall workflow status with emoji
-- Per-job status reactions
-- Configurable job filtering
-- Link to workflow run
+The input names come from the action's `action.yml` at `v3`.
 
-**Simple Message Action:**
-```yaml
-- uses: s3krit/matrix-message-action@v1
-  with:
-    homeserver: matrix.org
-    token: ${{ secrets.MATRIX_TOKEN }}
-    channel: '!roomId:matrix.org'
-    message: "Build ${{ job.status }} on ${{ github.ref_name }}"
-```
+### GitLab CI
 
-### GitLab CI → Matrix
+There is no maintained GitLab integration to recommend, but a plain client-server API call works. Use `PUT` with a transaction ID, as the spec requires:
 
 ```yaml title=".gitlab-ci.yml"
 notify_matrix:
   stage: .post
+  when: always
   script:
     - |
-      curl -X POST "https://matrix.server/_matrix/client/r0/rooms/$ROOM/send/m.room.message" \
+      curl -sS -X PUT \
+        "https://matrix.example.org/_matrix/client/v3/rooms/$MATRIX_ROOM_ID/send/m.room.message/$CI_PIPELINE_ID-$CI_JOB_ID" \
         -H "Authorization: Bearer $MATRIX_TOKEN" \
-        -d "{\"msgtype\":\"m.text\",\"body\":\"Pipeline $CI_PIPELINE_STATUS for $CI_PROJECT_NAME\"}"
-  when: always
+        -H "Content-Type: application/json" \
+        -d "{\"msgtype\":\"m.notice\",\"body\":\"$CI_PROJECT_NAME: job $CI_JOB_NAME $CI_JOB_STATUS\"}"
 ```
 
-### ChatOps Workflow
-
-With Hookshot, manage your entire dev workflow from Matrix:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│ Developer workflow from Matrix                          │
-├─────────────────────────────────────────────────────────┤
-│ 1. !gh create "Bug: API timeout"  → Issue #123 created  │
-│ 2. !gh assign 123 @alice          → Assigned            │
-│ 3. (Alice pushes fix, opens PR)                         │
-│ 4. [Hookshot]: PR #456 opened by alice                  │
-│ 5. !gh approve 456                → PR approved         │
-│ 6. [Hookshot]: PR #456 merged                           │
-│ 7. !gh workflow run deploy.yml    → Deploy triggered    │
-│ 8. [Hookshot]: Workflow succeeded ✅                     │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Room Strategy
-
-```
-#dev-commits:server    - Push notifications (high volume)
-#dev-prs:server        - PR activity
-#dev-issues:server     - Issue tracking
-#ci-alerts:server      - Build failures only
-#deployments:server    - Production deploys
-```
+`MATRIX_ROOM_ID` must be URL-encoded (`!` becomes `%21`, `:` becomes `%3A`). Store `MATRIX_TOKEN` as a masked CI variable.
 
 ---
 
-## Terminal & CLI Tools
+## Command-line clients
 
-### gomuks - Terminal Matrix Client
+### gomuks
 
-**[gomuks](https://github.com/gomuks/gomuks)** is a powerful terminal Matrix client.
+[gomuks](https://github.com/gomuks/gomuks) (v0.2610.0, 2026-10-16) is now a Go backend with several frontends:
 
-**Features:**
-- Full E2EE support with verification
-- Media upload and inline links
-- Power level management (`/powerlevel`)
-- Graphical file picker (requires zenity)
-- Light and dark terminal themes
+- **gomuks web** is the most mature frontend and is ready for daily use. Electron desktop and Android wrappers exist.
+- **gomuks terminal** is an experimental port of the legacy client and supports little beyond basic chat.
 
-**New Architecture (2025):**
-- Backend + separate frontends (terminal, web)
-- WebSocket RPC API for custom clients
-- **archivemuks** - Export room history to JSON
+The Go module is now `go.mau.fi/gomuks`; the old `maunium.net/go/gomuks` path installs the legacy v0.3 client. Install from the [releases](https://github.com/gomuks/gomuks/releases) or follow [docs.mau.fi/gomuks](https://docs.mau.fi/gomuks/). The `archivemuks` tool exports room history to JSON.
 
-**Installation:**
+### matrix-commander
+
+[matrix-commander](https://github.com/8go/matrix-commander) (8.0.6, 2026-07-02) sends and receives Matrix messages from scripts, with E2EE on by default. Installation and first-time login are covered in its README.
+
 ```bash
-# Go install
-go install maunium.net/go/gomuks@latest
+# Send a message, a file, an image
+matrix-commander -m "Build complete" -r '!roomid:example.org'
+matrix-commander -f ./report.pdf -r '!roomid:example.org'
+matrix-commander -i ./screenshot.png -r '!roomid:example.org'
 
-# Or download binary from releases
+# Pipe text in
+./generate-report.sh | matrix-commander -r '!reports:example.org'
+
+# Print messages
+matrix-commander --listen forever                     # all rooms, until stopped
+matrix-commander --listen once                        # whatever is queued, then exit
+matrix-commander --listen tail --tail 10 -r '!roomid:example.org'
+
+# Rooms
+matrix-commander --room-create myroom --name "My Room"     # alias localpart, not #myroom:server
+matrix-commander --room-invite '!roomid:example.org' --user '@bob:example.org'
+matrix-commander --room-kick '!roomid:example.org' --user '@bob:example.org'
 ```
 
-**Key Commands:**
-```
-/join #room:server     - Join room
-/powerlevel @user 50   - Set power level
-/upload                - Upload file (opens picker)
-/copy                  - Copy message content
-/toggle inlineurls     - Enable clickable links
-```
+Without `-r`, messages go to the default room saved in the credentials file. `matrix-commander-tui` is an interactive command builder that needs `fzf` and `vipe` (from moreutils).
 
-### matrix-commander - Scripting CLI
-
-**[matrix-commander](https://github.com/8go/matrix-commander)** is perfect for scripting and automation. E2EE is enabled by default and cannot be disabled.
-
-**Latest:** v8.0.5 (2025-06-17)
-
-**Basic Usage:**
-```bash
-# Send message
-matrix-commander -m "Build complete!" -r '!roomid:server'
-
-# Send to multiple rooms
-matrix-commander -m "Alert!" -r '!room1:server' -r '!room2:server'
-
-# Send file
-matrix-commander --file ./report.pdf -r '!roomid:server'
-
-# Send image with caption
-matrix-commander --image ./screenshot.png -m "Bug reproduction"
-```
-
-**Scripting Integration:**
-```bash
-#!/bin/bash
-# CI notification script
-
-STATUS=$1
-REPO=$2
-
-if [ "$STATUS" = "success" ]; then
-    MSG="✅ Build passed for $REPO"
-else
-    MSG="❌ Build FAILED for $REPO"
-fi
-
-matrix-commander -m "$MSG" -r '!builds:server'
-```
-
-**Monitoring & Listening:**
-```bash
-# Listen forever and pipe to script
-matrix-commander --listen forever --room '!room:server' | ./process.sh
-
-# Listen once (single message)
-matrix-commander --listen once --room '!room:server'
-
-# Tail mode (like tail -f)
-matrix-commander --listen tail --room '!room:server'
-```
-
-**Admin Features:**
-```bash
-# Invite user to room
-matrix-commander --room-invite '!room:server' --user '@user:server'
-
-# Kick user
-matrix-commander --room-kick '!room:server' --user '@user:server'
-
-# Set room name
-matrix-commander --room-set-name '!room:server' "New Room Name"
-
-# Create room
-matrix-commander --room-create --name "My Room" --alias "#myroom:server"
-```
-
-**Cron Examples:**
-```bash
-# /etc/cron.d/matrix-notifications
-
-# Morning standup reminder
-0 9 * * 1-5 user matrix-commander -m "☕ Standup in 15 minutes" -r '!team:server'
-
-# Daily backup status
-0 6 * * * user /scripts/backup.sh && matrix-commander -m "✅ Backup complete"
-
-# Disk space alert
-*/30 * * * * user [ $(df / --output=pcent | tail -1 | tr -d ' %') -gt 90 ] && \
-    matrix-commander -m "⚠️ Disk usage over 90%!" -r '!alerts:server'
-```
-
-**TUI Mode:**
-```bash
-# Interactive terminal interface
-matrix-commander-tui
-```
-
-**Rust Version:**
-There's also [matrix-commander-rs](https://github.com/8go/matrix-commander-rs) for Rust enthusiasts (minimal features currently).
+A Rust rewrite, [matrix-commander-rs](https://github.com/8go/matrix-commander-rs), is at v0.11.0 (2026-06-27).
 
 ---
 
-## Client Power Features
+## Element Web shortcuts and commands
 
-### Element Web Shortcuts
-
-Press `Ctrl/Cmd + /` to see all shortcuts. Key ones:
+Checked against Element Web v1.12.32. Press `Ctrl/Cmd + /` for the full list.
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl + K` | Jump to room (quick switcher) |
-| `Ctrl + Shift + U` | Upload file |
-| `Shift + Page Up` | Jump to last unread |
-| `Ctrl + D` | Mute mic (in call) |
-| `Ctrl + E` | Mute camera (in call) |
-| `↑` | Edit last message |
-
-### Slash Commands
+| `Ctrl/Cmd + K` | Jump to room search |
+| `Ctrl/Cmd + Shift + U` | Upload a file |
+| `Shift + Page Up` | Jump to oldest unread message |
+| `Ctrl/Cmd + D` | Toggle microphone (in a call) |
+| `Ctrl/Cmd + E` | Toggle camera in a call; toggles code formatting in the composer |
+| `↑` in an empty composer | Edit your previous message |
 
 ```
-/me <action>          - Emote action
-/shrug                - Append ¯\_(ツ)_/¯
-/tableflip            - Append (╯°□°)╯︵ ┻━┻
-/lenny                - Append ( ͡° ͜ʖ ͡°)
-
-/invite @user:server  - Invite user
-/kick @user           - Kick user
-/ban @user            - Ban user
-/op @user 50          - Set power level
-
-/topic New topic      - Change room topic
-/nick New Name        - Change display name
-/myroomavatar url     - Set room-specific avatar
-
-/markdown on|off      - Toggle markdown
-/devtools             - Open developer tools
+/me <message>                 Emote
+/shrug <message>              Prefix with ¯\_(ツ)_/¯   (also /tableflip, /unflip, /lenny)
+/invite <user-id> [reason]
+/remove <user-id> [reason]    Alias: /kick
+/ban <user-id> [reason]
+/op <user-id> [level]         Default level 50; /deop resets
+/topic [topic]
+/nick <name>                  Change your display name everywhere
+/myroomnick <name>            Change it in this room only (alias /roomnick)
+/myroomavatar [mxc-url]       Room-specific avatar; no argument opens a file picker
+/plain <message>              Send without Markdown
+/html <message>               Send raw HTML
+/converttodm, /converttoroom
+/devtools
 ```
 
-### SchildiChat Exclusive Features
-
-**[SchildiChat](https://schildi.chat/)** adds features Element lacks:
-
-- **Mark as unread** - MSC2867 support
-- **Unread count for muted chats** - Different color display
-- **URL previews in E2EE** - Optional setting
-- **Open at first unread** - Jump to unread on room open
-- **Swipe between spaces** - Gesture navigation
-- **Don't auto-mark as read** - Privacy feature
-- **Power level colors** - Visual user hierarchy
-
-### FluffyChat Unique Features
-
-**[FluffyChat](https://fluffychat.im/)** offers:
-
-- **Voice messages** - Record and send audio
-- **Location sharing** - Send your position
-- **Material You design** - Modern Android styling
-- **Custom emotes/stickers** - Full pack support
-- **Polls and threads** - Full support since v2.3.0
-- **Text reactions** - Long press → /react command
+Element Web has no `/markdown` command; use `/plain` to send a single message without formatting.
 
 ---
 
-## Performance Power-Ups
+## Performance
 
-### Sliding Sync
+### Sliding sync is built in
 
-Enable for instant app launch and sync:
+Synapse serves simplified sliding sync (MSC4186), which Element X uses, natively and enables it by default. You don't need a sliding-sync proxy or any config. (MSC3575, the original proposal, was closed without being merged.)
 
-```yaml
-# homeserver.yaml (Synapse 1.90+)
-experimental_features:
-  msc3575_enabled: true
-```
+### Monitoring
 
-**Benefits:**
-- Instant login (no initial sync wait)
-- Fast room switching
-- Efficient on mobile data
-- Required for Element X
+Set `enable_metrics: true` and add a `metrics` listener bound to localhost. See [Self-Hosting Tips](./self-hosting-tips#monitoring). Synapse ships a Grafana dashboard at [contrib/grafana](https://github.com/element-hq/synapse/tree/develop/contrib/grafana).
 
-### Local DNS Caching
+### PostgreSQL
 
-Synapse makes many DNS queries. Speed up with local caching:
-
-```bash
-# Install dnsmasq
-sudo apt install dnsmasq
-
-# /etc/dnsmasq.conf
-cache-size=10000
-```
-
-### PostgreSQL Tuning
-
-```ini
-# postgresql.conf for Matrix
-shared_buffers = 256MB
-effective_cache_size = 768MB
-work_mem = 16MB
-maintenance_work_mem = 128MB
-random_page_cost = 1.1
-effective_io_concurrency = 200
-```
-
-### Prometheus + Grafana Monitoring
-
-```yaml
-# homeserver.yaml
-enable_metrics: true
-```
-
-Import the [Synapse Grafana dashboard](https://github.com/matrix-org/synapse/tree/develop/contrib/grafana) for real-time insights.
+Size PostgreSQL settings from the machine's RAM, not from fixed numbers. See [Self-Hosting Tips](./self-hosting-tips#postgresql-tuning).
 
 ---
 
-## Quick Reference
+## Quick reference
 
 | Need | Tool |
 |------|------|
 | CLI server admin | synadm |
-| Web server admin | synapse-admin |
-| Moderation | Draupnir |
-| Automation bots | Maubot |
-| Developer webhooks | Hookshot |
-| Terminal client | gomuks |
-| Scripting | matrix-commander |
-| Classic IM feel | SchildiChat |
-| Mobile-friendly | FluffyChat |
-| Next-gen mobile | Element X |
-
----
-
-*Install these tools and unlock your Matrix superpowers!*
+| Web server admin | synapse-admin or Ketesa |
+| Moderation | Draupnir, Meowlnir, Mjolnir |
+| Plugin bots | Maubot |
+| Developer integrations | Hookshot |
+| Scripted messaging | matrix-commander |
+| Lightweight client | gomuks web |

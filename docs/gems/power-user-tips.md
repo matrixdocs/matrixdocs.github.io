@@ -1,463 +1,291 @@
 ---
 sidebar_position: 1
 title: Power User Tips
-description: Become a Matrix power user with these essential tips
+description: Formatting, shortcuts, slash commands, encryption hygiene and links in Matrix clients
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, Element Web 1.12.32"
 ---
 
 # Power User Tips
 
-Level up your Matrix skills with these power user techniques.
+Practical tips for everyday Matrix use. Element-specific details were checked against Element Web v1.12.32; other clients differ.
 
-## Message Mastery
+## Formatting
 
-### Markdown Formatting
+### Markdown
+
+Element Web parses Markdown with **CommonMark**, so only CommonMark syntax works:
 
 ```markdown
 **bold** or __bold__
 *italic* or _italic_
-~~strikethrough~~
 `inline code`
-```code block```
 > quote
-[link](https://url)
+[link](https://example.org)
+# Heading
+- bullet list
+1. numbered list
 ```
 
-### Advanced Markdown
+For a code block, put the triple backticks on their own lines:
 
-```markdown
-# Heading 1
-## Heading 2
-### Heading 3
-
-- Bullet list
-- Another item
-  - Nested item
-
-1. Numbered list
-2. Second item
-
-| Header | Header |
-|--------|--------|
-| Cell   | Cell   |
-
----
-Horizontal rule
+````markdown
 ```
-
-### HTML Formatting
-
-Some clients support inline HTML:
-```html
-<sub>subscript</sub>
-<sup>superscript</sup>
-<details>
-<summary>Click to expand</summary>
-Hidden content here
-</details>
+code block
 ```
+````
 
-### LaTeX Math (Element)
+CommonMark has no `~~strikethrough~~` and no tables, so Element Web sends those as plain text. Some other clients support them; behaviour is client-dependent.
 
-```latex
-$$E = mc^2$$
-$$\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$
-```
+### Inline HTML
 
-### Quick Emotes
+Element Web's Markdown converter keeps only these HTML tags: `<sub>`, `<sup>`, `<del>`, `<s>`, `<u>` and `<br>`. Use `<del>` or `<s>` if you want strikethrough. Other tags, such as `<details>`, are not passed through.
 
-| Type | Shows |
-|------|-------|
+To send raw HTML, use `/html <message>`. To send one message with no formatting, use `/plain <message>`.
+
+### LaTeX maths
+
+Element Web renders LaTeX only if you enable **Settings → Labs → Render LaTeX maths in messages** (where Labs is available).
+
+### Text emoticons
+
+| Command | Sends |
+|---------|-------|
 | `/shrug` | ¯\\\_(ツ)\_/¯ |
-| `/tableflip` | (╯°□°)╯︵ ┻━┻ |
-| `/unflip` | ┬─┬ノ( º _ ºノ) |
+| `/tableflip` | (╯°□°）╯︵ ┻━┻ |
+| `/unflip` | ┬──┬ ノ( ゜-゜ノ) |
 | `/lenny` | ( ͡° ͜ʖ ͡°) |
-| `/me action` | *YourName action* |
+| `/me waves` | *YourName waves* |
+
+The emoticon commands put the emoticon **before** any text you add.
 
 ---
 
-## Navigation Shortcuts
-
-### Element Web Essentials
+## Keyboard shortcuts (Element Web)
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl/Cmd + K` | **Quick room switcher** (most useful!) |
-| `Ctrl/Cmd + Shift + U` | Upload file |
+| `Ctrl/Cmd + K` | Jump to room search |
+| `Ctrl/Cmd + Shift + U` | Upload a file |
 | `Ctrl/Cmd + /` | Show all shortcuts |
-| `Shift + Page Up` | Jump to last unread |
-| `↑` (in empty composer) | Edit last message |
-| `Esc` | Close dialogs/panels |
+| `Shift + Page Up` | Jump to oldest unread message |
+| `↑` in an empty composer | Edit your previous message |
+| `Alt + ↑ / ↓` | Previous / next room |
+| `Alt + Shift + ↑ / ↓` | Previous / next unread room |
+| `Esc` | Cancel reply or edit |
 
-### Fuzzy Search Prefixes
+### Search dialog
 
-In the quick room switcher (`Ctrl+K`):
-```
-@user     → Search people
-#room     → Search public rooms
-typing    → Fuzzy match room names
-```
+`Ctrl/Cmd + K` opens a search dialog that matches your rooms and people. It has filter buttons for **People** and **Public rooms**. If you type a full alias such as `#room:example.org`, it offers to join that room.
 
-### Room Navigation
+### Message actions
 
-- **Click room name** → Room settings
-- **Click member count** → Member list
-- **Right-click room** → Quick actions menu
-
-### Message Actions
-
-- **Hover message** → Reaction bar appears
-- **Three dots (⋯)** → Full action menu
-- **Reply arrow** → Thread reply
-- **Right-click** → Context menu
+- Hover a message to see the reaction, reply and thread buttons.
+- **Reply** quotes the message in the main timeline. **Reply in thread** starts or continues a thread. They are separate actions.
+- The **⋯** menu has the rest: edit, forward, pin, view source, and so on.
 
 ---
 
-## Room Power Moves
-
-### Quick Room Commands
+## Room commands
 
 ```
-/invite @user:server.com    # Invite user
-/kick @user reason          # Kick with reason
-/ban @user spam             # Ban with reason
-/unban @user:server.com     # Unban user
+/invite @user:example.org [reason]
+/remove @user:example.org [reason]     (alias /kick)
+/ban @user:example.org [reason]
+/unban @user:example.org
 
-/topic New room topic       # Change topic
-/roomname New Name          # Change room name
-/nick My Nickname           # Change your display name (room-specific)
-/myroomavatar mxc://...     # Room-specific avatar
+/topic New room topic
+/roomname New name
+/nick New Name                         Global display name (all rooms)
+/myroomnick Work Me                    Display name in this room only
+/myroomavatar [mxc://...]              Avatar in this room only
 ```
 
-### Power Levels Explained
+Don't wrap arguments in quotes: `/myroomnick "Work Me"` sets the name to `"Work Me"`, quotes included.
 
-| Level | Default Role | Abilities |
-|-------|--------------|-----------|
-| 0 | Default | Send messages |
+### Power levels
+
+| Level | Usual role | Typical abilities |
+|-------|------------|-------------------|
+| 0 | Member | Send messages |
 | 50 | Moderator | Kick, ban, redact others' messages |
-| 100 | Admin | Everything, including changing power levels |
+| 100 | Admin | Change power levels and room settings |
 
-**Custom power levels via room settings:**
+In **room version 12** (the default for new rooms on current servers) the room **creators** have unlimited power and are not listed in the `users` map. A PL 100 admin cannot demote them. When you upgrade a room to v12, Element lets you name additional creators (`/upgraderoom 12 @other:example.org`).
+
+You can adjust individual permissions in the room's settings, or edit the `m.room.power_levels` state event in `/devtools`. For example:
+
 ```json
 {
   "users_default": 0,
   "events": {
-    "m.room.name": 25,        // Trusted users can rename
-    "m.room.message": 0,      // Everyone can message
-    "m.room.redaction": 10    // Slightly trusted can redact
+    "m.room.name": 25,
+    "m.room.message": 0,
+    "m.room.redaction": 10
   },
   "users": {
-    "@vip:example.com": 25
+    "@vip:example.org": 25
   }
 }
 ```
 
-**Quick power level commands:**
-```
-/op @user:server 75    # Give power level 75
-/deop @user:server     # Remove elevated power
-```
+That gives PL 25 the right to rename the room. (The JSON must be valid, so no comments.)
 
-### Room-Specific Profiles
-
-Different identity per room:
 ```
-/nick "Work Me"
-/myroomavatar mxc://server/media-id
+/op @user:example.org 75    Set power level 75 (default 50)
+/deop @user:example.org     Reset to the room default
 ```
 
 ---
 
-## Spaces Organization
+## Spaces
 
-### Space Hierarchy
-
-```
-🏢 My Company
-├── 📢 Announcements (suggested)
-├── 💬 General
-├── 🛠️ Engineering
-│   ├── Frontend
-│   ├── Backend
-│   └── DevOps
-└── 🎉 Social
-    ├── Random
-    └── Games
-```
-
-### Space Tips
-
-- **Suggested rooms** - Admin-marked as important
-- **Nested spaces** - Spaces can contain spaces
-- **Multi-homing** - Rooms can exist in multiple spaces
-- **Personal spaces** - Organize rooms just for yourself
-- **Space-level moderation** - Ban lists apply to all child rooms
-
-### Quick Space Actions
-
-- **Drag rooms** between spaces
-- **Right-click space** → Add existing room
-- **Space settings** → Manage rooms list
-- **Leave space** doesn't leave rooms
+- **Suggested rooms** are highlighted to people who join the space.
+- Spaces can contain other spaces.
+- A room can belong to several spaces.
+- Leaving a space does not leave its rooms (Element asks what to do).
+- Spaces do **not** pass bans down to their rooms. For bans across many rooms, use a policy list with a moderation bot such as [Draupnir](./power-tools#draupnir).
 
 ---
 
-## Encryption Best Practices
+## Encryption hygiene
 
-### Key Backup
+### Recovery and key storage
 
-**Always set up secure backup:**
-1. Settings → Security → Secure Backup
-2. Choose Security Key (recommended)
-3. **Save the key offline** (password manager, paper)
+In Element Web, go to **Settings → Encryption** and set up recovery. Save the recovery key somewhere offline, such as a password manager or on paper. Without it, a new device can only read old messages if another of your devices is online to verify it.
 
-### Device Verification
+### Verify your devices
 
-**Verify new devices immediately:**
-1. Start verification from either device
-2. Compare emoji or scan QR
-3. Mark as verified
+Verify each new login from an existing device (emoji comparison or QR code). Element marks unverified sessions with a warning.
 
-**Why it matters:**
-- Unverified devices show ⚠️
-- Some rooms reject unverified devices
-- April 2026: Element requires verified devices for E2EE
+Element Web also has a Labs option, **Exclude insecure devices when sending/receiving messages**. As of v1.12.32 it is off by default.
 
-### Cross-Signing
+### Review sessions
 
-Enable cross-signing to:
-- Automatically trust your own devices
-- Show green shields to others
-- Simplify verification
-
-### Session Management
-
-Regular session hygiene:
-1. **Settings → Security → Sessions**
-2. Review all devices
-3. Remove old/unknown sessions
-4. Verify new sessions immediately
+**Settings → Devices** lists every logged-in session. Sign out the ones you don't recognise or no longer use.
 
 ---
 
-## Search & Discovery
+## Finding rooms
 
-### Search Operators
+- **Explore rooms** in Element lists public rooms on your server or another server you choose.
+- A space's page lists its rooms.
+- [matrixrooms.info](https://matrixrooms.info) is a search engine for public rooms across many servers.
 
-```
-from:@username:server    # From specific user
-in:!roomid:server        # In specific room
-"exact phrase"           # Exact match
-before:2025-01-01        # Before date
-after:2024-06-01         # After date
-```
-
-### Room Directory Tricks
-
-```
-#:matrix.org          → All public rooms
-#gaming:*             → Gaming rooms across servers
-```
-
-### Room Discovery
-
-- **Explore** (compass icon) → Public rooms
-- **Server dropdown** → Browse other servers
-- **Space directory** → Rooms in a space
-- **[matrixrooms.info](https://matrixrooms.info)** → External directory
+Matrix search has no `from:` or `before:` operators. Element searches message text in the current room or across all rooms. Encrypted rooms can only be searched in Element Desktop, which keeps a local index.
 
 ---
 
-## Notifications Tuning
+## Notifications
 
-### Per-Room Settings
+| Room setting | Effect |
+|--------------|--------|
+| All messages | Notify for everything |
+| Mentions and keywords | Only @mentions and your keywords |
+| Mute | No notifications |
 
-| Setting | Effect |
-|---------|--------|
-| All messages | Everything notifies |
-| Mentions & Keywords | Only @mentions and keywords |
-| Mute | No notifications, no badge |
+Keywords are set in **Settings → Notifications**.
 
-### Global Keywords
-
-Settings → Notifications → Keywords:
-```
-your-name
-your-project
-urgent
-```
-
-### Read State Management
-
-- **Mark all read**: Right-click room → Mark as read
-- **Mark unread**: Right-click → Mark as unread (SchildiChat, FluffyChat)
-- **Favorite rooms**: Star important rooms for quick access
+- **Mark as read**: right-click (or long-press) the room.
+- **Mark as unread**: available in Element Web, FluffyChat and others; it is in the spec since v1.12.
+- **Favourites** and **Low Priority** sort your room list.
 
 ---
 
-## Performance Optimization
+## When Element Web gets slow
 
-### When Element Gets Slow
+1. **Settings → Help & About → Clear cache and reload**.
+2. Leave large rooms you no longer read.
+3. Turn off URL previews in busy rooms.
 
-1. **Settings → Help & About → Clear cache**
-2. Leave inactive rooms
-3. Disable URL previews in busy rooms
-4. Leave large public rooms (10k+ members)
-
-### Room List Management
-
-- **Favorite** important rooms
-- **Low priority** for noisy rooms
-- **Leave** rooms you don't use
-
-### Use Element X
-
-Element X uses Sliding Sync for:
-- Instant startup
-- Fast room switching
-- Lower bandwidth
+Element X (mobile) uses sliding sync and starts much faster than the classic mobile apps.
 
 ---
 
-## Developer Tools
+## Developer tools
 
-### Access Developer Tools
+Type `/devtools` in a room to open Element's developer tools. You can explore room state, account data and send custom events. To see an event's raw JSON, use **⋯ → View source** on a message.
 
-In Element: Settings → Help → Developer Tools
+### Access token
 
-Or use `/devtools` command.
+**Settings → Help & About → Access Token** reveals your token.
 
-### Explore Room State
+:::warning
+An access token gives full access to your account. Don't paste it into untrusted tools or share it. Log the session out to revoke it.
+:::
 
-```
-/devtools
-├── Explore Room State
-├── Send Custom Event
-├── View Source (for events)
-└── Explore Account Data
-```
-
-### Get Your Access Token
-
-```
-Settings → Help & About → Access Token (click to reveal)
-```
-
-### Quick API Calls
+### API calls with curl
 
 ```bash
-# Get your profile
+# Your profile
 curl -H "Authorization: Bearer $TOKEN" \
-  "https://matrix.server/_matrix/client/v3/profile/@you:server"
+  "https://matrix.example.org/_matrix/client/v3/profile/@you:example.org"
 
-# Send a message
+# Send a message (room ID URL-encoded: ! -> %21, : -> %3A)
 curl -X PUT -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"msgtype":"m.text","body":"Hello from API!"}' \
-  "https://matrix.server/_matrix/client/v3/rooms/!room:server/send/m.room.message/$(date +%s)"
+  -d '{"msgtype":"m.text","body":"Hello from the API"}' \
+  "https://matrix.example.org/_matrix/client/v3/rooms/%21abc%3Aexample.org/send/m.room.message/$(date +%s%N)"
 ```
+
+The last path segment is a transaction ID. It must be unique per access token.
 
 ---
 
-## Multi-Account Usage
+## Multiple accounts
 
-### When to Use Multiple Accounts
-
-| Account | Purpose |
-|---------|---------|
-| Personal | Friends, hobbies |
-| Work | Company Matrix |
-| Anonymous | Sensitive topics |
-| Bot/Test | Development |
-
-### Account Switching
-
-- **Element**: Profile menu → Add account
-- **SchildiChat**: Built-in multi-account
-- **FluffyChat**: Native multi-account
+| Client | Multi-account |
+|--------|---------------|
+| Element Web / Desktop | No. Use separate browser profiles, or a separate Desktop profile (`--profile`) |
+| FluffyChat | Yes |
+| SchildiChat Revenge | Yes |
 
 ---
 
-## Privacy Tricks
+## Privacy settings (Element Web)
 
-### Read Receipts
+In **Settings → Preferences**:
 
-Disable in Settings → Preferences:
-- Others won't see when you read
-- You won't see when others read
+- **Send read receipts**: when off, Element sends private read receipts (`m.read.private`), so your server still knows what you have read but other users don't.
+- **Show read receipts sent by other users**: a separate display setting.
+- **Send typing notifications**: turn it off to hide "typing…".
 
-### Typing Indicators
-
-Disable to not show "typing..."
-
-### Presence
-
-If supported by homeserver:
-- Appear offline while online
-- Hide "last seen" time
+Presence ("online", "last seen") depends on the server; some servers turn it off.
 
 ---
 
-## Hidden Features
+## Links
 
-### URL Schemes
+### matrix: URIs
+
+The `matrix:` scheme drops the sigil (`#`, `!`, `@`, `$`):
 
 ```
-matrix:r/room:server           # Open room
-matrix:u/user:server           # Open user profile
-matrix:roomid/!roomid:server   # Open by room ID
+matrix:r/room:example.org                               Room by alias
+matrix:roomid/abc:example.org?via=example.org           Room by ID
+matrix:roomid/abc:example.org/e/eventid?via=example.org Specific event
+matrix:u/alice:example.org?action=chat                  Chat with a user
 ```
 
-### Direct Message Links
+### matrix.to links
 
-Create a DM link: `https://matrix.to/#/@user:server.com`
+```
+https://matrix.to/#/#room:example.org
+https://matrix.to/#/@alice:example.org
+https://matrix.to/#/!abc:example.org/$eventid?via=example.org
+```
 
-### Room Links with Event
-
-Link to specific message: `https://matrix.to/#/!roomid:server/$eventid`
+Always add `?via=` to links that use a room ID. It tells the client which server to join through. Room IDs in v12 rooms have no server part, so `via` is the only routing hint.
 
 ---
 
-## Community Secrets
-
-### Useful Public Rooms
+## Public rooms worth joining
 
 ```
-#matrix:matrix.org          - Official Matrix chat
-#matrix-dev:matrix.org      - Developer discussions
-#synapse:matrix.org         - Synapse homeserver
-#element-web:matrix.org     - Element Web chat
-#twim:matrix.org            - This Week In Matrix
+#matrix:matrix.org          Matrix discussion
+#matrix-dev:matrix.org      Client and server developers
+#synapse:matrix.org         Synapse admins
+#element-web:matrix.org     Element Web
+#twim:matrix.org            This Week in Matrix
 ```
-
-### Finding Niche Communities
-
-1. Browse [matrixrooms.info](https://matrixrooms.info)
-2. Ask in #matrix:matrix.org
-3. Explore Space directories
-
----
-
-## Quick Reference Card
-
-```
-┌────────────────────────────────────────────────┐
-│              MATRIX POWER USER                 │
-├────────────────────────────────────────────────┤
-│ Ctrl+K          → Quick room switch           │
-│ ↑ (empty input) → Edit last message           │
-│ /topic Text     → Change topic                │
-│ /invite @user   → Invite user                 │
-│ /op @user 50    → Set power level             │
-│ /me action      → Emote                       │
-│ **bold**        → Bold text                   │
-│ `code`          → Inline code                 │
-├────────────────────────────────────────────────┤
-│ 🔐 Always set up key backup                   │
-│ ✅ Verify new devices immediately             │
-│ 📱 Use Element X on mobile for speed          │
-└────────────────────────────────────────────────┘
-```
-
----
-
-*Next: [Power Tools](./power-tools) →*

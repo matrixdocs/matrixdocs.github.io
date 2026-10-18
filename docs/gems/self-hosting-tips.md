@@ -1,215 +1,149 @@
 ---
 sidebar_position: 5
 title: Self-Hosting Tips
-description: Optimization and management tips for homeserver admins
+description: Practical tuning, monitoring, security and backup tips for Matrix homeserver admins
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, Synapse 1.163.0"
 ---
 
 # Self-Hosting Tips
 
-Expert tips for running your own Matrix homeserver.
+Tips for running a homeserver, mostly Synapse. Config keys are from the Synapse 1.163 [configuration manual](https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html). Read it, and the [upgrade notes](https://element-hq.github.io/synapse/latest/upgrade.html), before changing a production server.
 
-## Homeserver Alternatives
+:::info Coming next
+Synapse 1.164 (RC expected around 2026-10-20) will probably drop Python 3.10 support ([PR #20359](https://github.com/element-hq/synapse/pull/20359), open as of 2026-10-18). Check your Python version before upgrading.
+:::
 
-### Conduit (Rust)
+## Choosing a homeserver
 
-**[Conduit](https://conduit.rs)** is a lightweight Matrix homeserver written in Rust:
+| Server | Status (2026-10) | Good for |
+|--------|------------------|----------|
+| [Synapse](https://github.com/element-hq/synapse) | Reference server, v1.163.0 (2026-10-14) | Most deployments; the widest feature support |
+| [Conduit](https://gitlab.com/famedly/conduit) | Active, v0.10.15 (2026-09-30) | Small servers; a single Rust binary |
+| [Tuwunel](https://github.com/matrix-construct/tuwunel) | Active, v1.9.4 (2026-10-10) | Successor to conduwuit |
+| [Continuwuity](https://forgejo.ellis.link/continuwuation/continuwuity) | Active | Community successor to conduwuit |
+| [Dendrite](https://github.com/element-hq/dendrite) | Maintenance mode, security fixes only | Existing installs |
 
-**Pros:**
-- Single binary, no dependencies
-- Low memory usage (~100MB for small deployments)
-- Fast startup
-- Easy configuration
+conduwuit ended in 2025 and its repo is archived. Its README names Tuwunel as successor, while Continuwuity is a community continuation; both are maintained. See [Server comparison](../servers/comparison) and [Conduit](../servers/conduit).
 
-**Cons:**
-- Missing some advanced Synapse features
-- Smaller community
-- Less tested at scale
-
-**Installation:**
-```bash
-# Docker
-docker run -d -p 8448:6167 \
-  -v db:/var/lib/matrix-conduit \
-  -e CONDUIT_SERVER_NAME=your.server.name \
-  -e CONDUIT_DATABASE_BACKEND=rocksdb \
-  matrixconduit/matrix-conduit:latest
-```
-
-**Configuration:**
-```toml title="conduit.toml"
-[global]
-server_name = "your.server.name"
-database_backend = "rocksdb"
-port = 6167
-max_request_size = 20_000_000
-allow_registration = false
-```
-
-### conduwuit (Conduit Fork)
-
-**[conduwuit](https://github.com/girlbossceo/conduwuit)** is an actively maintained Conduit fork with more features:
-
-- Experimental room v11 support
-- Better federation compatibility
-- More active development
-- Bug fixes not in upstream
-
-### When to Use What
-
-| Use Case | Recommended |
-|----------|-------------|
-| Large deployment (500+ users) | **Synapse** with workers |
-| Small personal server | **Conduit/conduwuit** |
-| Maximum features | **Synapse** |
-| Minimal resources | **Conduit** |
-| Production critical | **Synapse** |
-| Experimentation | **Conduit/Dendrite** |
+Whatever you run, don't expose a homeserver's plain-HTTP port on 8448. Port 8448 is for federation over TLS. Put a TLS reverse proxy in front, or delegate with `.well-known`.
 
 ---
 
-## Performance Optimization
+## Authentication: Matrix Authentication Service
 
-### Synapse Tuning
-
-#### Worker Mode
-
-For high-traffic servers, split into workers:
+New deployments, and anyone who wants Element X's full login experience, should look at [Matrix Authentication Service](https://github.com/element-hq/matrix-authentication-service) (MAS). It provides OIDC-based next-gen auth, and matrix.org has used it since 2025-04. Synapse integrates with it through the `matrix_authentication_service` block:
 
 ```yaml title="homeserver.yaml"
-worker_app: synapse.app.generic_worker
-worker_replication_host: 127.0.0.1
-worker_replication_http_port: 9093
+matrix_authentication_service:
+  enabled: true
+  endpoint: http://localhost:8080
+  secret_path: /etc/matrix-synapse/mas_secret
 ```
 
-Workers to consider:
-- **Sync workers** - Handle /sync requests
-- **Federation sender** - Outbound federation
-- **Media workers** - Media processing
-- **Event persisters** - Database writes
+Migrating an existing server needs PostgreSQL and uses `mas-cli syn2mas`; follow the [MAS documentation](https://element-hq.github.io/matrix-authentication-service/). With MAS enabled, Synapse no longer creates users through its admin API; users are managed in MAS.
 
-#### Cache Settings
+## Sliding sync
 
-```yaml
+Synapse serves simplified sliding sync (MSC4186) natively and has it on by default. Element X uses it. You don't need the old sliding-sync proxy or any config.
+
+---
+
+## Performance
+
+### Workers
+
+A single Synapse process is enough for small servers. For larger ones, split load across [workers](https://element-hq.github.io/synapse/latest/workers.html). Since Synapse 1.88 the old `worker_replication_*` settings are gone, and Synapse refuses to start if they are present. The main process and workers now share an `instance_map` and Redis:
+
+```yaml title="homeserver.yaml (shared config)"
+listeners:
+  - port: 9093
+    bind_addresses: ['127.0.0.1']
+    type: http
+    resources:
+      - names: [replication]
+
+worker_replication_secret_path: /etc/matrix-synapse/replication_secret
+
+redis:
+  enabled: true
+
+instance_map:
+  main:
+    host: localhost
+    port: 9093
+```
+
+Each worker gets its own small file:
+
+```yaml title="workers/generic_worker1.yaml"
+worker_app: synapse.app.generic_worker
+worker_name: generic_worker1
+
+worker_listeners:
+  - type: http
+    port: 8083
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+
+worker_log_config: /etc/matrix-synapse/generic-worker-log.yaml
+```
+
+Never expose the replication listener publicly; replication traffic is unencrypted. Your reverse proxy must route the endpoints each worker handles; the workers guide lists them. Deployment tools such as matrix-docker-ansible-deploy can generate all this for you.
+
+### Caches
+
+```yaml title="homeserver.yaml"
 caches:
   global_factor: 1.0
   per_cache_factors:
     get_users_in_room: 2.0
-    get_current_state_ids: 2.0
     stateGroupCache: 2.0
 ```
 
-### PostgreSQL Tuning
+The default `global_factor` is 0.5. Raise factors only if you have the RAM, and watch the cache metrics before and after.
 
-```ini title="postgresql.conf"
-shared_buffers = 1GB              # 25% of RAM
-effective_cache_size = 3GB        # 75% of RAM
-maintenance_work_mem = 256MB
-work_mem = 64MB
-random_page_cost = 1.1            # For SSDs
-effective_io_concurrency = 200    # For SSDs
-```
+### PostgreSQL tuning
 
-### Database Maintenance
+Use PostgreSQL rather than SQLite for anything beyond testing. Size settings from the RAM available to PostgreSQL, not fixed numbers. A common starting point:
 
-Regular maintenance tasks:
+| Setting | Starting point |
+|---------|----------------|
+| `shared_buffers` | About 25% of RAM |
+| `effective_cache_size` | About 50–75% of RAM |
+| `random_page_cost` | 1.1 on SSDs |
 
-```bash
-# Vacuum and analyze
-psql -U synapse -d synapse -c "VACUUM ANALYZE;"
+Autovacuum handles routine `VACUUM ANALYZE`. Don't schedule `REINDEX DATABASE` as routine maintenance; it takes heavy locks. See also Synapse's [PostgreSQL guide](https://element-hq.github.io/synapse/latest/postgres.html).
 
-# Reindex if needed
-psql -U synapse -d synapse -c "REINDEX DATABASE synapse;"
-```
+---
 
 ## Monitoring
 
-### Prometheus + Grafana
+Enable metrics and give them a listener bound to **localhost only**. Without `bind_addresses`, a listener binds to all interfaces and your metrics become public.
 
-```yaml title="docker-compose.yml"
-services:
-  prometheus:
-    image: prom/prometheus
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-
-  grafana:
-    image: grafana/grafana
-    ports:
-      - "3000:3000"
-```
-
-### Key Metrics
-
-| Metric | Alert Threshold |
-|--------|-----------------|
-| Federation lag | > 60 seconds |
-| Request latency | > 500ms p95 |
-| Database connections | > 80% |
-| Memory usage | > 85% |
-| Disk space | < 10 GB |
-
-### Synapse Metrics
-
-Enable in config:
-```yaml
+```yaml title="homeserver.yaml"
 enable_metrics: true
 listeners:
   - port: 9000
     type: metrics
+    bind_addresses: ['::1', '127.0.0.1']
 ```
 
-## Media Management
+(Add this listener to your existing `listeners` list rather than replacing it.)
 
-### matrix-media-repo
+Scrape it with Prometheus on the same host or over a private network, following Synapse's [metrics how-to](https://element-hq.github.io/synapse/latest/metrics-howto.html). Synapse's Grafana dashboard is in [contrib/grafana](https://github.com/element-hq/synapse/tree/develop/contrib/grafana). If you run Grafana, change the default admin password and don't publish it without authentication.
 
-**[matrix-media-repo](https://github.com/t2bot/matrix-media-repo)** is an alternative media repository:
+Useful things to alert on: federation send lag, request latency, database connection pool usage, memory and disk space.
 
-**Features:**
-- S3/MinIO storage support
-- Media deduplication
-- Thumbnail generation
-- Federation media caching
-- Multiple homeserver support
+---
 
-**Installation:**
-```yaml title="docker-compose.yml"
-services:
-  media-repo:
-    image: t2bot/matrix-media-repo:latest
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./media-repo.yaml:/etc/media-repo.yaml
-      - ./media:/media
-```
+## Media
 
-**Configuration:**
-```yaml title="media-repo.yaml"
-repo:
-  bindAddress: "0.0.0.0"
-  port: 8000
+### S3 storage for Synapse
 
-database:
-  postgres: "postgres://user:pass@localhost/mediarepo"
-
-homeservers:
-  - name: example.com
-    csApi: "https://matrix.example.com"
-    backoffAt: 10
-
-datastores:
-  - type: s3
-    opts:
-      tempPath: "/tmp/mediarepo_s3"
-      endpoint: s3.amazonaws.com
-      accessKeyId: "YOUR_ACCESS_KEY"
-      secretAccessKey: "YOUR_SECRET_KEY"
-      bucketName: "matrix-media"
-```
-
-### S3 Storage (Native Synapse)
-
-Store media directly in S3 without external repo:
+[synapse-s3-storage-provider](https://github.com/matrix-org/synapse-s3-storage-provider) (1.7.0) copies media to S3. Install it into **the same Python environment as Synapse**, for example `pip install synapse-s3-storage-provider` inside Synapse's virtualenv.
 
 ```yaml title="homeserver.yaml"
 media_storage_providers:
@@ -220,263 +154,189 @@ media_storage_providers:
     config:
       bucket: matrix-media
       region_name: us-east-1
-      access_key_id: YOUR_KEY
-      secret_access_key: YOUR_SECRET
+      # access_key_id / secret_access_key can be set here, but prefer the
+      # standard AWS credential sources (environment, ~/.aws, instance role)
+      # so secrets are not in homeserver.yaml.
 ```
 
-**Install provider:**
+Media is still written to the local media store first. To free local disk, run the provider's `s3_media_upload` script on a schedule, as its README describes.
+
+### matrix-media-repo
+
+[matrix-media-repo](https://github.com/t2bot/matrix-media-repo) (image `ghcr.io/t2bot/matrix-media-repo`, last release v1.3.8 from 2025-01) replaces Synapse's media handling. Its README recommends it only for large servers or hosting providers, and points people who just want S3 at synapse-s3-storage-provider. If you deploy it, start from its `config.sample.yaml`. Each datastore needs `id` and `forKinds`, and the S3 secret key is `accessSecret`.
+
+### Cleaning up remote media
+
 ```bash
-pip install synapse-s3-storage-provider
+# Purge cached remote media not accessed since the given time (ms since epoch)
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:8008/_synapse/admin/v1/purge_media_cache?before_ts=1735689600000"
 ```
 
-### Media Cleanup
-
-Remove old remote media:
-
-```bash
-# Via Admin API
-curl -X POST -H "Authorization: Bearer $TOKEN" \
-  "https://matrix.server/_synapse/admin/v1/purge_media_cache?before_ts=1577836800000"
-```
+Or with synadm: `synadm media purge -d 30`.
 
 ---
 
-## Identity Server
+## Identity server
 
-### Sydent
-
-**[Sydent](https://github.com/matrix-org/sydent)** is the reference Matrix identity server:
-
-**Purpose:**
-- Email/phone to Matrix ID lookup
-- Third-party identity verification
-- Required for some discovery features
-
-**Installation:**
-```yaml title="docker-compose.yml"
-services:
-  sydent:
-    image: matrixdotorg/sydent
-    ports:
-      - "8090:8090"
-    volumes:
-      - ./sydent.yaml:/etc/sydent/sydent.yaml
-      - ./sydent-data:/var/lib/sydent
-```
-
-**Configuration:**
-```yaml title="sydent.yaml"
-general:
-  server.name: id.example.com
-  log.path: /var/log/sydent
-
-db:
-  file: /var/lib/sydent/sydent.db
-
-http:
-  port: 8090
-
-email:
-  smtphost: smtp.example.com
-  smtpport: 587
-  smtpusername: matrix@example.com
-  smtppassword: secret
-  from: "Matrix ID Server <noreply@example.com>"
-```
-
-**Note:** Most small deployments don't need their own identity server. Use `matrix.org` or `vector.im` identity servers instead.
+Most homeservers don't need their own identity server. Sydent's README notes that most servers use the matrix.org instance or none at all. If you do need one, [Sydent](https://github.com/element-hq/sydent) is now maintained under `element-hq` (the `matrix-org/sydent` repo is archived). It uses an INI-style `sydent.conf`; follow its README instead of writing one from scratch.
 
 ---
 
-## Backup Strategy
+## Security hardening
 
-### Database Backup
+:::warning
+The settings below control who can register and what your server will fetch. Getting them wrong can turn your server into a spam source or a proxy into your internal network.
+:::
 
-```bash
-#!/bin/bash
-# backup.sh
-DATE=$(date +%Y%m%d)
-pg_dump -U synapse synapse | gzip > /backups/synapse_$DATE.sql.gz
+### Registration
 
-# Keep last 7 days
-find /backups -name "synapse_*.sql.gz" -mtime +7 -delete
+Never run open registration without a token or a captcha:
+
+```yaml title="homeserver.yaml"
+enable_registration: true
+registration_requires_token: true
 ```
 
-### Media Backup
+Create tokens with the [registration tokens admin API](https://element-hq.github.io/synapse/latest/usage/administration/admin_api/registration_tokens.html) or synadm. Email verification on its own doesn't stop spam bots. On MAS-based servers, registration is configured in MAS.
 
-```bash
-# Rsync media to backup location
-rsync -avz /var/lib/synapse/media_store/ /backups/media/
-```
+### Rate limiting
 
-### Signing Keys
-
-**Critical!** Backup your signing key:
-```bash
-cp /data/*.signing.key /secure-backup/
-```
-
-Losing this means losing your server identity.
-
-## Federation Optimization
-
-### Federation Sender Tuning
-
-```yaml
-federation_sender_instances:
-  - federation_sender1
-  - federation_sender2
-```
-
-### Problematic Servers
-
-Block abusive servers:
-
-```yaml
-federation_domain_whitelist: null  # Allow all except...
-
-# Or use room ACLs for per-room blocking
-```
-
-### Federation Testing
-
-```bash
-# Test federation
-curl "https://federationtester.matrix.org/api/report?server_name=example.com"
-```
-
-## Security Hardening
-
-### Rate Limiting
-
-```yaml
-rc_messages:
+```yaml title="homeserver.yaml"
+rc_message:
   per_second: 0.2
   burst_count: 10
 
 rc_registration:
-  per_second: 0.1
+  per_second: 0.17
   burst_count: 3
 
 rc_login:
-  per_second: 0.03
-  burst_count: 5
+  address:
+    per_second: 0.003
+    burst_count: 5
+  account:
+    per_second: 0.003
+    burst_count: 5
+  failed_attempts:
+    per_second: 0.17
+    burst_count: 3
 ```
 
-### Registration Control
+The key is `rc_message` (singular), and `rc_login` takes `address`, `account` and `failed_attempts` sub-sections. Misspelled or flattened keys are silently ignored. If you run Element Call, it needs higher `rc_message` limits; see [Advanced Features](./advanced-features#element-call).
 
-```yaml
-enable_registration: false
-registration_shared_secret: "long-random-secret"
+### URL previews
 
-# Or with email verification
-enable_registration: true
-registrations_require_3pid:
-  - email
-```
+If you set `url_preview_enabled: true`, you **must** also set `url_preview_ip_range_blacklist`. Otherwise anyone in any room can make your server fetch internal addresses, including cloud metadata at `169.254.169.254`. Use the full list from the Synapse docs:
 
-### Media Restrictions
-
-```yaml
-max_upload_size: 50M
+```yaml title="homeserver.yaml"
+url_preview_enabled: true
 url_preview_ip_range_blacklist:
   - '127.0.0.0/8'
   - '10.0.0.0/8'
   - '172.16.0.0/12'
   - '192.168.0.0/16'
+  - '100.64.0.0/10'
+  - '192.0.0.0/24'
+  - '169.254.0.0/16'
+  - '192.88.99.0/24'
+  - '198.18.0.0/15'
+  - '192.0.2.0/24'
+  - '198.51.100.0/24'
+  - '203.0.113.0/24'
+  - '224.0.0.0/4'
+  - '::1/128'
+  - 'fe80::/10'
+  - 'fc00::/7'
+  - '2001:db8::/32'
+  - 'ff00::/8'
+  - 'fec0::/10'
+max_upload_size: 50M
 ```
 
-## Automation
+Add any other internal ranges your network uses. Note that the blacklist is ignored when Synapse uses an HTTP proxy.
 
-### matrix-docker-ansible-deploy
+### Blocking abusive servers
 
-The best way to deploy Matrix:
+Synapse has no server blocklist setting. `federation_domain_whitelist` is an **allowlist**: if it is unset or `null`, Synapse federates with everyone. To keep out abusive servers:
 
-```bash
-git clone https://github.com/spantaleev/matrix-docker-ansible-deploy.git
-cd matrix-docker-ansible-deploy
-```
+- Set `m.room.server_acl` in the rooms you moderate (Element: room settings, or `/devtools`).
+- Use a moderation bot such as [Draupnir](./power-tools#draupnir) to apply server bans from policy lists across rooms.
+- Firewall the federation port against specific hosts if needed.
 
-Manages:
-- Synapse/Dendrite
-- Element Web
-- Bridges (all major ones)
-- Bots (Mjolnir, etc.)
-- SSL certificates
-- Backups
-
-### Automatic Updates
-
-```yaml
-# watchtower for Docker
-services:
-  watchtower:
-    image: containrrr/watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --cleanup --interval 86400
-```
-
-## Disaster Recovery
-
-### Recovery Checklist
-
-1. **Restore database** from backup
-2. **Restore media** from backup
-3. **Restore signing keys** (critical!)
-4. **Verify configuration**
-5. **Start services**
-6. **Test federation**
-
-### Testing Recovery
-
-Regularly test your recovery process:
-1. Set up test environment
-2. Restore from backups
-3. Verify functionality
-4. Document any issues
-
-## Resource Estimation
-
-### Users vs Resources
-
-| Users | RAM | CPU | Storage |
-|-------|-----|-----|---------|
-| 1-50 | 2GB | 1 | 20GB |
-| 50-500 | 4GB | 2 | 50GB |
-| 500-5000 | 8GB | 4 | 200GB |
-| 5000+ | 16GB+ | 8+ | 500GB+ |
-
-### Storage Growth
-
-Estimate ~100MB per active user per month (varies by usage).
-
-## Useful Commands
-
-```bash
-# Check Synapse version
-curl http://localhost:8008/_synapse/admin/v1/server_version
-
-# List users
-curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:8008/_synapse/admin/v2/users?limit=100"
-
-# Room stats
-curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:8008/_synapse/admin/v1/rooms"
-
-# Purge old events (careful!)
-curl -X POST -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:8008/_synapse/admin/v1/purge_history/!room:example.com" \
-  -d '{"delete_local_events": true, "purge_up_to_ts": 1577836800000}'
-```
-
-## Community Resources
-
-- [#synapse:matrix.org](https://matrix.to/#/#synapse:matrix.org) - Synapse admins
-- [#homeservers:matrix.org](https://matrix.to/#/#homeservers:matrix.org) - General admin chat
-- [matrix-docker-ansible-deploy](https://github.com/spantaleev/matrix-docker-ansible-deploy) - Ansible playbook
+Check your federation setup with the [federation tester](https://federationtester.matrix.org/).
 
 ---
 
-*You've reached the end of Hidden Gems. Happy hacking!*
+## Backups
+
+### Database
+
+```bash title="backup.sh"
+#!/bin/sh
+set -e
+DATE=$(date +%Y%m%d)
+pg_dump -U synapse -Fc synapse > /backups/synapse_$DATE.dump
+find /backups -name 'synapse_*.dump' -mtime +7 -delete
+```
+
+A database dump does **not** include your config, signing key or media. Back those up too:
+
+```bash
+rsync -a /var/lib/synapse/media_store/ /backups/media/
+cp /etc/matrix-synapse/*.signing.key /secure-backup/
+```
+
+### Signing key
+
+Keep the signing key safe. If you lose it you can generate a new one, but other servers will have cached the old key. List it under `old_signing_keys` if you still have its public part; the Synapse docs explain how to recover it from another server.
+
+### Test your restores
+
+Restore to a test machine regularly: database, media, signing key and config. Then start Synapse and check that federation works.
+
+---
+
+## Upgrades
+
+Upgrade deliberately:
+
+1. Pin image tags or package versions; don't track `latest`.
+2. Read the [Synapse upgrade notes](https://element-hq.github.io/synapse/latest/upgrade.html) for every version you skip. Some releases need config changes, such as the worker settings removed in 1.88.
+3. Back up, upgrade, and check logs and federation.
+
+Don't let a container auto-updater (such as Watchtower, which is archived) upgrade Synapse or PostgreSQL unattended. A PostgreSQL major-version change needs a dump and restore or `pg_upgrade`, and skipped upgrade steps can stop Synapse from starting.
+
+### Deployment tools
+
+- [matrix-docker-ansible-deploy](https://github.com/spantaleev/matrix-docker-ansible-deploy): an Ansible playbook covering Synapse and Conduit-family servers, Element Web, bridges, Draupnir, MAS and more. See [Ansible deployment](../deployment/ansible).
+- Element Server Suite Community: Element's Helm chart bundling Synapse, MAS, Element Web and the Element Call backend.
+
+---
+
+## Useful admin API calls
+
+```bash
+# Synapse version (no auth needed)
+curl http://localhost:8008/_synapse/admin/v1/server_version
+
+# List users
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:8008/_synapse/admin/v2/users?limit=100"
+
+# List rooms
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:8008/_synapse/admin/v1/rooms"
+
+# Purge history before a timestamp (room ID URL-encoded)
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+  -d '{"delete_local_events": false, "purge_up_to_ts": 1577836800000}' \
+  "http://localhost:8008/_synapse/admin/v1/purge_history/%21abc%3Aexample.org"
+```
+
+Setting `delete_local_events: true` also deletes your own users' messages permanently. Leave it `false` unless you mean it.
+
+## Community
+
+- [#synapse:matrix.org](https://matrix.to/#/#synapse:matrix.org): Synapse admins
+- [#homeservers:matrix.org](https://matrix.to/#/#homeservers:matrix.org): general homeserver admin chat

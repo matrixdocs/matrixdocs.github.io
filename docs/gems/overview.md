@@ -1,172 +1,151 @@
 ---
 sidebar_position: 1
 title: Hidden Gems Overview
-description: Discover lesser-known Matrix features, power tools, and automation
+description: Lesser-known Matrix features, admin tools and automation, checked against current releases
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, Synapse 1.163.0, Element Web 1.12.32"
 ---
 
 # Hidden Gems
 
-Welcome to the power user section. Transform from a casual Matrix user into a power user with these tools, tips, and techniques.
+This section covers tools and features that many Matrix users never come across: admin CLIs, bots, keyboard shortcuts, smaller clients and server tuning. Commands were checked against each tool's source or README as of 2026-10. Archived or dormant projects are labelled as such.
 
-## What You'll Gain
+## Where to start
 
-After reading this section, you'll be able to:
-
-- ⚡ Navigate Matrix at lightning speed with keyboard shortcuts
-- 🤖 Automate workflows with bots and integrations
-- 🛠️ Use admin tools to manage servers like a pro
-- 🔐 Master encryption and security features
-- 🎯 Discover clients with unique superpowers
-
-## Quick Start Guide
-
-| Your Goal | Start Here |
-|-----------|------------|
-| Navigate faster, format better | [Power User Tips](./power-user-tips) |
-| Admin tools, CLI utilities | [Power Tools](./power-tools) |
-| Bots, webhooks, CI/CD | [Automation](./automation) |
-| Try unique clients | [Lesser-Known Clients](./lesser-known-clients) |
-| Server optimization | [Self-Hosting Tips](./self-hosting-tips) |
+| Goal | Page |
+|------|------|
+| Shortcuts, formatting, slash commands | [Power User Tips](./power-user-tips) |
+| Admin CLIs, moderation bots, CLI clients | [Power Tools](./power-tools) |
+| Webhooks, CI notifications, reminders | [Automation](./automation) |
+| Clients beyond Element | [Lesser-Known Clients](./lesser-known-clients) |
+| Widgets, calls, image packs, room versions | [Advanced Features](./advanced-features) |
+| Running a homeserver | [Self-Hosting Tips](./self-hosting-tips) |
 
 ---
 
-## Power Tools Preview
+## Tools at a glance
 
-### For Server Admins
+### For server admins
 
-| Tool | What It Does |
+| Tool | What it does | Status (2026-10) |
+|------|--------------|------------------|
+| [synadm](https://codeberg.org/synadm/synadm) | Command-line client for the Synapse admin API | v0.49.2; developed on Codeberg (the old GitHub repo is archived) |
+| [synapse-admin](https://github.com/Awesome-Technologies/synapse-admin) | Web admin UI for Synapse | Maintained |
+| [Ketesa](https://github.com/etkecc/ketesa) | etke.cc's fork of synapse-admin (formerly `etkecc/synapse-admin`) | Maintained |
+| [Draupnir](https://github.com/the-draupnir-project/Draupnir) | Moderation bot built on policy lists | v3.2.0 (2026-10-14) |
+| [Meowlnir](https://github.com/maunium/meowlnir) | Moderation bot written in Go, aimed at Synapse | Maintained |
+
+### For automation
+
+| Tool | What it does |
 |------|--------------|
-| **[synadm](https://github.com/JOJ0/synadm)** | CLI Swiss Army knife for Synapse |
-| **[synapse-admin](https://github.com/Awesome-Technologies/synapse-admin)** | Web-based admin UI |
-| **[Draupnir](https://github.com/the-draupnir-project/Draupnir)** | Next-gen moderation (Mjolnir successor) |
-
-### For Automation
-
-| Tool | What It Does |
-|------|--------------|
-| **[Maubot](https://mau.bot)** | Plugin-based bot system |
-| **[Hookshot](https://github.com/matrix-org/matrix-hookshot)** | GitHub, GitLab, JIRA, RSS integration |
-| **[matrix-commander](https://github.com/8go/matrix-commander)** | Scripting and CLI messaging |
-| **[gomuks](https://github.com/gomuks/gomuks)** | Terminal client with web frontend |
+| [Maubot](https://github.com/maubot/maubot) | Plugin-based bot system with a web management UI |
+| [Hookshot](https://github.com/matrix-org/matrix-hookshot) | GitHub, GitLab, Jira, RSS/Atom, generic webhooks, OpenProject, Figma |
+| [matrix-commander](https://github.com/8go/matrix-commander) | Send and receive Matrix messages from shell scripts |
+| [gomuks](https://github.com/gomuks/gomuks) | Client with a Go backend; the web frontend is the main one, the terminal frontend is experimental |
 
 ---
 
-## Essential Shortcuts
+## Element Web shortcuts worth knowing
 
-### Element Web (Must Know)
+Checked against Element Web v1.12.32 (`KeyboardShortcuts.ts`):
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl/Cmd + K` | **Quick room switch** |
-| `↑` (empty input) | Edit last message |
-| `Ctrl/Cmd + Shift + U` | Upload file |
-| `Ctrl/Cmd + /` | Show all shortcuts |
+| `Ctrl/Cmd + K` | Jump to room search |
+| `↑` in an empty composer | Edit your previous message |
+| `Ctrl/Cmd + Shift + U` | Upload a file |
+| `Ctrl/Cmd + /` | Open the keyboard shortcuts list |
 
-### Slash Commands
+### Slash commands
 
 ```
-/me action       - Emote
-/topic text      - Set room topic
-/invite @user    - Invite user
-/op @user 50     - Set power level
-/devtools        - Developer tools
-/shrug           - ¯\_(ツ)_/¯
+/me <message>          Send an emote ("* Alice waves")
+/topic <topic>         Set the room topic
+/invite <user-id>      Invite a user
+/op <user-id> 50       Set a user's power level (50 if omitted)
+/devtools              Open developer tools for the current room
+/shrug <message>       Prefix the message with ¯\_(ツ)_/¯
 ```
 
----
-
-## 2025/2026 New Features
-
-### Threads
-Organize long conversations into threaded replies. Available in Element X, FluffyChat, Cinny.
-
-### Polls
-Create interactive polls in rooms. Native support in most clients.
-
-### Sticky Events (MSC4354)
-Temporary per-user state for live location, call status, and more.
-
-### Element X
-Next-gen mobile with Sliding Sync for instant startup and fast sync.
-
-### Verification Required (April 2026)
-Element will require verified devices for E2EE messages.
+Type `/help` in Element Web to list every command your version supports.
 
 ---
 
-## Labs Features Worth Enabling
+## Recent features
 
-In **Element → Settings → Labs**:
+### Threads and polls
+Threads are standard in Element Web, Element X and FluffyChat (since v2.3.0). Most major clients support polls.
 
-| Feature | Why Enable |
-|---------|------------|
-| Threads | Organize discussions |
-| Video rooms | Persistent video spaces |
-| Rich text editor | Better formatting |
-| Pinned messages | Highlight important content |
+### Element X and next-generation auth
+Element X uses simplified sliding sync, which is built into Synapse and on by default, so no proxy is needed. Element recommends pairing Element X with [Matrix Authentication Service](https://github.com/element-hq/matrix-authentication-service) (MAS), the OIDC-based "next-gen auth" that matrix.org moved to in 2025. See [Self-Hosting Tips](./self-hosting-tips).
 
----
+### Room version 12
+Room version 12 is the spec's recommended default (spec v1.19) and Synapse's default since 1.162. Room creators now have unlimited power. See [Advanced Features](./advanced-features#room-versions).
 
-## Client Superpowers
+### Image packs
+Custom emoji and sticker packs entered the spec in v1.19 (`m.room.image_pack`). See [Advanced Features](./advanced-features#custom-emoji-and-stickers).
 
-### SchildiChat
-- Mark as unread (other clients don't have this!)
-- URL previews in encrypted rooms
-- Don't auto-mark as read
-- Swipe between spaces
+### Sticky events (experimental)
+[MSC4354](https://github.com/matrix-org/matrix-spec-proposals/pull/4354) adds short-lived per-user state, for example call membership. It is not in spec v1.19. Synapse supports it only behind `experimental_features.msc4354_enabled`, which is off by default.
 
-### FluffyChat
-- Voice messages
-- Location sharing
-- Material You design
-- Polls and threads
-
-### Cinny
-- Custom CSS theming
-- Vim-style navigation
-- Beautiful Discord-like UI
-
-### gomuks
-- Terminal-based
-- New web frontend
-- Power level commands
-- Archive room history to JSON
+### Excluding unverified devices (still opt-in)
+Element Web can stop sharing keys with, and decrypting messages from, devices their owners have not verified. As of v1.12.32 this is still a Labs feature ("Exclude insecure devices when sending/receiving messages") and is off by default.
 
 ---
 
-## Quick Automation Ideas
+## Labs features in Element Web
 
-### Send Alerts from Scripts
+These are under **Settings → Labs**, which only appears if the deployment sets `show_labs_settings`. As of v1.12.32:
+
+| Feature | What it does |
+|---------|--------------|
+| Video rooms | Rooms with an always-on video call |
+| Rich text editor | WYSIWYG composer |
+| Render LaTeX maths in messages | Renders maths written in LaTeX |
+| Scroll to date | Adds `/jumptodate` and date headers |
+| Exclude insecure devices | See above |
+
+Threads and pinned messages are no longer Labs features.
+
+---
+
+## Client highlights
+
+- **SchildiChat**: the original Element-based apps are no longer maintained. Development moved to [SchildiChat Next](https://github.com/SchildiChat/schildichat-android-next) (Android, based on Element X) and [SchildiChat Revenge](https://github.com/SchildiChat/schildi-revenge) (desktop and Android, beta).
+- **FluffyChat**: voice messages, location sharing, polls and threads; releases roughly monthly.
+- **Cinny**: Discord-like layout and native custom emoji packs.
+- **gomuks**: the web frontend is ready for daily use; `archivemuks` exports room history.
+
+"Mark as unread" is in the spec (v1.12) and in Element Web, so it is no longer unique to SchildiChat.
+
+---
+
+## Quick automation ideas
+
+Send an alert from a script. Put the room ID in single quotes so the shell leaves the `!` alone:
+
 ```bash
-matrix-commander -m "🚨 Server alert!" -r '!alerts:server'
+matrix-commander -m "Server alert" -r '!alerts:example.org'
 ```
 
-### Subscribe to RSS Feeds
+Subscribe a room to an RSS feed with Hookshot:
+
 ```
 !hookshot feed https://blog.example.com/rss
 ```
 
-### Get GitHub Notifications
-```
-!hookshot github repo owner/repo
-```
+Connect a GitHub repository with Hookshot (the full URL is required):
 
-### Schedule Reminders
 ```
-!remind me tomorrow at 9am standup meeting
+!hookshot github repo https://github.com/owner/repo
 ```
 
----
+Set a reminder with the [maubot reminder plugin](https://github.com/maubot/reminder):
 
-## Explore the Guides
+```
+!remind tomorrow at 9:00 standup meeting
+```
 
-1. **[Power User Tips](./power-user-tips)** - Keyboard shortcuts, formatting, navigation
-2. **[Power Tools](./power-tools)** - synadm, Draupnir, Maubot, gomuks
-3. **[Automation](./automation)** - Webhooks, CI/CD, scheduled messages
-4. **[Lesser-Known Clients](./lesser-known-clients)** - Cinny, FluffyChat, Nheko, SchildiChat
-5. **[Advanced Features](./advanced-features)** - Widgets, integrations, deep dives
-6. **[Self-Hosting Tips](./self-hosting-tips)** - Performance, monitoring, optimization
-
----
-
-*Install the tools. Learn the shortcuts. Automate the boring stuff. Become a Matrix power user.*
+More in [Automation](./automation).
