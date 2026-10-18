@@ -7,7 +7,7 @@
 //   event     - "type": "m.*" in JSON blocks is a type the spec defines
 //   install   - npm/pip/cargo/go/docker targets are in scripts/install-allowlist.json
 // Opt out of one fenced block with a line `{/* snippet:skip: reason */}` right before it.
-// Usage: MATRIX_SPEC=... SYNAPSE_SRC=... node scripts/check-snippets.mjs [--json] [--strict]
+// Usage: MATRIX_SPEC=... SYNAPSE_SRC=... [DOCS_DIR=...] node scripts/check-snippets.mjs [--json] [--strict] [--targets]
 import fs from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
@@ -136,7 +136,7 @@ function checkConfigNode(node, sch, prefix, out) {
 }
 
 // ---------- scan ----------
-const DOCS = path.join(ROOT, 'docs');
+const DOCS = process.env.DOCS_DIR ? path.resolve(process.env.DOCS_DIR) : path.join(ROOT, 'docs');
 const report = [];
 const totals = {config: 0, endpoint: 0, deprecated: 0, admin: 0, event: 0, install: 0};
 const seenTargets = new Set();
