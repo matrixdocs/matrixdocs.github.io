@@ -125,7 +125,7 @@ mautrix-python is the library under [maubot](../bots/maubot). Most mautrix bridg
 
 ### A minimal client
 
-Checked against mautrix 0.21.1 by constructing the client and registering the handler, without network access. Create the `Client` inside a running event loop.
+Checked against mautrix 0.21.1 with pyright (no errors), and by constructing the client and registering the handler without network access. Create the `Client` inside a running event loop. The `@client.on(...)` decorator also works at runtime, but its type hints make pyright report an error, so this sample uses `add_event_handler`.
 
 ```python
 import asyncio
@@ -144,10 +144,11 @@ async def main() -> None:
     client.ignore_initial_sync = True  # don't replay history on startup
     client.ignore_first_sync = True
 
-    @client.on(EventType.ROOM_MESSAGE)
     async def handler(evt: MessageEvent) -> None:
         if evt.sender != client.mxid and evt.content.body == "!ping":
             await client.send_notice(evt.room_id, "pong")
+
+    client.add_event_handler(EventType.ROOM_MESSAGE, handler)
 
     await client.start(None)  # runs until stopped
 
