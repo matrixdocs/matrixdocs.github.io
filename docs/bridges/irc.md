@@ -1,232 +1,131 @@
 ---
 sidebar_position: 5
 title: IRC Bridge
-description: Bridge Matrix to IRC networks
+description: Bridge Matrix to IRC networks with Heisenbridge
+last_update:
+  date: 2026-10-18
+verified_with: "Heisenbridge v1.15.4 (heisenbridge/*.py, README), Synapse 1.163.0"
 ---
 
 # IRC Bridge
 
-Connect to IRC networks from Matrix using Heisenbridge - a bouncer-style IRC bridge.
+[Heisenbridge](https://github.com/hifi/heisenbridge) is a bouncer-style IRC bridge: each Matrix user gets their own IRC connection, controlled by text commands in a DM with the bridge bot. As of 2026-10-18 the latest release is **v1.15.4 (2025-10-04)**; there have been no commits since, so expect slow maintenance.
 
-## Why Heisenbridge?
+Other options:
 
-Heisenbridge takes a **bouncer approach**: each Matrix user connects to IRC individually, like a traditional IRC bouncer. This is different from portal-style bridges.
+| Bridge | Good for | Status (2026-10) |
+|--------|----------|------------------|
+| Heisenbridge | Personal use, small groups | v1.15.4, slow maintenance |
+| [matrix-appservice-irc](https://github.com/matrix-org/matrix-appservice-irc) | Network-wide bridges with many users | 4.0.0 (2025-10-24), maintained |
+| [mautrix-irc](https://github.com/mautrix/irc) | (future) | No release; its README says switching from Heisenbridge is "not yet recommended" |
 
-| Feature | Heisenbridge | matrix-appservice-irc |
-|---------|--------------|----------------------|
-| **Style** | Bouncer (per-user) | Portal (server-wide) |
-| **Setup** | Simple | Complex |
-| **IRC identity** | Your own | Shared prefix |
-| **Admin required** | Yes (appservice) | Yes |
-| **Best for** | Personal use | Communities |
+Libera.Chat has had no official Matrix bridge since 2023 ([Libera news](https://libera.chat/news/official-matrix-bridge-farewell)), so to reach Libera from Matrix you run your own bridge.
 
-### Key Features
+:::warning Heisenbridge does not support encryption
+If your homeserver creates rooms encrypted by default, Heisenbridge can't read your commands. On Synapse, leave `encryption_enabled_by_default_for_room_type` at `off` (other rooms can still be encrypted by choice). Also note that bridge admins can read stored IRC passwords and channel keys.
+:::
 
-- **Zero configuration** - No database required
-- **Bouncer mode** - Each user has their own IRC connection
-- **Relaybot mode** - Optional shared connection for rooms
-- **Full IRC** - All standard IRC features work
-- **Managed via DM** - Just message @heisenbridge
-- **Sustainable maintenance** - Active development (v1.14.5+)
+## Setup with Docker
 
-## Docker Setup
+Images are on Docker Hub as `hif1/heisenbridge`. Each release is tagged `x.y.z`, `x.y` and `x`; `latest` follows the master branch, so pin a release.
 
-```yaml title="docker-compose.yml"
-version: '3'
-services:
-  heisenbridge:
-    image: hif1/heisenbridge:latest
-    restart: unless-stopped
-    command: -c /data/config.yaml -l heisenbridge http://synapse:8008
-    volumes:
-      - ./heisenbridge-data:/data
-```
-
-## Configuration
-
-### Generate Registration
+**1. Generate the registration file.** The `url` in it must be an address the homeserver can reach. By default it is `http://127.0.0.1:9898`, which is wrong inside Docker, so pass `-l`/`-p`:
 
 ```bash
-docker run --rm -v $(pwd)/heisenbridge-data:/data hif1/heisenbridge:latest \
-  -c /data/config.yaml --generate
+docker run --rm -v "$(pwd)":/data hif1/heisenbridge:1.15 \
+  -c /data/heisenbridge.yaml --generate -l heisenbridge -p 9898
 ```
 
-### Config File
+Use `--generate-compat` instead of `--generate` for Conduit-based servers and Dendrite. The generated file looks like this (tokens are random):
 
-```yaml title="config.yaml"
+```yaml title="heisenbridge.yaml (registration)"
 id: heisenbridge
-url: http://localhost:9898
-as_token: <generated>
-hs_token: <generated>
+url: http://heisenbridge:9898
+as_token: <random>
+hs_token: <random>
+rate_limited: false
 sender_localpart: heisenbridge
 namespaces:
   users:
-    - exclusive: true
-      regex: '@irc_.*'
-  aliases:
-    - exclusive: true
-      regex: '#irc_.*'
+    - regex: '@irc_.*'
+      exclusive: true
+  aliases: []
+  rooms: []
 ```
 
-Add to homeserver and restart.
+**2. Register it** by adding the file to Synapse's `app_service_config_files` and restarting Synapse.
+
+**3. Run the bridge**, pointing it at the homeserver. The image's entrypoint already listens on `0.0.0.0`.
+
+```yaml title="docker-compose.yml"
+services:
+  heisenbridge:
+    image: hif1/heisenbridge:1.15
+    restart: unless-stopped
+    command: -c /data/heisenbridge.yaml -p 9898 -o @you:example.com http://synapse:8008
+    volumes:
+      - ./heisenbridge.yaml:/data/heisenbridge.yaml
+```
+
+`-o` sets the bridge owner (admin). Without it, the first local user to talk to the bridge claims it. Heisenbridge keeps its own settings on the homeserver, not in a config file. See the [README](https://github.com/hifi/heisenbridge#readme) and its [docker-compose example](https://github.com/hifi/heisenbridge/tree/master/docker-compose).
 
 ## Using Heisenbridge
 
-### Connect to Network
+Start a DM with `@heisenbridge:example.com`. Commands are case-insensitive; add `-h` to any command for help. Command names below are from the v1.15.4 source (`control_room.py`, `network_room.py`, `channel_room.py`).
 
-1. DM `@heisenbridge:example.com`
-2. `ADDNETWORK libera irc.libera.chat`
-3. `OPEN libera`
-4. In the network room: `CONNECT`
-
-### Join Channels
-
-In the network room:
-```
-JOIN #channel
-```
-
-A new Matrix room is created for each channel.
-
-### Commands
-
-| Command | Description |
-|---------|-------------|
-| `ADDNETWORK <name> <server>` | Add IRC network |
-| `DELNETWORK <name>` | Remove network |
-| `NETWORKS` | List networks |
-| `OPEN <network>` | Open network control room |
-| `CONNECT` | Connect to network |
-| `DISCONNECT` | Disconnect |
-| `JOIN #channel` | Join IRC channel |
-| `PART #channel` | Leave channel |
-| `QUERY nick` | Start private chat |
-| `NICK newnick` | Change nickname |
-
-### Network Room Commands
+**In the DM with the bridge (control room):**
 
 ```
-CONNECT              - Connect to IRC
-DISCONNECT           - Disconnect
-STATUS              - Connection status
-NICK newnick        - Change nick
-JOIN #channel       - Join channel
-QUIT [message]      - Quit with message
+ADDNETWORK libera                               # admin only
+ADDSERVER libera irc.libera.chat 6697 --tls     # admin only; default port is 6667 without TLS
+NETWORKS                                        # list networks
+OPEN libera                                     # open a network room
+QUIT                                            # disconnect from all networks and remove your settings
 ```
 
-## Pre-configured Networks
-
-Common IRC networks:
-
-| Network | Server |
-|---------|--------|
-| Libera.Chat | irc.libera.chat:6697 |
-| OFTC | irc.oftc.net:6697 |
-| Freenode | chat.freenode.net:6697 |
+**In the network room:**
 
 ```
-ADDNETWORK libera irc.libera.chat:+6697
+NICK yournick
+SASL --username=yournick --password=yourpassword
+CONNECT
+JOIN #matrix
+QUERY somenick                                  # open a private chat
+DISCONNECT
 ```
 
-(+ prefix for TLS)
+Use `NICKSERV identify <password>` (alias `NS`) if the network has no SASL, or `CERTFP` for certificate authentication.
 
-## NickServ Authentication
+**In a channel room:** `PART` leaves the channel, `NAMES` lists members, `TOPIC` shows or sets the topic, and `OP`, `VOICE`, `KICK` and `KB` (kick and ban) do what you'd expect.
 
-### SASL
+## Plumbing a room (relay mode)
+
+To connect an existing Matrix room to an IRC channel through a single IRC connection, run this in the network room:
 
 ```
-ADDNETWORK libera irc.libera.chat:+6697 --sasl-nick=yournick --sasl-password=yourpass
+PLUMB !roomid:example.com #channel
 ```
 
-### Traditional
+The bridge joins the Matrix room and relays everyone's messages to the IRC channel through your connection.
 
-In network room after connecting:
-```
-MSG NickServ IDENTIFY yourpassword
-```
+## Member sync
+
+How IRC users appear in Matrix is set per channel room with `SYNC`:
+
+| Option | Behaviour |
+|--------|-----------|
+| `SYNC --full` | Members are fully synchronised |
+| `SYNC --half` | Members are added when they join or talk |
+| `SYNC --lazy` | Members are added only when they talk |
 
 ## Troubleshooting
 
-### Can't Connect
-
-- Check firewall for IRC ports (6667, 6697)
-- Verify server address
-- Check TLS settings (+6697)
-
-### Nickname in Use
-
-```
-NICK differentnick
-```
-
-### Disconnected
-
-Heisenbridge reconnects automatically. Check logs for errors.
-
-## Bouncer vs Relaybot Mode
-
-### Bouncer Mode (Default)
-
-Each Matrix user gets their own IRC connection:
-
-```
-Matrix User Alice  →  IRC user "Alice"
-Matrix User Bob    →  IRC user "Bob"
-```
-
-- Full control over your IRC identity
-- Private messages work naturally
-- You manage your own channels
-
-### Relaybot Mode
-
-Single IRC connection relays messages for a Matrix room:
-
-```
-Matrix Room  →  [Heisenbridge Relay]  →  IRC Channel
-```
-
-Use when:
-- Bridging a community room
-- Users don't need individual IRC identities
-- Simpler management needed
-
-**Enable relaybot:**
-In the network room: `RELAYBOT #channel`
-
-## User Synchronization
-
-Control how IRC users appear in Matrix:
-
-| Mode | Behavior |
-|------|----------|
-| **Full** | Sync all users on connect |
-| **Half** | Sync users on join |
-| **Lazy** | Only sync when user talks |
-
-Configure in bridge settings for performance vs completeness tradeoff.
-
-## Privacy Note
-
-:::tip IRC Users Don't Know
-Users on IRC shouldn't know you're using Matrix - unless you send media that links to your homeserver. Messages appear as normal IRC.
-:::
-
-## Alternative: matrix-appservice-irc
-
-For larger deployments, consider [matrix-appservice-irc](https://github.com/matrix-org/matrix-appservice-irc):
-
-- **Server-wide** bridging
-- **Portal rooms** for channels
-- **Ident support**
-- More complex setup
+- **The bot doesn't answer:** the room is probably encrypted (see the warning above), or the homeserver can't reach the `url` in the registration file.
+- **Can't connect:** check the server, port and `--tls` flag with `SERVERS libera`, then `CONNECT` again and read the network room for errors.
+- **Nickname in use:** set another one with `NICK`.
 
 ## Resources
 
-- [Heisenbridge GitHub](https://github.com/hifi/heisenbridge)
-- [Matrix Room](https://matrix.to/#/#heisenbridge:vi.fi)
-- [IRC Channel](irc://irc.libera.chat/#heisenbridge)
-
----
-
-*Next: [Signal Bridge](./signal) →*
+- [Heisenbridge on GitHub](https://github.com/hifi/heisenbridge)
+- Support room: [#heisenbridge:vi.fi](https://matrix.to/#/#heisenbridge:vi.fi)
+- [matrix-appservice-irc docs](https://matrix-org.github.io/matrix-appservice-irc/latest/)

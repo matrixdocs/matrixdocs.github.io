@@ -1,200 +1,70 @@
 ---
 sidebar_position: 6
 title: Signal Bridge
-description: Bridge Matrix to Signal messenger
+description: Bridge Matrix to Signal with mautrix-signal
+last_update:
+  date: 2026-10-18
+verified_with: "mautrix-signal v26.10 (v0.2610.0), mautrix-go v0.32.0, docs.mau.fi"
 ---
 
 # Signal Bridge
 
-Connect Signal to Matrix using mautrix-signal.
+[mautrix-signal](https://github.com/mautrix/signal) is a puppeting bridge between Matrix and Signal, written in Go on bridgev2 and using libsignal directly. As of 2026-10-18 the latest release is **v26.10 (git tag `v0.2610.0`, 2026-10-16)**.
 
-## Features
-
-- **Full puppeting** - Appear as yourself on Signal
-- **Individual chats** - Bridge 1:1 conversations
-- **Group chats** - Bridge Signal groups
-- **Media** - Images, voice messages, files
-- **Reactions** - Emoji reactions
-- **Receipts** - Read receipts and typing
-- **NEW: History backfill** - Transfer history on login (Feb 2025)
-
-### 2025 Updates
-
-| Feature | Description |
-|---------|-------------|
-| **History transfer** | Backfill from phone on pairing |
-| **Backfill fixes** | Fixed backfilling after re-login |
-| **Calendar versioning** | Now uses vYY.0M.patch format |
-
-### Requirements
-
-- Signal app on phone
-- ffmpeg (for voice messages)
-
-## Docker Setup
-
-```yaml title="docker-compose.yml"
-version: '3'
-services:
-  mautrix-signal:
-    image: dock.mau.dev/mautrix/signal:latest
-    restart: unless-stopped
-    volumes:
-      - ./signal-data:/data
-
-  signald:
-    image: signald/signald:latest
-    restart: unless-stopped
-    volumes:
-      - ./signald-data:/signald
-```
-
-:::info
-mautrix-signal requires either signald or the built-in signal library. Recent versions include native Signal support.
+:::danger signald is not used any more
+mautrix-signal stopped using **signald** in v0.5.0 (2024-02-16), and signald itself no longer works with Signal's production servers. Do not deploy a signald container or set `socket_path`; any guide that does is out of date.
 :::
+
+:::warning
+The bridge is a linked device on your Signal account. It decrypts every message to pass it to Matrix, so the bridge operator and your homeserver can read your Signal chats, and contact names and numbers are stored in the bridge database. Signal's end-to-end encryption ends at the bridge.
+:::
+
+Full documentation: [docs.mau.fi/bridges/go/signal](https://docs.mau.fi/bridges/go/signal/).
+
+## Setup
+
+Follow the generic [Go bridge setup](https://docs.mau.fi/bridges/go/setup.html) or [Docker setup](https://docs.mau.fi/bridges/general/docker-setup.html), using `dock.mau.dev/mautrix/signal:v26.10`. The default appservice port is 29328. The Docker image includes `ffmpeg`, which is used for voice messages and GIFs. If you build from source you also need libsignal-ffi, which the setup page explains.
 
 ## Configuration
 
+The bridge uses the shared bridgev2 layout (see the [overview](./overview#the-bridgev2-config-layout)). Set `homeserver`, `appservice.address`, `database` and `bridge.permissions` as described there. The Signal-specific `network:` section works with its defaults. To get message history, turn on backfill **before** you log in:
+
 ```yaml title="config.yaml"
-homeserver:
-  address: https://matrix.example.com
-  domain: example.com
-
-appservice:
-  address: http://localhost:29328
-  hostname: 0.0.0.0
-  port: 29328
-  database:
-    type: postgres
-    uri: postgres://user:pass@localhost/signal?sslmode=disable
-
-signal:
-  socket_path: /signald/signald.sock
-  # Or for native:
-  # use_native: true
-
-bridge:
-  username_template: "signal_{{.}}"
-
-  encryption:
-    allow: true
-    default: true
-
-  permissions:
-    "*": relay
-    "example.com": user
-    "@admin:example.com": admin
+# backfill: keys from mautrix/go v0.32.0 bridgev2/matrix/mxmain/example-config.yaml
+backfill:
+  enabled: true
+  max_initial_messages: 50
+# network: keys from mautrix/signal v0.2610.0 pkg/connector/example-config.yaml
+network:
+  # Name shown in Signal's linked devices list
+  device_name: mautrix-signal
 ```
 
-## Linking Your Account
+`network.use_contact_avatars` and the `{{.ContactName}}` / `{{.Nickname}}` display name variables use your phone's contacts. The example config marks them as unsafe on multi-user instances.
 
-1. DM `@signalbot:example.com`
-2. Send `!signal link`
-3. Open Signal on phone:
-   - **Android/iOS:** Settings → Linked Devices → Link New Device
-4. Scan QR code with Signal app
-5. **Important:** When prompted, choose to **transfer history**
+## Logging in
 
-```
-You: !signal link
-Bot: [QR Code Image]
-Bot: Open Signal, go to Settings > Linked Devices, and scan this code.
-Bot: Successfully linked as YourName
-```
+1. Open a DM with `@signalbot:example.com`.
+2. In the Signal app, go to **Settings → Linked Devices** and add a new device.
+3. Send `login` to the bot and scan the QR code it sends.
+4. If backfill is enabled, Signal asks whether to transfer message history. Choose either option.
 
-:::tip Transfer History
-When pairing, Signal will ask if you want to transfer message history. **Say yes** to backfill your messages to Matrix. If you don't see this prompt, your Signal app may be outdated.
-:::
+If you transferred history, recent chats are created and backfilled. Otherwise chats appear as new messages arrive. To unlink, send `logout` (or remove the device in Signal).
 
-:::info Secondary Device
-Signal allows one primary device (phone) and multiple linked devices. The bridge links as a secondary device, so you keep full Signal functionality on your phone.
-:::
-
-## History Backfill
-
-Signal performs a **one-time history transfer** when you link the bridge (similar to WhatsApp).
-
-### Configuration
-
-```yaml
-bridge:
-  history_sync:
-    # Request history amount (web=3mo, desktop=1yr)
-    request_full_sync: false
-    full_sync_config:
-      days_of_messages: 365  # Request up to 1 year
-
-    # How much to actually backfill
-    max_initial_messages: 100
-```
-
-### How It Works
-
-1. You scan QR code to link bridge
-2. Signal asks "Transfer message history?"
-3. If yes, phone sends history to bridge
-4. Bridge creates rooms and imports messages
-
-:::warning Configure Before Linking
-Set your backfill preferences **before** the first login. History transfer only happens once during initial pairing.
-:::
+The bridge can only be a **linked** (secondary) device. Registering a new primary Signal account through the bridge is no longer supported; use an official app, or [signal-cli](https://docs.mau.fi/bridges/go/signal/authentication.html) as described in the docs.
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `!signal help` | Show help |
-| `!signal link` | Link Signal account |
-| `!signal unlink` | Unlink account |
-| `!signal ping` | Test connection |
-| `!signal sync` | Sync contacts/groups |
-
-## Bridging Groups
-
-Groups are automatically bridged when you receive messages. To manually sync:
-
-```
-!signal sync groups
-```
-
-## Privacy Considerations
-
-### End-to-End Encryption
-
-- Signal uses E2EE for all messages
-- Bridge decrypts to relay to Matrix
-- Matrix room can have its own E2EE
-- **Bridge sees plaintext** to convert
-
-### Data Storage
-
-- Signal messages stored on Matrix homeserver
-- Contact info synced to bridge database
-- Consider privacy implications
+mautrix-signal uses the shared bridgev2 commands (see the [overview](./overview#commands-bridgev2)), such as `login`, `logout`, `start-chat`, `create-group`, `bridge` and `set-relay`. The only Signal-specific command is `discard-sender-key`. There is no `ping`, `link` or `sync` command. Run `help` for the full list.
 
 ## Troubleshooting
 
-### QR Code Not Working
-
-- Ensure Signal app is updated
-- Try regenerating: `!signal link`
-- Check signald logs
-
-### Messages Not Syncing
-
-- Verify link status: `!signal ping`
-- Re-link if needed
-- Check for Signal service issues
-
-### Rate Limiting
-
-Signal has rate limits for new accounts. Use an established account.
+- **QR code expired:** send `login` again and scan within the time limit.
+- **Messages stop arriving:** check whether the bridge still appears under Linked Devices in Signal. If it was removed, log in again.
+- **No history after login:** history transfer only happens if `backfill.enabled` was true when you logged in.
 
 ## Resources
 
-- [mautrix-signal GitHub](https://github.com/mautrix/signal)
-- [Documentation](https://docs.mau.fi/bridges/signal/)
-
----
-
-*Next: [WhatsApp Bridge](./whatsapp) →*
+- [mautrix-signal on GitHub](https://github.com/mautrix/signal) and its [CHANGELOG](https://github.com/mautrix/signal/blob/main/CHANGELOG.md)
+- [docs.mau.fi/bridges/go/signal](https://docs.mau.fi/bridges/go/signal/)
+- Support room: [#signal:maunium.net](https://matrix.to/#/#signal:maunium.net)
