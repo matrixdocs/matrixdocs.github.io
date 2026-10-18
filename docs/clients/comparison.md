@@ -19,12 +19,12 @@ These tables compare the most-used Matrix clients as of 2026-10. They are built 
 | **Key backup / recovery key** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Spaces** | ✅ | ✅ (including creating them) | ✅ | ✅ | ✅ |
 | **Threads** | ✅ | ✅ (may need Labs) | 🔄 partial | ✅ (since v2.3.0) | 🔄 |
-| **Voice/video calls** | ✅ Element Call | ✅ Element Call | ✅ voice/video rooms (v4.11+) | ✅ MatrixRTC | 🔄 varies by platform |
-| **Several accounts** | ❌ | Android 26.10+ | ❌ | ✅ | 🔄 |
+| **Voice/video calls** | ✅ Element Call | ✅ Element Call | ✅ calls (v4.12+) and voice/video rooms (v4.11+) | ✅ MatrixRTC | 🔄 varies by platform |
+| **Several accounts** | ❌ | Android 26.10.0 pre-release | ❌ | ✅ | 🔄 |
 
 ✅ supported · 🔄 partial · ❌ not supported
 
-Since spec v1.18 (MSC4153), clients are expected to stop sharing room keys with devices their owner has not cross-signed, and to hide messages from such devices. Element's apps are rolling this out; check each client for its own behaviour.
+Since spec v1.18 (MSC4153), clients are expected to stop sharing room keys with devices their owner has not cross-signed, and to hide messages from such devices. Element has postponed making this its default (Element Web has it as a Labs option); check each client for its own behaviour.
 
 ## Platforms
 
@@ -37,7 +37,7 @@ Since spec v1.18 (MSC4153), clients are expected to stop sharing room keys with 
 | **Android** | Classic only | ✅ | ❌ | ✅ | ❌ | ✅ |
 | **iOS** | Classic only | ✅ | ❌ | ✅ | ❌ | ❌ |
 
-"Classic only" means the old Element mobile app, which gets security fixes only; use Element X instead. SchildiChat Revenge publishes Linux and Windows desktop packages (no macOS build as of v26.10.18); see its [releases](https://github.com/SchildiChat/schildi-revenge/releases).
+"Classic only" means the old Element mobile app, which gets security fixes only; use Element X instead. SchildiChat Revenge publishes Linux and Windows desktop packages (no macOS build as of v26.10.18); see its [releases](https://github.com/SchildiChat/schildi-revenge/releases). FluffyChat 2.10.0 publishes Linux, Windows, web and Android builds but no macOS build.
 
 ## Technology
 

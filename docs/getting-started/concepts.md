@@ -111,7 +111,7 @@ Federation is how homeservers communicate:
 When you join a room, your homeserver keeps its own copy of the room. This means:
 - Messages are stored on every participating homeserver
 - If one server goes down, the others carry on
-- **Leaving a room does not delete your server's copy.** "Forgetting" a room only hides it from you. Synapse deletes the data only if the admin enables `forget_rooms_on_leave` together with `forgotten_room_retention_period`, or uses the [Delete Room admin API](https://element-hq.github.io/synapse/latest/admin_api/rooms.html#delete-room-api). Other servers in the room keep their copies too.
+- **Leaving a room does not delete your server's copy.** "Forgetting" a room only hides it from you. In Synapse, a room's data is purged once every local user has forgotten it only if the admin sets `forgotten_room_retention_period` (`forget_rooms_on_leave` makes leaving count as forgetting). Admins can also use message retention policies or the [Delete Room admin API](https://element-hq.github.io/synapse/latest/admin_api/rooms.html#delete-room-api). Other servers in the room keep their own copies.
 :::
 
 ## End-to-end encryption (E2EE)
@@ -139,16 +139,16 @@ To confirm you are talking to the right person or device:
 
 ## Power levels
 
-Rooms grant permissions with numeric "power levels". By default, users have 0, moderators 50 and admins 100:
+Rooms grant permissions with numeric "power levels". By convention, users have 0, moderators 50 and admins 100. The table shows Synapse's defaults for new rooms:
 
 | Level | Typical role | Capabilities |
 |-------|-------------|--------------|
 | 0 | Default | Send messages |
-| 50 | Moderator | Kick and ban users, delete messages |
-| 100 | Admin | Change room settings and permissions |
+| 50 | Moderator | Kick and ban users, delete messages, change the room name, topic, avatar and address |
+| 100 | Admin | Change permissions, history visibility, encryption and server ACLs |
 | ∞ | Room creator(s), room version 12+ | Everything; cannot be demoted |
 
-In [room version 12](https://spec.matrix.org/v1.19/rooms/v12/), the user who created the room (plus any `additional_creators`) has an infinitely high power level. Creators are not listed in `m.room.power_levels` and cannot be changed after creation. New v12 rooms also set the level needed to upgrade the room (send `m.room.tombstone`) above the other admin actions, typically 150. In older room versions, the creator simply starts at 100.
+In [room version 12](https://spec.matrix.org/v1.19/rooms/v12/), the user who created the room (plus any `additional_creators`) has an infinitely high power level. Creators are not listed in `m.room.power_levels` and cannot be changed after creation. New v12 rooms also restrict who can upgrade the room (send `m.room.tombstone`); Synapse sets this to 150, above the other admin actions. In older room versions, the creator simply starts at 100.
 
 :::info
 The thresholds are customizable. A room can require any level for each action.

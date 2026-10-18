@@ -67,13 +67,13 @@ const features = [
   {
     icon: '🌐',
     title: 'Decentralized & Federated',
-    description: 'No single point of failure. Run your own server or join existing ones - they all communicate seamlessly.',
+    description: 'Run your own server or join an existing one. Servers federate, so users on different servers share the same rooms.',
     link: '/docs/getting-started/concepts',
   },
   {
     icon: '🔗',
-    title: 'Bridge Everything',
-    description: 'Connect Discord, Telegram, Slack, IRC, Signal, WhatsApp and more into unified Matrix rooms.',
+    title: 'Bridges',
+    description: 'Bridges link Matrix rooms to Discord, Telegram, Slack, IRC, Signal, WhatsApp and more. Quality varies by network.',
     link: '/docs/bridges/overview',
   },
   {

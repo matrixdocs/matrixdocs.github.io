@@ -26,7 +26,7 @@ Join the Matrix community and find helpful resources.
 
 - [Matrix Documentation](https://matrix.org/docs/)
 - [Synapse Documentation](https://element-hq.github.io/synapse/latest/)
-- [Element Documentation](https://element.io/help)
+- [Element Documentation](https://docs.element.io/)
 
 ### Blogs
 
@@ -46,9 +46,9 @@ Join the Matrix community and find helpful resources.
 | [#element-web:matrix.org](https://matrix.to/#/#element-web:matrix.org) | Element Web |
 | [#homeservers:matrix.org](https://matrix.to/#/#homeservers:matrix.org) | Server admins |
 
-### Community Spaces
+### Community hubs
 
-| Space | Focus |
+| Room | Focus |
 |-------|-------|
 | [#community:matrix.org](https://matrix.to/#/#community:matrix.org) | Community hub |
 | [#twim:matrix.org](https://matrix.to/#/#twim:matrix.org) | This Week In Matrix |
@@ -86,7 +86,7 @@ Search for rooms about:
 
 1. **Read existing MSCs** at [github.com/matrix-org/matrix-spec-proposals](https://github.com/matrix-org/matrix-spec-proposals)
 2. **Join discussion** in #matrix-spec:matrix.org
-3. **Write an MSC** following the template
+3. **Write an MSC** following the [proposal process](https://spec.matrix.org/proposals/)
 4. **Implement** in clients/servers
 
 ### To Implementations
@@ -130,7 +130,7 @@ Search for Matrix meetups in your area or start one!
 | Platform | Account |
 |----------|---------|
 | Mastodon | [@matrix@mastodon.matrix.org](https://mastodon.matrix.org/@matrix) |
-| X (Twitter) | [@matrixdotorg](https://x.com/matrixdotorg) |
+| Bluesky | [@matrix.org](https://bsky.app/profile/matrix.org) |
 | YouTube | [Matrix.org](https://youtube.com/c/Matrixdotorg) |
 
 ## Supporting Matrix

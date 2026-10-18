@@ -4,7 +4,7 @@ title: Account Security
 description: Protect your Matrix account from unauthorized access
 last_update:
   date: 2026-10-18
-verified_with: "spec v1.19, Synapse 1.163.0, Element Web 1.12.32"
+verified_with: "spec v1.19, Synapse 1.163.0, MAS 1.27.0, Element Web 1.12.32"
 ---
 
 # Account Security
@@ -29,7 +29,7 @@ Homeservers can delegate login to an identity provider:
 
 ### Two-factor authentication
 
-Neither Synapse nor MAS has built-in two-factor authentication (no TOTP or security keys). The MAS documentation recommends pairing MAS with an upstream identity provider if you need them. In practice:
+As of Synapse 1.163 and MAS 1.27, neither has built-in two-factor authentication (no TOTP, passkeys or security keys). To get it, put an identity provider that supports MFA in front of them:
 
 - **As a user**: if your server offers SSO through a provider with multi-factor authentication, use it.
 - **As an admin**: enforce MFA in the upstream identity provider that MAS or Synapse uses.
@@ -136,11 +136,11 @@ Sign out of your clients or mute rooms. Your account stays as it is.
 You can deactivate your own account; no admin is needed:
 
 - **Element Web**: Settings → **Account** → **Deactivate account**.
-- **MAS servers**: from the account portal, or through the client.
+- **MAS servers**: in the account portal. Since spec v1.18, clients must send you there rather than deactivating the account themselves.
 
-Deactivation is irreversible. You leave all rooms, your Matrix ID can never be reused, and your contact details are removed from the identity server.
+You cannot undo deactivation yourself (only a server admin can reactivate an account). You leave all rooms, Synapse does not let your Matrix ID be registered again, and your contact details are removed from the identity server.
 
-Your old messages stay visible to people who already received them. Element offers to **hide your messages from people who join rooms later**; this uses the spec's `erase` option ([account deactivation](https://spec.matrix.org/v1.19/client-server-api/#post_matrixclientv3accountdeactivate)), so servers show redacted copies to future joiners.
+Your old messages stay visible to people who already received them. Element offers to **hide your messages from people who join rooms later**; this uses the spec's `erase` option ([account deactivation](https://spec.matrix.org/v1.19/client-server-api/#post_matrixclientv3accountdeactivate)), so your homeserver shows redacted copies to future joiners. The request is not sent over federation, so other servers may still serve the originals.
 
 ### Before deactivating
 
@@ -166,7 +166,7 @@ In Element Web, **Settings → Preferences**:
 Separate accounts can make sense for work and personal use. Client support varies:
 
 - **Element Web / Desktop**: one account at a time.
-- **Element X**: Android added multi-account support in v26.10.0 (2026-10-16).
+- **Element X**: multi-account support is in the Android v26.10.0 pre-release (2026-10-16); the current stable release, v26.09.4, does not have it.
 - **FluffyChat**, **Commet** and **SchildiChat Revenge**: several accounts at once.
 - **gomuks**: one account per backend; run several backends for several accounts.
 

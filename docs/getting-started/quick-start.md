@@ -15,7 +15,7 @@ This page gets you an account, a client and your first rooms.
 
 Your homeserver holds your account. You can talk to people on any other server, so the choice is about who runs it, their rules and their limits.
 
-- **matrix.org** is run by the Matrix.org Foundation and is the default in most apps. Free accounts have [media upload limits](https://matrix.org/homeserver/pricing/) (as of 2026-10: 10 MB per file, 100 MB per 24 hours) and a paid premium tier. Guest accounts are disabled.
+- **matrix.org** is run by the Matrix.org Foundation and is the default in most apps. Free accounts have [media upload limits](https://matrix.org/homeserver/pricing/) (as of 2026-10: 10 MB per file, 100 MB per 24 hours) and a paid premium tier.
 - **Other public servers** are listed at [servers.joinmatrix.org](https://servers.joinmatrix.org), with their registration rules. For example, [tchncs.de](https://tchncs.de/matrix) is a long-running German server; its page states that sign-up uses Google reCAPTCHA and that IP logs are kept for 7 days. Read each server's terms before you sign up.
 - **Your own server**: see [Servers](../servers/overview).
 
@@ -63,7 +63,7 @@ If you lose your recovery key **and** all your signed-in devices, you cannot rea
 
 ## 5. Verify your other devices
 
-When you sign in on a second device, the app asks you to confirm it from a device you already use (scan a QR code or compare emoji) or to enter your recovery key. Do it straight away: under the current spec's recommended behaviour, devices you have not verified do not get keys to new encrypted messages.
+When you sign in on a second device, the app asks you to confirm it from a device you already use (scan a QR code or compare emoji) or to enter your recovery key. Do it straight away. Since spec v1.18, clients are expected to stop sending message keys to devices you have not verified. Element has announced it will turn this on and has postponed the date, so an unverified device may work today and stop decrypting later.
 
 ## 6. Join some rooms
 
