@@ -1,0 +1,31 @@
+name: Check snippets against upstream
+
+# Report-only until the finding count reaches 0; then set the repository variable SNIPPETS_STRICT=1.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run fetch-upstream
+      - name: Check snippets
+        run: |
+          set +e
+          npm run --silent check -- ${{ vars.SNIPPETS_STRICT == '1' && '--strict' || '' }} > snippets.txt
+          status=$?
+          { echo '```'; cat snippets.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          tail -2 snippets.txt
+          exit $status
