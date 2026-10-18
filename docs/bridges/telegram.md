@@ -2,325 +2,115 @@
 sidebar_position: 3
 title: Telegram Bridge
 description: Bridge Matrix to Telegram with mautrix-telegram
+last_update:
+  date: 2026-10-18
+verified_with: "mautrix-telegram v26.10 (v0.2610.0), mautrix-go v0.32.0, docs.mau.fi"
 ---
 
 # Telegram Bridge
 
-Connect Telegram chats, groups, and channels to Matrix. mautrix-telegram is a **hybrid puppeting/relaybot** bridge - it supports both personal accounts and relay bots.
+[mautrix-telegram](https://github.com/mautrix/telegram) is a hybrid puppeting/relay bridge between Matrix and Telegram. As of 2026-10-18 the latest release is **v26.10 (git tag `v0.2610.0`, 2026-10-16)**.
 
-## Features
+The bridge was **rewritten in Go on bridgev2 in v26.04 (2026-04-16)**. Guides written for the old Python bridge (`relaybot` sections, `telegram.bot_token`, `!tg ping`, `{userid}` templates, the `puppeting`/`full` permission levels) no longer apply.
 
-- **Full puppeting** - Appear as yourself on Telegram
-- **Relay bot mode** - Bridge without everyone logging in
-- **Groups & supergroups** - Bridge any Telegram group
-- **Channels** - Bridge Telegram channels (read-only or via bot)
-- **Bots** - Use Telegram bots from Matrix
-- **Stickers** - Convert and send stickers
-- **Reactions** - Emoji reactions both ways (bot account support added 2025)
-- **Location sharing** - Send and receive locations
-- **File size limits** - Configurable per chat type
+:::warning
+A Telegram login gives the bridge full access to your account. Telegram is known to ban suspicious accounts, and a brand-new account using a third-party client counts as suspicious; an established account is fine ([docs](https://docs.mau.fi/bridges/go/telegram/authentication.html)). Telegram chats are not end-to-end encrypted, and the bridge operator can read everything bridged.
+:::
 
-### 2025 Updates
+Full documentation: [docs.mau.fi/bridges/go/telegram](https://docs.mau.fi/bridges/go/telegram/).
 
-| Feature | Description |
-|---------|-------------|
-| **Reactions on bot** | Receive reactions when using bot account |
-| **File size limits** | Limit by chat type configuration |
-| **Hidden members fix** | No more kicking puppets from private groups |
-| **Relaybot improvements** | Better portal creation with `ignore_unbridged_group_chat` |
+## Upgrading from the Python bridge
 
-## Docker Setup
+- v26.04 to v26.09 migrate a Python v0.15.3+ install in place: database and most config are converted, but logging config and legacy permission levels are not. Back up first and check the config afterwards.
+- **v26.10 removed the legacy migration.** To upgrade from Python, run a release between v26.04 and v26.09 first.
+- The old relaybot is not migrated. Use [relay mode](#relay-mode) instead.
+- On multi-user bridges, normal (non-super) groups are no longer shared portals; each Matrix user gets their own room. Upgrade a group to a supergroup (`!tg upgrade`) if you want one shared room.
+- Run `!tg set-management-room` after upgrading to use commands without a prefix in your DM with the bot.
 
-```yaml title="docker-compose.yml"
-version: '3'
-services:
-  mautrix-telegram:
-    image: dock.mau.dev/mautrix/telegram:latest
-    restart: unless-stopped
-    volumes:
-      - ./telegram-data:/data
-```
+Source: [v0.2604.0 release notes](https://github.com/mautrix/telegram/releases/tag/v0.2604.0), [v0.2610.0 release notes](https://github.com/mautrix/telegram/releases/tag/v0.2610.0).
+
+## Setup
+
+Follow the generic [Go bridge setup](https://docs.mau.fi/bridges/go/setup.html) or [Docker setup](https://docs.mau.fi/bridges/general/docker-setup.html), using `dock.mau.dev/mautrix/telegram:v26.10`. The default appservice port is 29317.
+
+You need your own Telegram API credentials: create an application at [my.telegram.org/apps](https://my.telegram.org/apps) to get an `api_id` and `api_hash`.
 
 ## Configuration
 
-### Get Telegram API Credentials
-
-1. Go to [my.telegram.org](https://my.telegram.org)
-2. Log in with your phone number
-3. Click "API development tools"
-4. Create a new application
-5. Note your `api_id` and `api_hash`
-
-### Essential Config
+The bridge uses the shared bridgev2 layout (see the [overview](./overview#the-bridgev2-config-layout)). Telegram-specific settings go under `network:`. The keys you must change:
 
 ```yaml title="config.yaml"
+# network: keys from mautrix/telegram v0.2610.0 pkg/connector/example-config.yaml
+# other keys from mautrix/go v0.32.0 bridgev2/matrix/mxmain/example-config.yaml
 homeserver:
-  address: https://matrix.example.com
+  address: http://synapse:8008
   domain: example.com
-
 appservice:
-  address: http://localhost:29317
-  hostname: 0.0.0.0
-  port: 29317
-  database:
-    type: postgres
-    uri: postgres://user:pass@localhost/telegram?sslmode=disable
-
-telegram:
-  api_id: YOUR_API_ID
-  api_hash: YOUR_API_HASH
-
-bridge:
-  username_template: "telegram_{{.}}"
-
-  # Double puppeting
-  double_puppet_server_map:
-    example.com: https://matrix.example.com
-  login_shared_secret_map:
-    example.com: "your-shared-secret"
-
-  # Encryption
-  encryption:
-    allow: true
-    default: true
-
-  # Permissions
-  permissions:
-    "*": relaybot
-    "example.com": user
-    "@admin:example.com": admin
-```
-
-## Logging In
-
-1. DM `@telegrambot:example.com`
-2. Send `!tg login`
-3. Enter your phone number
-4. Enter the code Telegram sends
-5. Enter 2FA password if enabled
-
-```
-You: !tg login
-Bot: Please enter your phone number...
-You: +1234567890
-Bot: Please enter the code...
-You: 12345
-Bot: Successfully logged in!
-```
-
-## Bridging Chats
-
-### Bridge a Group
-
-```
-!tg bridge            - Bridge current Telegram group
-!tg create <name>     - Create new bridged group
-```
-
-### Using Relay Bot
-
-For groups you can't personally bridge:
-
-1. Create a Telegram bot via [@BotFather](https://t.me/BotFather)
-2. Add bot token to config:
-   ```yaml
-   telegram:
-     bot_token: "your-bot-token"
-   ```
-3. Add bot to Telegram group
-4. Users send via relay
-
-## Commands Reference
-
-### User Commands
-
-| Command | Description |
-|---------|-------------|
-| `!tg help` | Show help |
-| `!tg login` | Start login |
-| `!tg logout` | Disconnect |
-| `!tg ping` | Test connection |
-| `!tg bridge` | Bridge current group |
-| `!tg unbridge` | Unbridge room |
-| `!tg sync` | Sync contacts |
-
-### Chat Commands
-
-| Command | Description |
-|---------|-------------|
-| `!tg create <name>` | Create bridged group |
-| `!tg invite <user>` | Invite Telegram user |
-| `!tg kick <user>` | Kick user |
-
-### Admin Commands
-
-| Command | Description |
-|---------|-------------|
-| `!tg filter` | Manage spam filters |
-| `!tg set-relay` | Configure relay |
-
-## Stickers
-
-Telegram stickers can be bridged:
-
-```yaml
-bridge:
-  sticker:
-    webp_to_png: true      # Convert to PNG
-    add_to_room: false     # Auto-add sticker packs
-```
-
-### Sending Stickers
-
-1. Bridge sticker pack: `!tg sticker add <pack-link>`
-2. Use sticker picker in Element
-3. Or send sticker file directly
-
-## Advanced Features
-
-### Channel Bridging
-
-Bridge public Telegram channels:
-
-```
-!tg bridge @channelname
-```
-
-Channel posts appear as messages from the channel.
-
-### Supergroup Migration
-
-When Telegram upgrades a group to supergroup:
-1. Bridge auto-migrates
-2. Room continues with new ID
-3. Check logs for issues
-
-### Public Portals
-
-Make bridged rooms public:
-
-```yaml
-bridge:
-  public_portals: true
-```
-
-### Bot Forwarding
-
-Forward Telegram bot messages to Matrix:
-
-```yaml
-bridge:
-  forward_telegram_bot_messages: true
-```
-
-## Relay Bot Mode
-
-For groups where users can't or won't log in individually. Matrix users appear through a Telegram bot.
-
-### Setup Relay Bot
-
-1. Create bot via [@BotFather](https://t.me/BotFather)
-2. Add token to config:
-
-```yaml
-telegram:
-  bot_token: "123456:ABC-your-bot-token"
-```
-
-3. Configure relay mode:
-
-```yaml
-bridge:
-  relaybot:
-    # Allow anyone to use relay
-    whitelist: []
-
-    # Or limit to specific Matrix users
-    # whitelist:
-    #   - "@user:example.com"
-
-    # Allow creating portals from Telegram
-    authless_portals: true
-
-    # Ignore unbridged groups (don't auto-create portals)
-    ignore_unbridged_group_chat: false
-```
-
-### Create Portal from Telegram
-
-With `authless_portals: true`:
-
-1. Add relay bot to Telegram group
-2. Send `/portal` in the group
-3. Bot creates Matrix room and replies with alias (public groups)
-4. For private groups, use `/invite @matrix:example.com`
-
-### Message Formatting
-
-Customize how relay messages appear:
-
-```yaml
-bridge:
-  relaybot:
-    message_formats:
-      m.text: "[{displayname}] {message}"
-      m.notice: "[{displayname}] {message}"
-      m.emote: "* {displayname} {message}"
-
-    # Per-room config via !tg config command
-```
-
-### Hybrid Mode
-
-Use both puppeting AND relay:
-- Logged-in users appear as themselves
-- Non-logged-in users go through relay bot
-- Best of both worlds
-
-```yaml
+  address: http://mautrix-telegram:29317
+database:
+  type: postgres
+  uri: postgres://mautrix:password@postgres/mautrix_telegram?sslmode=disable
 bridge:
   permissions:
-    "*": relaybot          # Everyone can use relay
-    "example.com": user    # Your users can also puppet
+    "example.com": user        # relay | commands | user | admin
+    "@you:example.com": admin
+network:
+  api_id: 12345
+  api_hash: your-api-hash
 ```
+
+Other `network:` options include `animated_sticker` (conversion target, default `gif`), `member_list`, `sync` (how many chats to create portals for), `bridge_communities` (bridge Telegram communities as spaces) and `always_tombstone_on_supergroup_migration`. For history, enable the top-level `backfill.enabled`.
+
+## Logging in
+
+Open a DM with `@telegrambot:example.com` and use one of these flows:
+
+| Command | What happens |
+|---------|--------------|
+| `login phone` | Send your number in international format. Telegram sends a code **to another logged-in Telegram client**, never by SMS. You'll be asked for your 2FA password if you have one. |
+| `login qr` | In the Telegram app go to Settings → Devices → Link Desktop Device and scan the QR code. |
+| `login bot` | Log in with a BotFather token, for relaying or if you don't want to use your real account. Bots are more limited (chats only sync after a message arrives). |
+
+You cannot register a new Telegram account through the bridge: Telegram stopped allowing registration from third-party clients on 2023-02-18. Sign up with an official app first.
+
+## Bridging chats
+
+After login the bridge creates portals for recent chats (controlled by `network.sync`). Telegram-specific commands, from `pkg/connector/commands.go` at v0.2610.0:
+
+| Command | Purpose |
+|---------|---------|
+| `sync-chats` | Sync your chat list and create missing portals |
+| `join <invite link>` | Join a group by invite link |
+| `upgrade` | Upgrade a basic group to a supergroup |
+| `emoji-pack` / `pack` | Transfer emoji and sticker packs between Matrix and Telegram (`upload`, `download`, `list`) |
+
+The shared bridgev2 commands also work: `start-chat`, `create-group`, `bridge`, `unbridge`, `set-relay`, `list-logins`, `logout` and so on (see the [overview](./overview#commands-bridgev2)). Run `help` for the full list.
+
+Telegram topic groups are bridged as Matrix spaces.
+
+## Relay mode
+
+To let Matrix users who haven't logged in talk in a Telegram group:
+
+1. Set `bridge.relay.enabled: true` and give those users at least `relay` permission.
+2. From a **dedicated Matrix account** (not your main one), run `login bot <token>` (or log in a normal Telegram account).
+3. In the bridged room, run `!tg set-relay`.
+
+To let others bridge chats through the relay without being bridge admins, add its login ID (from `list-logins`) to `bridge.relay.default_relays`. Basic groups can't be shared between several Matrix users, so upgrade them with `!tg upgrade` if you mix relayed and logged-in users. See [relay mode](https://docs.mau.fi/bridges/general/relay-mode.html).
 
 ## Troubleshooting
 
-### "FLOOD_WAIT_X"
+- **`FLOOD_WAIT_X`:** Telegram rate limiting. Wait X seconds; lower the `network.sync` limits if it happens at startup.
+- **Session revoked:** you (or Telegram) ended the bridge's session. Log in again.
+- **No login code arrives:** the code goes to your other Telegram apps, not SMS. Use `login qr` if you have no other client.
+- **Animated stickers don't show:** install `ffmpeg` and LottieConverter, or change `network.animated_sticker.target`. The Docker image includes them.
 
-Telegram rate limiting. Wait X seconds and retry.
+## Public instances
 
-### "SESSION_REVOKED"
-
-Session expired. Re-login with `!tg login`.
-
-### Messages delayed
-
-- Check Telegram service status
-- Verify bridge connectivity
-- Review rate limits
-
-### Media not sending
-
-```yaml
-# Increase limits
-telegram:
-  max_download_size: 52428800  # 50MB
-  max_upload_size: 52428800
-```
-
-### Stickers not working
-
-- Ensure webp conversion is enabled
-- Check for missing dependencies (libwebp)
-- Verify sticker pack is accessible
+If you don't want to host the bridge yourself, docs.mau.fi lists [Beeper](https://www.beeper.com/) (puppeting only), t2bot.io (relay only, legacy Python bridge) and tchncs.de (legacy Python bridge).
 
 ## Resources
 
-- [mautrix-telegram GitHub](https://github.com/mautrix/telegram)
-- [Documentation](https://docs.mau.fi/bridges/telegram/)
-- [Matrix room](https://matrix.to/#/#telegram:maunium.net)
-
----
-
-*Next: [Slack Bridge](./slack) →*
+- [mautrix-telegram on GitHub](https://github.com/mautrix/telegram)
+- [docs.mau.fi/bridges/go/telegram](https://docs.mau.fi/bridges/go/telegram/)
+- Support room: [#telegram:maunium.net](https://matrix.to/#/#telegram:maunium.net)

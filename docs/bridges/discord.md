@@ -2,331 +2,131 @@
 sidebar_position: 2
 title: Discord Bridge
 description: Bridge Matrix to Discord with mautrix-discord
+last_update:
+  date: 2026-10-18
+verified_with: "mautrix-discord v0.7.7 (example-config.yaml, commands.go), docs.mau.fi"
 ---
 
 # Discord Bridge
 
-Connect Discord servers and DMs to Matrix using mautrix-discord.
+[mautrix-discord](https://github.com/mautrix/discord) is a puppeting bridge between Matrix and Discord, written in Go. As of 2026-10-18 the latest release is **v0.7.7 (2026-08-16)**. Unlike the other mautrix bridges it still uses the **legacy** architecture, so its config keeps settings under `bridge:` rather than the bridgev2 layout described in the [overview](./overview).
 
-## Features
+:::info Coming next
+A bridgev2 rewrite is in progress on the [`megadiscord` branch](https://github.com/mautrix/discord/tree/megadiscord) and has not been released. When it ships, config keys will move (e.g. `bridge.encryption` → top-level `encryption`) and commands will change to the bridgev2 set.
+:::
 
-- **Double puppeting** - Your Matrix messages appear from you on Discord
-- **Full Discord support** - Servers, channels, threads, DMs, groups
-- **Media bridging** - Images, videos, files, embeds, animated stickers
-- **Reactions** - Emoji reactions sync both ways
-- **Replies & threads** - Maintain conversation context
-- **Guild bridging** - Bridge entire Discord servers at once
-- **Bot account support** - Use Discord bot instead of user token
-- **Backfill** - Sync message history on room creation
+:::warning
+Logging in with a user account gives the bridge your Discord token, and the mautrix docs note that "Discord may ban users who are too suspicious". A bot login avoids this risk. The bridge `admin` permission level adds administration tools, so grant it narrowly.
+:::
 
-### 2025 Updates
+Full documentation: [docs.mau.fi/bridges/go/discord](https://docs.mau.fi/bridges/go/discord/).
 
-| Feature | Description |
-|---------|-------------|
-| **Authenticated media** | Matrix v1.11 media support |
-| **create-portal command** | Bridge individual channels selectively |
-| **Room upgrades** | Auto-follow Matrix room upgrades |
-| **Webhook avatars** | Configure `public_address` for avatars |
+## What it does
 
-## Quick Start (Docker)
+- DMs, group DMs and guild (server) channels, including threads
+- Formatted text, media, replies, threads, deletions and reactions in both directions
+- Discord custom emoji and embeds into Matrix (custom emoji from Matrix to Discord are not supported yet)
+- Relaying for Matrix users who haven't logged in, through Discord webhooks
+- Following room upgrades (tombstones), added in v0.7.6 (2026-02). New rooms are created as room version 11 (v0.7.5 hardcodes it to avoid v12).
+- Backfill, disabled by default (the limits are 0)
 
-```yaml title="docker-compose.yml"
-version: '3'
-services:
-  mautrix-discord:
-    image: dock.mau.dev/mautrix/discord:latest
-    restart: unless-stopped
-    volumes:
-      - ./discord-data:/data
-```
+See the [CHANGELOG](https://github.com/mautrix/discord/blob/main/CHANGELOG.md) for details.
+
+## Setup with Docker
+
+Follow [docs.mau.fi: Docker setup](https://docs.mau.fi/bridges/general/docker-setup.html). Pin the release tag; `:latest` follows the main branch.
 
 ```bash
-# Start to generate config
-docker compose up -d
-docker compose stop
-
-# Edit config
-nano discord-data/config.yaml
-
-# Generate registration
-docker compose run --rm mautrix-discord
-
-# Add registration to homeserver, restart homeserver, then:
-docker compose up -d
+mkdir mautrix-discord && cd mautrix-discord
+# First run writes config.yaml and exits
+docker run --rm -v "$(pwd)":/data:z dock.mau.dev/mautrix/discord:v0.7.7
+# Edit config.yaml, then run again to write registration.yaml
+docker run --rm -v "$(pwd)":/data:z dock.mau.dev/mautrix/discord:v0.7.7
 ```
+
+Add `registration.yaml` to Synapse's `app_service_config_files`, restart Synapse, and start the bridge with `--restart unless-stopped`.
 
 ## Configuration
 
-### Essential Config
+Change at least these keys. Everything else can stay at its default to start with.
 
 ```yaml title="config.yaml"
+# From mautrix/discord v0.7.7 example-config.yaml (legacy layout)
 homeserver:
-  address: https://matrix.example.com
+  address: http://synapse:8008
   domain: example.com
-
 appservice:
-  address: http://localhost:29334
-  hostname: 0.0.0.0
-  port: 29334
+  address: http://mautrix-discord:29334
   database:
     type: postgres
-    uri: postgres://user:pass@localhost/discord?sslmode=disable
-
+    uri: postgres://mautrix:password@postgres/mautrix_discord?sslmode=disable
 bridge:
-  username_template: "discord_{{.}}"
-  displayname_template: "{{.Username}}#{{.Discriminator}}"
-
-  # Portal settings
-  portal_message_buffer: 128
-  delivery_receipts: true
-
-  # Double puppeting
-  double_puppet_server_map:
-    example.com: https://matrix.example.com
+  permissions:
+    "example.com": user          # relay | user | admin
+    "@you:example.com": admin
+  # Automatic double puppeting: as_token from a doublepuppet registration
   login_shared_secret_map:
-    example.com: "your-shared-secret"
-
-  # Encryption
+    example.com: "as_token:<token>"
   encryption:
     allow: true
-    default: true
-    require: false
-
-  # Permissions
-  permissions:
-    "*": relay
-    "example.com": user
-    "@admin:example.com": admin
+    default: false
+    msc4190: false               # set true if your homeserver uses MAS
 ```
 
-### Permission Levels
+Useful optional keys (all under `bridge:`): `displayname_template` (default uses Discord's global name, not the removed `#1234` discriminator), `startup_private_channel_create_limit` (DM portals created at startup, default 5), `public_address` (needed for Matrix avatars on relay webhooks), `direct_media` and `backfill`. Double puppeting is explained in the [double puppeting guide](https://docs.mau.fi/bridges/general/double-puppeting.html).
 
-| Level | Capabilities |
-|-------|-------------|
-| `relay` | Use relay mode only |
-| `user` | Login, create portals, bridge DMs |
-| `admin` | Manage bridge, see all portals |
+## Logging in
 
-## Logging In
+Open a DM with `@discordbot:example.com`. Details: [authentication](https://docs.mau.fi/bridges/go/discord/authentication.html).
 
-### Method 1: QR Code (Recommended)
+| Method | Command | Notes |
+|--------|---------|-------|
+| QR code | `login` (alias of `login-qr`) | Scan with the Discord mobile app. Fails if Discord asks for a CAPTCHA; use token login then. |
+| User token | `login-token user <token>` | Copy the `Authorization` header from a browser session (use a private window). |
+| Bot | `login-token bot <token>` | Create an application, enable the **Server Members** and **Message Content** privileged intents, and invite the bot with Send Messages, Create Public Threads, Send Messages in Threads, Read Message History and Add Reactions. Add Manage Webhooks for `set-relay --create`. |
 
-1. Start a DM with `@discordbot:example.com`
-2. Send `!discord login`
-3. Bridge sends QR code image
-4. Open Discord mobile app → Settings → Scan QR Code
-5. Scan the QR code to authenticate
+## Bridging guilds and channels
+
+Commands work in the management room without a prefix; elsewhere use `!discord`.
 
 ```
-You: !discord login
-Bot: [QR Code Image]
-Bot: Scan this QR code with the Discord mobile app
-Bot: Successfully logged in as YourName#1234
+guilds status                                  # list guilds and their bridging state
+guilds bridge <guild ID> [--entire]            # --entire creates portals for every channel
+guilds bridging-mode <guild ID> <mode>         # nothing | if-portal-exists | create-on-message | everything
+guilds unbridge <guild ID>                     # deletes the guild's portal rooms
+bridge [--replace[=delete]] <channel ID>       # link the current Matrix room (needs room moderator)
+unbridge
+create-portal <channel ID>
 ```
 
-### Method 2: Token Login
+## Relaying with webhooks
 
-1. Start a DM with `@discordbot:example.com`
-2. Send `!discord login-token YOUR_TOKEN`
+Matrix users who haven't logged in can be relayed through a Discord webhook, which shows their name and avatar per message. In a bridged room run `!discord set-relay --create [name]` (needs a login with Manage Webhooks) or `!discord set-relay --url <webhook URL>`. For Matrix avatars to appear, set `bridge.public_address` to a public HTTPS address that serves the bridge's `/mautrix-discord/avatar/` endpoint.
 
-**Getting a token:**
-1. Open Discord in browser (not app)
-2. Press F12 → Network tab
-3. Type something in any channel
-4. Find request to `messages` endpoint
-5. Look for `authorization` header → copy token
+If you only want relaying, log in as a bot from a dedicated Matrix account, not your main one; otherwise your own messages go through the bot instead of the webhook ([relay docs](https://docs.mau.fi/bridges/go/discord/relay.html)).
 
-:::warning
-Using a user token violates Discord ToS. Your account could be banned. Consider using a bot account for server bridging.
-:::
+`bridge.enable_webhook_avatars` is a different setting: it controls whether avatars of incoming Discord webhooks are bridged to Matrix.
 
-### Method 3: Bot Account (Safest)
+## Other commands
 
-For bridging servers without risking your personal account:
+| Command | Purpose |
+|---------|---------|
+| `logout` | Log out |
+| `ping` | Check your connection to Discord |
+| `reconnect` / `disconnect` | Reconnect or disconnect the Discord session |
+| `unset-relay [--delete]` | Stop relaying in this room |
+| `delete-portal` | Unbridge this room and kick all Matrix users (room moderator) |
 
-1. Create app at [discord.com/developers](https://discord.com/developers)
-2. Create bot, copy token
-3. Configure in bridge:
-
-```yaml
-bridge:
-  bot_token: "your-bot-token"
-```
-
-4. Invite bot to server with permissions:
-   - Read Messages, Send Messages
-   - Read Message History
-   - Manage Webhooks (for user avatars)
-   - Add Reactions
-
-## Bridging Discord Servers
-
-### List Your Servers
-
-```
-!discord guilds status
-```
-
-Shows all Discord servers you're in with their IDs.
-
-### Bridge Entire Server
-
-```
-!discord guilds bridge <server-id>
-```
-
-This creates:
-- A Matrix Space for the server
-- Portal rooms created as messages arrive
-
-**Bridge all channels immediately:**
-```
-!discord guilds bridge <server-id> --entire
-```
-
-### Bridge Individual Channels
-
-New in 2025 - use `create-portal` to selectively bridge:
-
-```
-!discord create-portal <channel-id>
-```
-
-Combined with `if-portal-exists` bridging mode, you can bridge only specific channels from a guild.
-
-### Bridging Modes
-
-```yaml
-bridge:
-  # When to create portal rooms
-  portal_creation:
-    # "always" - Create on any activity
-    # "if-portal-exists" - Only if manually created
-    mode: always
-```
-
-### Manual Channel Bridging
-
-To bridge a specific channel to an existing Matrix room:
-
-1. Invite `@discordbot:example.com` to the Matrix room
-2. Run: `!discord bridge <channel-id>`
-
-### Unbridging
-
-```
-!discord unbridge           # Unbridge current room
-!discord guilds unbridge <id>  # Unbridge entire server
-```
-
-## Room Management
-
-### Portal Rooms
-
-Each Discord channel becomes a Matrix room:
-```
-#discord_123456789:example.com  →  #general on Server
-```
-
-### Plumbing Existing Rooms
-
-Connect an existing Matrix room to Discord:
-```
-!discord bridge <channel-id>
-```
-
-### Unbridging
-
-```
-!discord unbridge
-```
-
-## Commands Reference
-
-### User Commands
-
-| Command | Description |
-|---------|-------------|
-| `!discord help` | Show help |
-| `!discord login` | Start OAuth login |
-| `!discord logout` | Disconnect account |
-| `!discord ping` | Test connection |
-| `!discord guilds` | List Discord servers |
-| `!discord bridge <id>` | Bridge a channel |
-| `!discord unbridge` | Unbridge current room |
-
-### Admin Commands
-
-| Command | Description |
-|---------|-------------|
-| `!discord set-relay` | Enable relay mode |
-| `!discord list-users` | List bridged users |
-| `!discord clear-db` | Clear bridge database |
+Run `help` for the full list.
 
 ## Troubleshooting
 
-### "Invalid token"
-
-- Token may have expired
-- Re-login with `!discord login`
-- Check for 2FA requirements
-
-### Messages not bridging
-
-1. Check bridge logs: `docker logs mautrix-discord`
-2. Verify permissions on Discord side
-3. Test with `!discord ping`
-
-### Reactions not syncing
-
-- Ensure bot has "Add Reactions" permission
-- Check if reaction is a custom emoji (may not bridge)
-
-### Media not working
-
-- Check max upload size in homeserver
-- Verify bridge has write access to media directory
-- Large files may timeout
-
-## Advanced Configuration
-
-### Relay Mode
-
-For servers where you can't add users:
-
-```yaml
-bridge:
-  relay:
-    enabled: true
-    message_formats:
-      m.text: "**{{ .Sender.Displayname }}**: {{ .Message }}"
-```
-
-### Webhook Avatars
-
-Display Matrix user avatars on Discord:
-
-```yaml
-bridge:
-  use_webhook_avatars: true
-```
-
-### Custom Bot
-
-Use your own Discord bot:
-
-```yaml
-bridge:
-  bot_token: "your-bot-token"
-  use_bot: true
-```
+- **QR login fails with a CAPTCHA error:** use `login-token user <token>`.
+- **Messages from a guild don't appear:** check `guilds status` and the guild's bridging mode.
+- **Matrix avatars missing on webhook messages:** set `public_address` and make sure Discord can reach it over HTTPS.
 
 ## Resources
 
-- [mautrix-discord GitHub](https://github.com/mautrix/discord)
-- [Documentation](https://docs.mau.fi/bridges/discord/)
-- [Matrix room](https://matrix.to/#/#discord:maunium.net)
-
----
-
-*Next: [Telegram Bridge](./telegram) →*
+- [mautrix-discord on GitHub](https://github.com/mautrix/discord)
+- [docs.mau.fi/bridges/go/discord](https://docs.mau.fi/bridges/go/discord/)
+- Support room: [#discord:maunium.net](https://matrix.to/#/#discord:maunium.net)

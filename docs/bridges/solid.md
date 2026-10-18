@@ -1,432 +1,73 @@
 ---
 sidebar_position: 8
-title: Solid & WebID Integration
-description: Bridge Matrix identities and chat data to the decentralized web
+title: "Matrix and Solid: a design sketch"
+description: A proposal for linking Matrix accounts to WebIDs and archiving chats to Solid pods. No implementation exists.
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, SolidOS solid-ui chatLogic.js and chat-pane (main, 2026-10)"
 ---
 
-# Solid & WebID Integration
+# Matrix and Solid: a design sketch
 
-Connect Matrix to the decentralized web. Link your Matrix identity to a WebID and archive chat history to Solid pods as Linked Data.
-
-:::info Experimental
-This integration is experimental and community-driven. Standards are still being developed.
+:::info Proposal, not software
+There is no Matrix↔Solid bridge, bot or library. This page sketches what an integration could look like. Nothing here is installable, and nothing here is a standard.
 :::
 
-## What is This?
+[Solid](https://solidproject.org/TR/protocol) stores personal data in "pods" under the user's control and identifies people by [WebID](https://www.w3.org/wiki/WebID), a URL that resolves to an RDF profile. Logins use [Solid-OIDC](https://solidproject.org/TR/oidc). Standardisation continues in the W3C [Linked Web Storage Working Group](https://www.w3.org/groups/wg/lws/).
 
-This page covers two related concepts:
+## 1. Linking a Matrix account to a WebID
 
-| Concept | Description |
-|---------|-------------|
-| **WebID-Matrix linking** | Declare that your Matrix ID and WebID are the same person |
-| **Solid chat archives** | Store Matrix messages as JSON-LD on a Solid pod |
+**From WebID to Matrix.** The FOAF idiom for "this person has an account" is `foaf:account` (`foaf:holdsAccount` is its deprecated old name). Don't use `owl:sameAs`, which would claim the person *is* the account. The account can be named with a [`matrix:` URI](https://spec.matrix.org/v1.19/appendices/#matrix-uri-scheme), which has been in the spec since v1.2:
 
-Together, these enable **decentralized identity** and **data ownership** for Matrix users.
-
-```mermaid
-flowchart LR
-    subgraph Matrix
-        MID["@alice:matrix.org"]
-        MRoom["Matrix Room"]
-    end
-
-    subgraph Solid Pod
-        WebID["WebID Profile"]
-        Archive["Chat Archive<br/>(JSON-LD)"]
-    end
-
-    MID <-->|"owl:sameAs"| WebID
-    MRoom -->|"Archive Bot"| Archive
-```
-
-## Background
-
-### What is WebID?
-
-A [WebID](https://www.w3.org/wiki/WebID) is a decentralized identifier - a URL that points to your profile document. Unlike centralized accounts, you control your WebID.
-
-```
-https://pod.example.com/profile/card#me
-```
-
-Your WebID profile can contain:
-- Name, avatar, bio
-- Links to other identities (Matrix, GitHub, etc.)
-- Public keys for authentication
-- Social connections
-
-### What is Solid?
-
-[Solid](https://solidproject.org/) (Social Linked Data) is a specification for personal data pods. You store your data on your pod and grant apps permission to access it.
-
-Key features:
-- **Data ownership** - You control your data
-- **Interoperability** - Apps use standard vocabularies
-- **Decentralization** - Choose your pod provider or self-host
-
-### Why Link Matrix to WebID?
-
-| Benefit | Description |
-|---------|-------------|
-| **Unified identity** | One identity across Matrix, Solid, and the web |
-| **Profile portability** | Use your Solid profile avatar/bio in Matrix contexts |
-| **Data ownership** | Archive your chats to your own pod |
-| **Semantic web** | Matrix data becomes queryable Linked Data |
-
-## Matrix URI Scheme
-
-Matrix has a standard URI scheme defined in [MSC2312](https://github.com/matrix-org/matrix-spec-proposals/pull/2312):
-
-```
-matrix:u/username:homeserver.org
-```
-
-Examples:
-```
-matrix:u/alice:matrix.org
-matrix:u/bob:example.com
-matrix:r/myroom:matrix.org      (rooms)
-matrix:roomid/!abc123:matrix.org (room by ID)
-```
-
-This URI scheme enables Matrix identities to be used in Linked Data contexts - you can reference a Matrix user just like any other web resource.
-
-## Linking WebID to Matrix
-
-### The Identity Problem
-
-Matrix identities (`@alice:matrix.org`) and WebIDs (`https://alice.example.com/profile/card#me`) are separate systems. To enable cross-platform features, we need to declare they represent the same person.
-
-```mermaid
-flowchart TB
-    subgraph "Without Linking"
-        A1["matrix:u/alice:matrix.org"] -.->|"?"| B1["https://pod.example.com/profile/card#me"]
-    end
-
-    subgraph "With owl:sameAs"
-        A2["matrix:u/alice:matrix.org"] <-->|"owl:sameAs"| B2["https://pod.example.com/profile/card#me"]
-    end
-```
-
-### Adding to Your WebID Profile
-
-Add a triple to your WebID profile document linking your Matrix identity:
-
-```turtle title="profile/card.ttl"
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
+```turtle title="profile/card.ttl (sketch)"
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 
-<#me>
-    a foaf:Person ;
-    foaf:name "Alice" ;
-    owl:sameAs <matrix:u/alice:matrix.org> .
+<#me> foaf:account <matrix:u/alice:example.org> .
+<matrix:u/alice:example.org> a foaf:OnlineAccount ;
+    foaf:accountName "@alice:example.org" .
 ```
 
-### Predicate Options
+**From Matrix to WebID.** Since spec v1.16, users can set custom profile fields (MSC4133). A client could store a WebID under a namespaced key it controls, such as `org.example.webid`; that key name is only an example. A verifier would trust the link only when both sides point at each other.
 
-The linking predicate is not yet standardized. Options include:
+## 2. Archiving a room to a pod
 
-| Predicate | Meaning | Strength |
-|-----------|---------|----------|
-| `owl:sameAs` | These identities are equivalent | Strong |
-| `foaf:account` | This is an account I control | Medium |
-| `schema:sameAs` | Schema.org equivalence | Strong |
-| `foaf:holdsAccount` | I hold this online account | Medium |
+A bot in the room could write messages to a pod. To be readable in SolidOS, it should follow the layout the SolidOS chat code uses (`solid-ui/src/chat/chatLogic.js`):
 
-**Recommendation:** Use `owl:sameAs` for now, as it's the most widely understood equivalence predicate.
+- the channel is `index.ttl#this`, typed `meeting:LongChat` (a class used by the SolidOS code, not defined in the published meeting ontology);
+- messages go in `YYYY/MM/DD/chat.ttl`;
+- the channel links each message with `wf:message` (`http://www.w3.org/2005/01/wf/flow#`);
+- a message has `sioc:content`, `dct:created` and `foaf:maker`;
+- edits use `dct:isReplacedBy`, and deletions use `schema:dateDeleted`.
 
-### Example Profile
-
-```turtle title="Complete WebID profile with Matrix link"
+```turtle title="2026/10/18/chat.ttl (sketch)"
+@prefix wf:   <http://www.w3.org/2005/01/wf/flow#> .
+@prefix sioc: <http://rdfs.org/sioc/ns#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix solid: <http://www.w3.org/ns/solid/terms#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
 
-<#me>
-    a foaf:Person ;
-    foaf:name "Alice Developer" ;
-    foaf:nick "alice" ;
-    foaf:img <https://pod.example.com/profile/avatar.png> ;
+<../../../index.ttl#this> wf:message <#msg1> .
 
-    # Matrix identity
-    owl:sameAs <matrix:u/alice:matrix.org> ;
-
-    # Other identities
-    owl:sameAs <https://github.com/alice> ;
-
-    # Solid pod
-    solid:oidcIssuer <https://solidcommunity.net> .
+<#msg1> sioc:content "Hello from Matrix" ;
+    dct:created "2026-10-18T09:30:00Z"^^xsd:dateTime ;
+    foaf:maker <https://alice.example/profile/card#me> .
 ```
 
-## Chat Archives on Solid
+Open problems: many senders have no WebID; Matrix redactions would need to reach the archive; and media needs authenticated download (spec v1.11) before it can be copied.
 
-Store Matrix chat history on a Solid pod as JSON-LD, enabling:
-- Personal chat backups you control
-- Semantic queries across your conversations
-- Integration with other Linked Data applications
+## 3. Consent and privacy
 
-### Message Format
+Archiving your own messages is your choice. Archiving **other people's** messages is not:
 
-Messages are stored using standard vocabularies:
+- **Ask first.** People in a Matrix room did not agree to have their messages copied to a third-party store. Announce the bot, explain where the data goes, and only archive rooms where members have agreed, or archive only the messages of users who opt in.
+- **Keep it private.** Write the archive to a private container with access control. Never put other people's messages in a public folder.
+- **Encrypted rooms.** To archive an encrypted room, the bot must be a member that decrypts every message. That defeats what members expected from end-to-end encryption, so don't do it without explicit agreement.
+- **Honour deletions.** When a Matrix message is redacted, delete it from the archive too. Under laws such as the GDPR, people may also ask you to remove their data.
+- **Mind the law.** Storing other people's personal data can make you a data controller, with legal duties that depend on where you and they are.
 
-```json title="2025/01/22/chat.json"
-{
-  "@context": {
-    "foaf": "http://xmlns.com/foaf/0.1/",
-    "sioc": "http://rdfs.org/sioc/ns#",
-    "dct": "http://purl.org/dc/terms/",
-    "meeting": "http://www.w3.org/ns/pim/meeting#"
-  },
-  "@type": "meeting:message",
-  "dct:created": "2025-01-22T14:30:00Z",
-  "sioc:content": "Hello, world!",
-  "foaf:maker": {
-    "@id": "matrix:u/alice:matrix.org",
-    "@type": "foaf:Person",
-    "foaf:name": "Alice",
-    "foaf:nick": "@alice:matrix.org",
-    "foaf:img": {
-      "@id": "https://pod.example.com/chats/avatars/alice.png"
-    }
-  }
-}
-```
+## Further reading
 
-:::tip When to use @graph
-Use `@graph` only when storing multiple messages in one file. For a single message, it's not needed.
-:::
-
-### Directory Structure
-
-Date-sharded for efficient access:
-
-```
-/public/chats/matrix-room-name/
-├── 2025/
-│   ├── 01/
-│   │   ├── 20/
-│   │   │   └── chat.json
-│   │   ├── 21/
-│   │   │   └── chat.json
-│   │   └── 22/
-│   │       └── chat.json
-│   └── ...
-├── avatars/
-│   ├── alice_matrix.org.png
-│   └── bob_example.com.png
-└── index.json
-```
-
-### Vocabularies Used
-
-| Vocabulary | Prefix | Usage |
-|------------|--------|-------|
-| [FOAF](http://xmlns.com/foaf/0.1/) | `foaf:` | Person, name, avatar |
-| [SIOC](http://rdfs.org/sioc/ns#) | `sioc:` | Content, forum, post |
-| [Dublin Core](http://purl.org/dc/terms/) | `dct:` | Created, modified dates |
-| [Meeting](http://www.w3.org/ns/pim/meeting#) | `meeting:` | Chat messages |
-
-### Avatar Handling
-
-Matrix media URLs require authentication, so bridges typically:
-
-1. Download avatars from Matrix media API
-2. Store on Solid pod (public or authenticated)
-3. Reference the pod URL in JSON-LD
-
-```json
-"foaf:img": {
-  "@id": "https://pod.example.com/chats/avatars/_alice_matrix.org.png"
-}
-```
-
-## Implementation Approaches
-
-### Bot-Based Archive
-
-A Matrix bot joins rooms and archives messages to a Solid pod:
-
-```mermaid
-sequenceDiagram
-    participant Room as Matrix Room
-    participant Bot as Archive Bot
-    participant Pod as Solid Pod
-
-    Room->>Bot: New message event
-    Bot->>Bot: Convert to JSON-LD
-    Bot->>Pod: Append to /chats/2025/01/22/chat.json
-
-    Room->>Bot: Message with new user
-    Bot->>Room: Fetch avatar (media API)
-    Bot->>Pod: Store avatar in /chats/avatars/
-    Bot->>Pod: Append message with avatar reference
-```
-
-The bot:
-1. Listens for new messages
-2. Converts to JSON-LD format
-3. Appends to daily chat file
-4. Downloads and caches avatars
-
-### Client-Side Export
-
-Matrix clients could export history directly to Solid:
-
-1. User authenticates to Solid pod
-2. Client exports room history
-3. Converts to JSON-LD
-4. Uploads to pod
-
-### WebID Profile Lookup
-
-Chat viewers can enrich Matrix identities:
-
-```mermaid
-sequenceDiagram
-    participant Client as Chat Viewer
-    participant Pod as Solid Pod
-    participant Profile as WebID Profile
-
-    Client->>Client: Parse matrix:u/alice:matrix.org
-    Client->>Pod: SPARQL: ?webid owl:sameAs <matrix:u/alice:...>
-    Pod-->>Client: https://pod.example.com/profile/card#me
-    Client->>Profile: Fetch WebID document
-    Profile-->>Client: Name, avatar, bio, links
-    Client->>Client: Display enriched user info
-```
-
-## Discovery Mechanisms
-
-### From Matrix to WebID
-
-How does a client find the WebID for a Matrix user?
-
-**Option 1: Query known pods**
-```sparql
-SELECT ?webid WHERE {
-  ?webid owl:sameAs <matrix:u/alice:matrix.org> .
-}
-```
-
-**Option 2: Matrix profile field**
-Add WebID to Matrix profile (custom field or future MSC)
-
-**Option 3: Well-known endpoint**
-`https://matrix.org/.well-known/webid/@alice:matrix.org`
-
-### From WebID to Matrix
-
-Easy - just parse the `owl:sameAs` triple from the WebID profile.
-
-## Use Cases
-
-### Decentralized Profiles
-
-Display Solid profile info for Matrix users:
-- Richer bios than Matrix allows
-- Verified links to other platforms
-- Professional information
-
-### Chat Data Ownership
-
-Users own their conversation history:
-- Export from any Matrix server
-- Import into any Solid-compatible app
-- Query across all your chats
-
-### Cross-Platform Identity
-
-One identity across multiple platforms:
-
-```mermaid
-flowchart TB
-    WebID["WebID<br/>pod.example.com/profile/card#me"]
-
-    Matrix["Matrix<br/>matrix:u/alice:matrix.org"]
-    GitHub["GitHub<br/>github.com/alice"]
-    Mastodon["Mastodon<br/>@alice@mastodon.social"]
-    Website["Website<br/>alice.example.com"]
-
-    WebID <-->|"owl:sameAs"| Matrix
-    WebID <-->|"owl:sameAs"| GitHub
-    WebID <-->|"owl:sameAs"| Mastodon
-    WebID <-->|"foaf:homepage"| Website
-```
-
-### Semantic Queries
-
-Query your chat history with SPARQL:
-
-```sparql
-# Find all messages mentioning "project"
-SELECT ?date ?content ?author WHERE {
-  ?msg a meeting:message ;
-       dct:created ?date ;
-       sioc:content ?content ;
-       foaf:maker/foaf:name ?author .
-  FILTER(CONTAINS(?content, "project"))
-}
-ORDER BY DESC(?date)
-```
-
-## Open Questions
-
-These areas need community input and standardization:
-
-### 1. Predicate Standardization
-
-Which predicate should link Matrix IDs to WebIDs?
-- `owl:sameAs` is strong but may be too strong
-- `foaf:account` is weaker but well-understood
-- A new `matrix:webId` predicate?
-
-### 2. Bidirectional Linking
-
-Should the link exist on both sides?
-- WebID profile → Matrix ID (easy, user controls)
-- Matrix profile → WebID (needs spec work)
-
-### 3. Verification
-
-How do we verify someone controls both identities?
-- Sign a challenge with Matrix device keys?
-- Post verification on both platforms?
-- Trust the WebID profile owner?
-
-### 4. Discovery
-
-How do clients discover WebID ↔ Matrix links?
-- Centralized index?
-- Decentralized queries?
-- Matrix profile extension?
-
-### 5. Privacy
-
-Linking identities has privacy implications:
-- Public WebID reveals Matrix identity
-- Should linking be opt-in and revocable?
-
-## Getting Involved
-
-### Community
-
-- [#solid:matrix.org](https://matrix.to/#/#solid:matrix.org) - Solid + Matrix discussion
-- [Solid Forum](https://forum.solidproject.org/) - Solid community
-- [Matrix Spec Proposals](https://github.com/matrix-org/matrix-spec-proposals) - Propose MSCs
-
-### Specifications
-
-- [WebID Spec](https://www.w3.org/wiki/WebID)
-- [Solid Protocol](https://solidproject.org/TR/protocol)
-- [MSC2312 - Matrix URI Scheme](https://github.com/matrix-org/matrix-spec-proposals/pull/2312)
-- [JSON-LD](https://json-ld.org/)
-
-### Related Projects
-
-- [Solid Project](https://solidproject.org/)
-- [ActivityPub](https://www.w3.org/TR/activitypub/) - Federated social
-- [DID (Decentralized Identifiers)](https://www.w3.org/TR/did-core/)
-
----
-
-*This page documents experimental community work. Contributions welcome!*
+- [Solid Protocol](https://solidproject.org/TR/protocol) and [Solid-OIDC](https://solidproject.org/TR/oidc)
+- [SolidOS chat-pane](https://github.com/SolidOS/chat-pane) and [solid-ui chat code](https://github.com/SolidOS/solid-ui/tree/main/src/chat)
+- [Matrix URI scheme](https://spec.matrix.org/v1.19/appendices/#matrix-uri-scheme) and [profile endpoints](https://spec.matrix.org/v1.19/client-server-api/#profiles)
+- [#solid:matrix.org](https://matrix.to/#/#solid:matrix.org)
