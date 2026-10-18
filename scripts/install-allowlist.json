@@ -7,7 +7,6 @@
     "pypi:matrix-synapse": "element-hq/synapse; 1.163.0 (2026-10-14); checked 2026-10-18",
     "pypi:maubot": "maubot/maubot; 0.6.0 (2025-11-17); checked 2026-10-18",
     "pypi:mautrix": "mautrix/python; 0.21.1 (2026-07-05); checked 2026-10-18",
-    "pypi:nio-bot": "nexy7574/nio-bot; 1.2.1 (2025-05-01); checked 2026-10-18",
     "pypi:simplematrixbotlib": "simplematrixbotlib; 2.13.1 (2026-03-29); checked 2026-10-18",
     "pypi:synapse-s3-storage-provider": "matrix-org/synapse-s3-storage-provider; 1.7.0 (2026-08-18); checked 2026-10-18",
     "crates:iamb": "ulyssa/iamb; 0.0.12 (2026-09-20); checked 2026-10-18",
@@ -48,6 +47,8 @@
     "docker:containrrr/watchtower": "Watchtower is archived (2025-12); do not recommend unattended auto-updates of a homeserver",
     "docker:signald/signald": "signald is unmaintained (last image 2023-03); mautrix-signal no longer uses it",
     "docker:matrixdotorg/sydent": "Sydent repo archived 2025-07",
-    "go:maunium.net/go/gomuks": "old module path; current module is go.mau.fi/gomuks"
+    "go:maunium.net/go/gomuks": "old module path; current module is go.mau.fi/gomuks",
+    "pypi:matrix-python-sdk": "PyPI name now belongs to an unrelated package; matrix-org's old SDK was matrix-client and is dead. Use matrix-nio or mautrix",
+    "pypi:nio-bot": "NioBot repo archived; deprecated by its author"
   }
 }
