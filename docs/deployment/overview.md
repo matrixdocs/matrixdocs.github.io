@@ -1,162 +1,85 @@
 ---
 sidebar_position: 1
 title: Deployment Overview
-description: Options for deploying Matrix infrastructure
+description: Options for deploying a Matrix homeserver and the services around it
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, Synapse 1.163.0, MAS v1.27.0, ess-helm 26.10.2, Element Call v0.28.0"
 ---
 
 # Deployment Overview
 
-This guide covers different approaches to deploying Matrix infrastructure.
+This page compares ways to run Matrix infrastructure and lists the components a deployment usually needs.
 
-## Deployment Options
+## Deployment options
 
-### Use Public Homeserver
+### Use a public homeserver
 
-**Easiest** - Just sign up:
+The easiest option is an account on an existing server such as matrix.org. See [public homeservers](../servers/overview#use-a-public-homeserver). You avoid running anything, but the operator sees your metadata, and you depend on their policies.
 
-| Option | Pros | Cons |
-|--------|------|------|
-| matrix.org | Largest, well-maintained | Metadata exposure, shared resources |
-| Other public | Various providers | Varies |
+### Managed hosting
 
-### Managed Hosting
+| Provider | What it offers (checked 2026-10-18) |
+|----------|-------------------------------------|
+| [etke.cc](https://etke.cc) | Managed Synapse hosting; also maintains the Ketesa admin UI |
+| [Element](https://element.io/pricing) | Element's pricing page lists self-hosted Element Server Suite (ESS) plans: Community (free), Enterprise and Sovereign. It does not list a hosted plan |
 
-**Hands-off** - Someone else runs it:
+Check the provider's current terms before relying on this table; hosting offers change.
 
-| Provider | Features | Best For |
-|----------|----------|----------|
-| [Element Matrix Services](https://element.io/ems) | Enterprise, support | Organizations |
-| [etke.cc](https://etke.cc) | Full stack, bridges | Communities |
-| [ungleich](https://ungleich.ch) | Swiss hosting | Privacy-focused |
+### Self-hosted
 
-### Self-Hosted
+| Approach | Effort | Notes |
+|----------|--------|-------|
+| [Docker Compose](./docker) | Medium | You assemble Synapse, PostgreSQL and a reverse proxy yourself |
+| [matrix-docker-ansible-deploy](./ansible) (MDAD) | Low to medium | Ansible playbook that installs and wires up the homeserver, clients, bridges, bots, MAS and Element Call |
+| [ESS Community](https://github.com/element-hq/ess-helm) | Low to medium | Element's Helm charts for Kubernetes or K3s. Bundles Synapse, MAS, Element Web, Element Admin and the MatrixRTC backend. Aimed at non-commercial use with up to 100 users; quick setup needs at least 2 CPU cores and 2 GB RAM. Latest 26.10.2 (2026-10-16) |
+| Packages or source | High | See [Synapse install](../servers/synapse#install-from-packages-or-pip) |
 
-**Full control** - Run everything yourself:
+:::warning ESS Community signing keys (CVE-2026-24044)
+ESS Community charts before 25.12.2 generated weak Synapse signing keys ([GHSA-qwcj-h6m8-vp6q](https://github.com/element-hq/ess-helm/security/advisories/GHSA-qwcj-h6m8-vp6q), critical, published 2026-02-12). If you installed ESS Community before then, upgrade to 25.12.2 or later and follow the advisory's key rotation steps.
+:::
 
-| Approach | Complexity | Flexibility |
-|----------|------------|-------------|
-| Manual | High | Maximum |
-| Docker Compose | Medium | High |
-| Ansible playbook | Low | Medium |
-| Kubernetes | Medium-High | High |
+`element-hq/element-docker-demo` is a Docker Compose demo of the same stack. Its README says it is not for serious production use, and it has had no commits since 2025-03.
 
-## Quick Comparison
+## Components
 
-| Factor | Public | Managed | Self-Hosted |
-|--------|--------|---------|-------------|
-| Setup time | Minutes | Hours | Days |
-| Cost | Free | $10-100+/mo | Hosting costs |
-| Maintenance | None | None | You |
-| Customization | None | Limited | Full |
-| Privacy | Low | Medium | High |
-| Compliance | No | Possible | Possible |
-
-## Self-Hosting Methods
-
-### Docker Compose
-
-Quick deployment with containers:
-
-```yaml title="docker-compose.yml"
-version: '3'
-services:
-  synapse:
-    image: matrixdotorg/synapse:latest
-    volumes:
-      - ./data:/data
-    ports:
-      - "8008:8008"
-```
-
-### matrix-docker-ansible-deploy
-
-**Recommended** for most users:
-
-```bash
-git clone https://github.com/spantaleev/matrix-docker-ansible-deploy.git
-```
-
-Features:
-- Complete stack deployment
-- All major bridges
-- Automatic SSL
-- Easy updates
-
-### Kubernetes
-
-For larger deployments:
-- Helm charts available
-- Horizontal scaling
-- Cloud-native
-
-## Components to Deploy
-
-### Minimum
+### Required
 
 | Component | Purpose |
 |-----------|---------|
-| Homeserver | Core Matrix server |
-| PostgreSQL | Database |
-| Reverse proxy | TLS termination |
+| Homeserver | Synapse, or one of the [alternatives](../servers/comparison) |
+| PostgreSQL | Database for Synapse (14 or later) and MAS. The Rust servers use an embedded database instead |
+| Reverse proxy | TLS termination; forwards only `/_matrix` and `/_synapse/client` to Synapse |
 
-### Recommended
-
-| Component | Purpose |
-|-----------|---------|
-| Element Web | Web client |
-| Coturn | VoIP/video |
-| Redis | Caching (for workers) |
-
-### Optional
+### Common additions
 
 | Component | Purpose |
 |-----------|---------|
-| Bridges | Connect other platforms |
-| Bots | Automation |
-| Integration manager | Widgets/bots UI |
+| [Element Web](https://github.com/element-hq/element-web) | Web client |
+| [Matrix Authentication Service](https://github.com/element-hq/matrix-authentication-service) (MAS) | OAuth 2.0 / OIDC login and registration for Synapse; latest v1.27.0 (2026-10-13) |
+| [Element Call](https://github.com/element-hq/element-call) with [LiveKit](https://github.com/livekit/livekit) and [lk-jwt-service](https://github.com/element-hq/lk-jwt-service) | Group voice and video calls (MatrixRTC). Element Call v0.28.0 and lk-jwt-service v0.9.0 were both released on 2026-10-13 |
+| Admin UI | Element Admin (in ESS) or [Ketesa](https://github.com/etkecc/ketesa) |
+| Redis (or Valkey) | **Required** if you run Synapse workers; not needed for a single process |
+| coturn | Only for legacy 1:1 WebRTC calls and Jitsi. Element Call does not need it |
+| Bridges and bots | See [Bridges](../bridges/overview) and [Bots](../bots/overview) |
 
-## Infrastructure Requirements
+## Infrastructure
 
-### Small Instance (Personal)
+See [hardware guidance](../servers/overview#hardware). As a rough rule, a Synapse server for a family or small group runs comfortably on 2 GB RAM and 2 cores with SSD storage. Memory grows with the size of the rooms users join.
 
-| Resource | Minimum | Recommended |
-|----------|---------|-------------|
-| RAM | 1 GB | 2 GB |
-| CPU | 1 core | 2 cores |
-| Storage | 10 GB | 50 GB |
-| Bandwidth | 100 Mbps | 1 Gbps |
+## Domain setup
 
-### Medium Instance (Community)
-
-| Resource | Minimum | Recommended |
-|----------|---------|-------------|
-| RAM | 4 GB | 8 GB |
-| CPU | 2 cores | 4 cores |
-| Storage | 50 GB | 200 GB |
-| Bandwidth | 1 Gbps | 1 Gbps |
-
-### Large Instance (Organization)
-
-| Resource | Minimum |
-|----------|---------|
-| RAM | 16+ GB |
-| CPU | 8+ cores |
-| Storage | 500+ GB SSD |
-| Bandwidth | 1+ Gbps |
-
-## Domain Setup
-
-### DNS Records
+### DNS records
 
 ```
-example.com              A    → Your server IP
-matrix.example.com       A    → Your server IP
-element.example.com      A    → Your server IP (optional)
+example.com          A/AAAA  → server that serves the .well-known files
+matrix.example.com   A/AAAA  → homeserver (reverse proxy)
+element.example.com  A/AAAA  → web client (optional)
 ```
 
-### Well-Known Delegation
+### Well-known delegation
 
-For `@user:example.com` with server at `matrix.example.com`:
+For user IDs like `@alice:example.com` with the server at `matrix.example.com`:
 
 ```json title="https://example.com/.well-known/matrix/server"
 {
@@ -172,11 +95,11 @@ For `@user:example.com` with server at `matrix.example.com`:
 }
 ```
 
-## SSL/TLS
+Serve both with `Content-Type: application/json`, and the client file with `Access-Control-Allow-Origin: *`. With the server file pointing at port 443, port 8448 is not needed. See [Well-known delegation](../servers/overview#well-known-delegation) for SRV records and details.
 
-### Let's Encrypt
+## TLS
 
-Free certificates:
+Federation needs a certificate from a publicly trusted CA for the hostname other servers connect to (`matrix.example.com` when using `.well-known`). Let's Encrypt works. Caddy and Traefik obtain certificates automatically; with nginx, use certbot:
 
 ```bash
 certbot certonly --webroot -w /var/www/html \
@@ -184,18 +107,10 @@ certbot certonly --webroot -w /var/www/html \
   -d example.com
 ```
 
-### Certificate Requirements
+## Next steps
 
-- Valid for your domain
-- Federation requires port 8448 OR .well-known
-- Modern TLS (1.2+)
-
-## Next Steps
-
-Choose your path:
-
-- [Docker Deployment](./docker)
-- [Ansible Deployment](./ansible)
+- [Docker deployment](./docker)
+- [Ansible deployment](./ansible)
 
 ---
 

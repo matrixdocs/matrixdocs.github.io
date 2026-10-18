@@ -1,382 +1,164 @@
 ---
 sidebar_position: 4
 title: Conduit
-description: The lightweight Rust homeserver for Matrix
+description: Conduit, the lightweight Rust homeserver, and its forks continuwuity and tuwunel
+last_update:
+  date: 2026-10-18
+verified_with: "Conduit v0.10.15, tuwunel v1.9.4, continuwuity v26.9.1, spec v1.19"
 ---
 
 # Conduit
 
-Conduit is a lightweight Matrix homeserver written in Rust. It's designed to be easy to set up and run with minimal resources.
+[Conduit](https://gitlab.com/famedly/conduit) is a Matrix homeserver written in Rust. It runs as a single binary with an embedded database, so it suits small servers for a family, friends or a small team. It is developed on GitLab under `famedly/conduit`; the documentation is at [famedly.gitlab.io/conduit](https://famedly.gitlab.io/conduit/).
 
-## Why Conduit?
+As of 2026-10-18 the latest release is **v0.10.15 (2026-09-30)**. Its README describes Conduit as **beta**: you can join most rooms, but some features are missing, such as outgoing read receipts, typing notifications and presence over federation.
 
-- **Tiny footprint**: Runs on Raspberry Pi, VPS, or containers
-- **Simple setup**: Single binary, SQLite built-in
-- **Fast**: Rust performance
-- **Easy maintenance**: Minimal configuration
+| | Conduit v0.10.15 |
+|---|---|
+| Database | RocksDB (recommended) or SQLite, embedded. No PostgreSQL |
+| Default room version | 12 (`default_room_version`); room versions 1 and 2 are not supported, 3 to 5 only partially ([FAQ](https://famedly.gitlab.io/conduit/faq.html)) |
+| Sliding sync | Simplified Sliding Sync works out of the box, so Element X can connect |
+| Authentication | Password and registration token. No SSO, OIDC or MAS |
+| Migration from Synapse | Not supported ([FAQ](https://famedly.gitlab.io/conduit/faq.html)) |
+| Metrics | No Prometheus endpoint; tracing options only |
 
-:::info
-Conduit is in beta. For production use, also consider [conduwuit](https://github.com/girlbossceo/conduwuit), a well-maintained fork with additional features.
-:::
+## Run Conduit with Docker
 
-## Quick Start
+Images are published as `registry.gitlab.com/famedly/conduit/matrix-conduit` (upstream's recommendation) and `matrixconduit/matrix-conduit` on Docker Hub. This Compose file follows upstream's [docker-compose.yml](https://gitlab.com/famedly/conduit/-/blob/v0.10.15/docs/deploying/docker-compose.yml). It configures Conduit entirely through `CONDUIT_*` environment variables, which is why `CONDUIT_CONFIG` is set to an empty string:
 
-### Docker (Recommended)
+```yaml title="docker-compose.yml"
+services:
+  homeserver:
+    image: matrixconduit/matrix-conduit:v0.10.15
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6167:6167"     # only the local reverse proxy can reach it
+    volumes:
+      - db:/var/lib/matrix-conduit/
+    env_file: ./conduit.env       # contains CONDUIT_REGISTRATION_TOKEN=<long random string>
+    environment:
+      CONDUIT_SERVER_NAME: example.com
+      CONDUIT_DATABASE_PATH: /var/lib/matrix-conduit/
+      CONDUIT_DATABASE_BACKEND: rocksdb
+      CONDUIT_PORT: 6167
+      CONDUIT_ADDRESS: 0.0.0.0    # inside the container; the host port is bound to 127.0.0.1
+      CONDUIT_MAX_REQUEST_SIZE: 20000000
+      CONDUIT_ALLOW_REGISTRATION: 'true'
+      CONDUIT_ALLOW_FEDERATION: 'true'
+      CONDUIT_TRUSTED_SERVERS: '["matrix.org"]'
+      CONDUIT_CONFIG: ''          # no config file; use the variables above
 
-```bash
-# Create directory
-mkdir -p conduit-data
+volumes:
+  db:
+```
 
-# Create config
-cat > conduit-data/conduit.toml << 'EOF'
+Two settings matter here:
+
+- **`CONDUIT_CONFIG`.** Without it, Conduit exits with an error. Either point it at a TOML file or set it to `''` to use environment variables only.
+- **`CONDUIT_ADDRESS`.** The default is `127.0.0.1`. Inside a container that makes Conduit unreachable through the published port, so set it to `0.0.0.0` and restrict access on the host side instead.
+
+## Configuration file
+
+If you prefer a file, set `CONDUIT_CONFIG=/path/to/conduit.toml`. These keys come from [`conduit-example.toml`](https://gitlab.com/famedly/conduit/-/blob/v0.10.15/conduit-example.toml) at v0.10.15:
+
+```toml title="conduit.toml"
 [global]
-server_name = "example.com"
-database_path = "/var/lib/conduit"
+server_name = "example.com"           # permanent: the domain in user IDs
+
 database_backend = "rocksdb"
+database_path = "/var/lib/matrix-conduit/"
+
+address = "127.0.0.1"                 # use "0.0.0.0" in a container
 port = 6167
-max_request_size = 52_428_800
-allow_registration = false
+
+max_request_size = 20_000_000         # bytes
+
+allow_registration = true
+registration_token = "CHANGE_ME_LONG_RANDOM_STRING"
+
 allow_federation = true
 trusted_servers = ["matrix.org"]
 
+#max_concurrent_requests = 100        # outbound requests to other servers at once
+
 [global.well_known]
-client = "https://matrix.example.com"
-server = "matrix.example.com:443"
-EOF
-
-# Run Conduit
-docker run -d --name conduit \
-  -v $(pwd)/conduit-data:/var/lib/conduit \
-  -p 6167:6167 \
-  matrixconduit/matrix-conduit:latest
+#server = "matrix.example.com:443"
+#client = "https://matrix.example.com"
 ```
 
-### Binary Installation
-
-```bash
-# Download latest release
-wget https://gitlab.com/famedly/conduit/-/releases/permalink/latest/downloads/conduit-linux-x86_64
-chmod +x conduit-linux-x86_64
-mv conduit-linux-x86_64 /usr/local/bin/conduit
-
-# Create config directory
-mkdir -p /etc/conduit
-mkdir -p /var/lib/conduit
-
-# Create config
-cat > /etc/conduit/conduit.toml << 'EOF'
-[global]
-server_name = "example.com"
-database_path = "/var/lib/conduit"
-database_backend = "rocksdb"
-port = 6167
-max_request_size = 52_428_800
-allow_registration = false
-allow_federation = true
-EOF
-
-# Run Conduit
-CONDUIT_CONFIG=/etc/conduit/conduit.toml /usr/local/bin/conduit
-```
-
-### Build from Source
-
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Clone and build
-git clone https://gitlab.com/famedly/conduit.git
-cd conduit
-cargo build --release
-
-# Binary at target/release/conduit
-```
-
-## Configuration
-
-### conduit.toml
-
-```toml title="/etc/conduit/conduit.toml"
-[global]
-# Server identity (REQUIRED)
-server_name = "example.com"
-
-# Database settings
-database_path = "/var/lib/conduit"
-database_backend = "rocksdb"  # or "sqlite"
-
-# Network settings
-address = "127.0.0.1"
-port = 6167
-
-# Limits
-max_request_size = 52_428_800  # 50MB
-max_concurrent_requests = 100
-
-# Registration
-allow_registration = false
-registration_token = "your-secret-token"  # If registration enabled
-
-# Federation
-allow_federation = true
-trusted_servers = ["matrix.org"]
-
-# Well-known delegation
-[global.well_known]
-client = "https://matrix.example.com"
-server = "matrix.example.com:443"
-
-# TLS (optional, usually handled by reverse proxy)
-# [global.tls]
-# certs = "/etc/letsencrypt/live/matrix.example.com/fullchain.pem"
-# key = "/etc/letsencrypt/live/matrix.example.com/privkey.pem"
-```
-
-### Database Backends
-
-| Backend | Use Case |
-|---------|----------|
-| **RocksDB** | Recommended for most deployments |
-| **SQLite** | Simpler, good for tiny instances |
-
-```toml
-# RocksDB (recommended)
-database_backend = "rocksdb"
-
-# SQLite
-database_backend = "sqlite"
-```
-
-### Reverse Proxy (Caddy)
-
-```caddyfile title="Caddyfile"
-matrix.example.com {
-    reverse_proxy /_matrix/* localhost:6167
-}
-
-matrix.example.com:8448 {
-    reverse_proxy localhost:6167
-}
-```
-
-### Reverse Proxy (Nginx)
-
-```nginx title="/etc/nginx/sites-available/matrix"
-server {
-    listen 443 ssl http2;
-    server_name matrix.example.com;
-
-    ssl_certificate /etc/letsencrypt/live/matrix.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/matrix.example.com/privkey.pem;
-
-    location /_matrix {
-        proxy_pass http://127.0.0.1:6167;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        client_max_body_size 50M;
-    }
-}
-
-server {
-    listen 8448 ssl http2;
-    server_name matrix.example.com;
-
-    ssl_certificate /etc/letsencrypt/live/matrix.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/matrix.example.com/privkey.pem;
-
-    location / {
-        proxy_pass http://127.0.0.1:6167;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
-## User Management
-
-### Admin Commands
-
-Conduit has an admin room for management. First, create an admin account:
-
-```bash
-# With registration enabled temporarily
-curl -X POST "http://localhost:6167/_matrix/client/r0/register" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "password", "auth": {"type": "m.login.dummy"}}'
-```
-
-### Admin Room Commands
-
-Join `#admins:your.server.name` and use commands:
-
-```
-# User management
-!admin users list
-!admin users create <username> <password>
-!admin users deactivate <user_id>
-
-# Room management
-!admin rooms list
-!admin rooms delete <room_id>
-
-# Server management
-!admin server stats
-!admin server clear-cache
-```
-
-:::tip
-The first user to register becomes admin automatically if `allow_registration` is enabled during initial setup.
+:::warning
+`allow_registration = true` with an empty `registration_token` lets anyone create accounts. Always set a token, or turn registration off after creating your accounts. The admin command `allow-registration` toggles registration until the next restart.
 :::
 
-## Systemd Service
+Notes on other keys:
 
-```ini title="/etc/systemd/system/conduit.service"
-[Unit]
-Description=Conduit Matrix Homeserver
-After=network.target
+- Cache size is controlled by `db_cache_capacity_mb` and `conduit_cache_capacity_modifier`. Conduit silently ignores unknown keys, so a misspelt option has no effect and no error.
+- By default, Conduit serves the `/.well-known/matrix/*` files itself, pointing clients and servers at `server_name` on port 443. Use `[global.well_known]` to point them at a subdomain.
+- Since v0.10.12, `ignored_keys` blocks by default the weak signing key generated by vulnerable ESS Community charts (CVE-2026-24044).
 
-[Service]
-Environment="CONDUIT_CONFIG=/etc/conduit/conduit.toml"
-User=conduit
-Group=conduit
-Restart=always
-ExecStart=/usr/local/bin/conduit
+## Binaries
 
-[Install]
-WantedBy=multi-user.target
+There are no files attached to GitLab releases. Upstream publishes static builds as CI artifacts. For example, the x86_64 musl build of the `master` branch:
+
+```
+https://gitlab.com/api/v4/projects/famedly%2Fconduit/jobs/artifacts/master/raw/x86_64-unknown-linux-musl?job=artifacts
 ```
 
-```bash
-# Create user
-useradd -r -s /bin/false conduit
-chown -R conduit:conduit /var/lib/conduit
+The [generic deployment guide](https://famedly.gitlab.io/conduit/deploying/generic.html) lists the other architectures, Debian packages, and a systemd unit that sets `CONDUIT_CONFIG`.
 
-# Enable and start
-systemctl enable conduit
-systemctl start conduit
+## Reverse proxy
+
+Proxy `/_matrix` on 443 to port 6167. Conduit answers `/.well-known/matrix/*` itself when requests for `server_name` reach it. Otherwise serve those files from your web server (see [Well-known delegation](./overview#well-known-delegation)).
+
+## First user and admin room
+
+The first account registered on a new server becomes an admin. Conduit creates an admin room, `#admins:example.com`, and commands are sent there as messages to the server's bot user:
+
+```
+@conduit:example.com: list-local-users
+@conduit:example.com: create-user alice
+@conduit:example.com: deactivate-user @alice:example.com
+@conduit:example.com: list-rooms
+@conduit:example.com: memory-usage
+@conduit:example.com: allow-registration false
 ```
 
-## conduwuit Fork
+Send `@conduit:example.com: --help` for the full list. To make someone else an admin, invite them to the admin room. Commands such as `!admin users ...` belong to the forks below, not to Conduit.
 
-For production, consider [conduwuit](https://github.com/girlbossceo/conduwuit):
-
-```bash
-# Docker
-docker run -d --name conduwuit \
-  -v $(pwd)/conduwuit-data:/var/lib/conduwuit \
-  -p 6167:6167 \
-  girlbossceo/conduwuit:latest
-```
-
-**Additional features:**
-- Better Spaces support
-- More MSCs implemented
-- Active development
-- Performance improvements
-- Bug fixes
-
-## Performance
-
-### Resource Usage
-
-Typical usage for small instance:
-- **RAM**: 20-100 MB
-- **CPU**: Minimal
-- **Disk**: Depends on media/messages
-
-### Optimization
-
-```toml
-[global]
-# Increase for busy servers
-max_concurrent_requests = 200
-
-# Tune cache
-cache_capacity = 1073741824  # 1GB
-```
+Clients register through the standard client-server API (`POST /_matrix/client/v3/register`), using the registration token flow when `registration_token` is set. Use a client that supports registration tokens; Conduit's README names Element Web, Nheko and SchildiChat Web.
 
 ## Backup
 
-### Database Backup
+Stop Conduit, copy the `database_path` directory (it also holds media), then start Conduit again. A filesystem snapshot also works.
 
-```bash
-# Stop Conduit first for consistency
-systemctl stop conduit
+## Forks: continuwuity and tuwunel
 
-# RocksDB
-cp -r /var/lib/conduit /backup/conduit-$(date +%Y%m%d)
+*Status as of 2026-10-18.*
 
-# Start again
-systemctl start conduit
-```
+[conduwuit](https://github.com/girlbossceo/conduwuit) was a popular Conduit fork. Its repository is now **archived**, and its last pre-release was v0.5.0-rc4 (2025-04-09). Two projects continue it:
 
-### Media Backup
+| | [tuwunel](https://github.com/matrix-construct/tuwunel) | [continuwuity](https://forgejo.ellis.link/continuwuation/continuwuity) |
+|---|---|---|
+| Describes itself as | "the official successor to conduwuit" | "the official community continuation of the conduwuit homeserver" |
+| Latest release | v1.9.4 (2026-10-10) | v26.9.1 (2026-09-28) |
+| Source | GitHub `matrix-construct/tuwunel` | Forgejo `forgejo.ellis.link/continuwuation/continuwuity` (GitHub mirror `continuwuity/continuwuity`) |
+| Images | `ghcr.io/matrix-construct/tuwunel`, `jevolk/tuwunel` | see [continuwuity.org](https://continuwuity.org) |
+| Migrate from conduwuit | Yes, in place | Yes |
+| Migrate from Conduit | Yes, RocksDB in place on first boot | No ("database is now incompatible") |
+| Docs | [matrix-construct.github.io/tuwunel](https://matrix-construct.github.io/tuwunel/) | [continuwuity.org](https://continuwuity.org) |
 
-Media is stored in the database path:
-```bash
-# Included in database backup above
-```
+Both forks default to room version 12, support Simplified Sliding Sync, and have added OIDC login options. Their config keys and admin commands differ from Conduit's (they use `!admin ...` commands in the admin room), so follow each project's own example config rather than the Conduit keys above.
 
-## Troubleshooting
+Back up your database before switching implementations. Switching between forks other than the documented paths can corrupt it.
 
-### Federation Issues
-
-```bash
-# Test federation
-curl "https://federationtester.matrix.org/api/report?server_name=example.com"
-
-# Check well-known
-curl https://example.com/.well-known/matrix/server
-curl https://example.com/.well-known/matrix/client
-```
-
-### Debug Logging
-
-```bash
-# Run with debug output
-CONDUIT_CONFIG=/etc/conduit/conduit.toml \
-RUST_LOG=debug \
-/usr/local/bin/conduit
-```
-
-### Common Issues
-
-**"Server not found":**
-- Check DNS/well-known configuration
-- Verify port 8448 is accessible
-- Test with federation tester
-
-**"Unable to decrypt":**
-- Conduit has full E2EE support
-- Check client key backup
-
-**High memory usage:**
-- Unusual for Conduit
-- Check for large rooms
-- Consider using RocksDB
-
-## Limitations
-
-Compared to Synapse/Dendrite:
-
-| Feature | Status |
-|---------|--------|
-| Basic messaging | ✅ Full |
-| E2EE | ✅ Full |
-| Federation | ✅ Full |
-| Spaces | 🔄 Basic |
-| Threads | ✅ Supported |
-| Appservices | 🔄 Basic |
-| VoIP | ✅ Supported |
-| Admin API | ❌ Limited |
+The [matrix-docker-ansible-deploy](../deployment/ansible) playbook supports `conduit`, `continuwuity` and `tuwunel` as homeserver implementations.
 
 ## Resources
 
-- [Conduit GitLab](https://gitlab.com/famedly/conduit)
-- [conduwuit GitHub](https://github.com/girlbossceo/conduwuit)
-- [Conduit Documentation](https://docs.conduit.rs/)
+- [Conduit on GitLab](https://gitlab.com/famedly/conduit)
+- [Conduit documentation](https://famedly.gitlab.io/conduit/)
+- [#conduit:fachschaften.org](https://matrix.to/#/#conduit:fachschaften.org)
 
 ---
 
-*Next: [Server Comparison](./comparison) →*
+*Next: [Server comparison](./comparison) →*

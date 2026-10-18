@@ -1,229 +1,77 @@
 ---
 sidebar_position: 5
 title: Server Comparison
-description: Compare Matrix homeserver implementations
+description: Compare Synapse, Dendrite, Conduit, tuwunel and continuwuity
+last_update:
+  date: 2026-10-18
+verified_with: "Synapse 1.163.0, Dendrite v0.15.2, Conduit v0.10.15, tuwunel v1.9.4, continuwuity v26.9.1, spec v1.19"
 ---
 
 # Server Comparison
 
-Choose the right homeserver for your needs.
+This table compares the homeservers you might choose in October 2026. Versions and statuses were checked against each project's repository on 2026-10-18. The "fit" rows are this site's assessment, not the projects' claims.
 
-## Overview
+## At a glance
 
-| Aspect | Synapse | Dendrite | Conduit |
-|--------|---------|----------|---------|
-| **Language** | Python | Go | Rust |
-| **Status** | Stable | Stable | Beta |
-| **Primary use** | Reference | Efficient | Lightweight |
-| **Maintained by** | Element | Matrix.org | Community |
+| | Synapse | Dendrite | Conduit | tuwunel | continuwuity |
+|---|---|---|---|---|---|
+| Language | Python + Rust | Go | Rust | Rust | Rust |
+| Latest release | 1.163.0 (2026-10-14) | v0.15.2 (2025-08-15) | v0.10.15 (2026-09-30) | v1.9.4 (2026-10-10) | v26.9.1 (2026-09-28) |
+| Status | Active, about every two weeks | Maintenance mode (security fixes only), beta | Active, beta | Active | Active |
+| Maintainer | Element | Element | Famedly and community | matrix-construct | Community |
+| Licence | AGPL-3.0 (or commercial) | AGPL-3.0 | Apache-2.0 | Apache-2.0 | Apache-2.0 |
+| Database | PostgreSQL (SQLite for testing) | PostgreSQL or SQLite | RocksDB or SQLite (embedded) | RocksDB (embedded) | RocksDB (embedded) |
+| Default room version | 12 (since 1.162) | – | 12 | 12 | 12 |
+| Simplified Sliding Sync (Element X) | Yes, native since 1.114 | No | Yes | Yes | Yes |
+| MAS / OIDC login | MAS (stable since 1.136), legacy SSO/OIDC too | No | No | Native OIDC option | OIDC option |
+| Application services (bridges) | Yes | "Not well tested" | Yes | Yes | Yes |
+| Horizontal scaling | Workers | No | No | No | No |
+| Metrics | Prometheus | Prometheus | No | See project docs | See project docs |
+| Ansible (MDAD) support | Default | Yes | Yes | Yes | Yes |
+| Kubernetes | [ESS Community](https://github.com/element-hq/ess-helm) Helm chart | Helm chart in repo | – | – | – |
 
-## Feature Comparison
+Sources: each project's README and changelog; [Dendrite FAQ](https://github.com/element-hq/dendrite/blob/main/docs/FAQ.md) for appservices; the MDAD [README](https://github.com/spantaleev/matrix-docker-ansible-deploy#readme) for Ansible support. "–" means no setting or no first-party option exists. Check licence files in each repository if the licence matters to you.
 
-### Core Protocol Support
+## Which one to pick
 
-| Feature | Synapse | Dendrite | Conduit |
-|---------|---------|----------|---------|
-| Client-Server API | ✅ Full | ✅ Full | ✅ Full |
-| Server-Server API | ✅ Full | ✅ Full | ✅ Full |
-| End-to-End Encryption | ✅ Full | ✅ Full | ✅ Full |
-| Room versions | All | All | Most |
-| Push notifications | ✅ | ✅ | ✅ |
-| URL previews | ✅ | ✅ | ✅ |
+| Situation | Suggested server | Why |
+|---|---|---|
+| You want everything to work (Element X, MAS, Element Call, bridges) | Synapse | Reference for new features; Element tests against it |
+| Organisation, or more than a few hundred active users | Synapse with PostgreSQL, workers when needed | Only option with horizontal scaling |
+| Kubernetes | Synapse via ESS Community | Packages Synapse, MAS, Element Web and MatrixRTC together |
+| Small server on modest hardware | Conduit, tuwunel or continuwuity | Single binary, embedded database, low memory |
+| Existing Dendrite server | Keep patched; plan a move | Security fixes only, no Element X support |
+| New Dendrite server | Not recommended | Maintenance mode |
 
-### Advanced Features
+## Resource use
 
-| Feature | Synapse | Dendrite | Conduit |
-|---------|---------|----------|---------|
-| Spaces | ✅ Full | ✅ Full | 🔄 Basic |
-| Threads | ✅ Full | ✅ Full | ✅ |
-| VoIP/TURN | ✅ Full | ✅ | ✅ |
-| Presence | ✅ | ✅ | ✅ |
-| Typing indicators | ✅ | ✅ | ✅ |
-| Read receipts | ✅ | ✅ | ✅ |
-| SSO/OIDC | ✅ | ✅ | 🔄 |
+Memory depends mainly on the size of the rooms your users join, not on the number of local users. One user in several large public rooms can push Synapse past 1 GB. Synapse's installation docs ask for "at least 1GB of free RAM if you want to join large public rooms like #matrix:matrix.org". The Rust servers typically need much less memory for the same rooms; check each project's docs for current guidance.
 
-### Integrations
+## Migration between servers
 
-| Feature | Synapse | Dendrite | Conduit |
-|---------|---------|----------|---------|
-| Appservices (bridges/bots) | ✅ Full | ✅ Full | 🔄 Basic |
-| Integration managers | ✅ | ✅ | ✅ |
-| Admin API | ✅ Extensive | 🔄 Basic | ❌ Limited |
-| Prometheus metrics | ✅ | ✅ | 🔄 |
+| From → To | Supported? |
+|---|---|
+| conduwuit → tuwunel | Yes, in place |
+| conduwuit → continuwuity | Yes |
+| Conduit → tuwunel | Yes, RocksDB in place on first boot |
+| Conduit → continuwuity | No |
+| Synapse → Conduit family | No |
+| Synapse ↔ Dendrite | No |
 
-## Performance Comparison
+Where there is no migration path, moving means a new server, new accounts, and rejoining rooms over federation. Back up the database before any in-place migration.
 
-### Resource Usage (Idle)
+## Feature notes
 
-| Resource | Synapse | Dendrite | Conduit |
-|----------|---------|----------|---------|
-| **RAM** | 300-500 MB | 50-100 MB | 20-50 MB |
-| **CPU** | Medium | Low | Very Low |
-| **Disk I/O** | Medium | Low | Low |
+- **End-to-end encryption** is done by clients. Servers only store and relay encrypted events, device keys and key backups, so all of these servers can host encrypted rooms.
+- **Element X** needs Simplified Sliding Sync. Without it, Element X will not connect.
+- **Element Call** needs a LiveKit SFU and `lk-jwt-service` next to the homeserver, plus MatrixRTC support in the homeserver (`matrix_rtc` in Synapse). See [Synapse: Calls](./synapse#calls-element-call-and-matrixrtc).
+- **Hosted options:** Element's pricing page (checked 2026-10-18) lists only self-hosted Element Server Suite plans. See [Deployment overview](../deployment/overview) for hosting choices.
 
-### Under Load (1000+ users)
+## Resources
 
-| Metric | Synapse | Dendrite | Conduit |
-|--------|---------|----------|---------|
-| **RAM** | 2-8 GB | 500 MB-2 GB | 200-500 MB |
-| **CPU cores** | 2-4+ | 1-2 | 1 |
-| **Database** | PostgreSQL | PostgreSQL | Embedded |
-
-### Scaling Approach
-
-```
-Synapse:     Single → Workers → Multiple instances
-Dendrite:    Monolith → Polylith (microservices)
-Conduit:     Single instance (no horizontal scaling)
-```
-
-## Setup Complexity
-
-### Time to First Message
-
-| Server | Estimated Setup Time |
-|--------|---------------------|
-| Conduit | 15-30 minutes |
-| Dendrite | 30-60 minutes |
-| Synapse | 1-2 hours |
-
-### Configuration Complexity
-
-| Aspect | Synapse | Dendrite | Conduit |
-|--------|---------|----------|---------|
-| Config file | Large, many options | Medium | Small, simple |
-| Database setup | Required (PostgreSQL) | Recommended | Built-in |
-| Reverse proxy | Required | Required | Required |
-| Documentation | Extensive | Good | Growing |
-
-## Use Case Recommendations
-
-### Personal Server
-
-**Best: Conduit**
-- Minimal resources
-- Easy setup
-- Good enough features
-
-```
-✅ Single user or small group
-✅ Limited hardware (Pi, small VPS)
-✅ Minimal maintenance desired
-```
-
-### Small Community (< 100 users)
-
-**Best: Dendrite**
-- Good balance of features and efficiency
-- All essential features
-- Moderate resources
-
-```
-✅ Community servers
-✅ Small organizations
-✅ Growing user base
-```
-
-### Organization / Large Community
-
-**Best: Synapse**
-- Complete feature set
-- Proven at scale
-- Best tooling
-
-```
-✅ Enterprise deployments
-✅ Large user bases
-✅ Complex requirements
-✅ Bridges and integrations
-```
-
-## Migration Paths
-
-### Conduit → Dendrite/Synapse
-
-Currently no direct migration. Options:
-1. Start fresh on new server
-2. Export/import rooms manually
-3. Run both in parallel
-
-### Dendrite → Synapse
-
-No automated migration. Same options as above.
-
-### Synapse → Dendrite
-
-Experimental migration tools in development.
-
-## Decision Matrix
-
-Score each factor (1-5) based on your needs:
-
-| Factor | Weight | Synapse | Dendrite | Conduit |
-|--------|--------|---------|----------|---------|
-| Features | _ | 5 | 4 | 3 |
-| Performance | _ | 3 | 4 | 5 |
-| Ease of setup | _ | 2 | 3 | 5 |
-| Maintenance | _ | 2 | 4 | 5 |
-| Scalability | _ | 5 | 4 | 2 |
-| Documentation | _ | 5 | 4 | 3 |
-| Community | _ | 5 | 4 | 3 |
-
-## Quick Decision Guide
-
-```mermaid
-flowchart TD
-    Start["Choose a Server"] --> Q1{"Need all features?"}
-
-    Q1 -->|Yes| Synapse["Synapse"]
-    Q1 -->|No| Q2{"Want efficiency<br/>+ features?"}
-
-    Q2 -->|Yes| Dendrite["Dendrite"]
-    Q2 -->|No| Conduit["Conduit"]
-
-    Synapse --> S1["Enterprise/compliance"]
-    Synapse --> S2["Large scale (1000+ users)"]
-    Synapse --> S3["Bridges critical"]
-
-    Dendrite --> D1["Medium scale (100-1000)"]
-    Dendrite --> D2["Lower resource usage"]
-    Dendrite --> D3["Modern codebase"]
-
-    Conduit --> C1["Personal use"]
-    Conduit --> C2["Minimal resources"]
-    Conduit --> C3["Quick setup / Learning"]
-```
-
-## Hosting Options
-
-### Self-Hosted
-
-| Option | Synapse | Dendrite | Conduit |
-|--------|---------|----------|---------|
-| Docker | ✅ Official | ✅ Official | ✅ Official |
-| Kubernetes | ✅ Helm charts | ✅ Helm charts | Community |
-| Ansible | ✅ Playbooks | ✅ Playbooks | Community |
-| NixOS | ✅ Module | ✅ Module | ✅ Module |
-
-### Managed Hosting
-
-| Provider | Server | Notes |
-|----------|--------|-------|
-| [Element Matrix Services](https://element.io/ems) | Synapse | Enterprise support |
-| [etke.cc](https://etke.cc) | Synapse | Managed hosting |
-| [ungleich](https://ungleich.ch) | Various | Swiss hosting |
-
-## Conclusion
-
-| If you want... | Choose |
-|---------------|--------|
-| Maximum features | Synapse |
-| Best performance/features balance | Dendrite |
-| Easiest setup | Conduit |
-| Enterprise support | Synapse (EMS) |
-| Minimal footprint | Conduit |
-| Future-proof | Dendrite |
+- [Synapse](./synapse) · [Dendrite](./dendrite) · [Conduit and forks](./conduit)
+- [Homeservers overview](./overview)
 
 ---
 
-*Next: [Bridges Overview](../bridges/overview) →*
+*See also: [Deployment overview](../deployment/overview)*

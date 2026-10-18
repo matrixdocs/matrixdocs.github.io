@@ -1,290 +1,242 @@
 ---
 sidebar_position: 3
 title: Ansible Deployment
-description: Deploy Matrix using matrix-docker-ansible-deploy
+description: Deploy Matrix with the matrix-docker-ansible-deploy playbook
+last_update:
+  date: 2026-10-18
+verified_with: "matrix-docker-ansible-deploy master @ 4912a37 (2026-10-17), Synapse 1.163.0"
 ---
 
 # Ansible Deployment
 
-The **matrix-docker-ansible-deploy** playbook is the easiest way to deploy a full Matrix stack.
+[matrix-docker-ansible-deploy](https://github.com/spantaleev/matrix-docker-ansible-deploy) (MDAD) is a community Ansible playbook that installs a Matrix server and related services as Docker containers managed by systemd. It covers the homeserver, PostgreSQL, Traefik with Let's Encrypt, Element Web, bridges, bots, MAS, Element Call and monitoring.
 
-## Features
-
-- Complete Matrix server setup
-- Element Web client
-- All major bridges
-- Bots (Mjolnir, etc.)
-- Automatic SSL certificates
-- Easy updates
-- Well-documented
+This page is a short orientation. Every variable below was checked against the playbook's `master` branch (commit `4912a37`, 2026-10-17): the role defaults, `group_vars/matrix_servers`, `examples/vars.yml`, or the pinned external roles in `requirements.yml`. The playbook changes often and renames variables in its [CHANGELOG](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/CHANGELOG.md), so treat the [official docs](https://github.com/spantaleev/matrix-docker-ansible-deploy/tree/master/docs) as the reference.
 
 ## Prerequisites
 
-- Ansible 2.9+ on your local machine
-- Server with:
-  - Fresh Debian/Ubuntu
-  - 2+ GB RAM
-  - Root access
-  - Ports 80, 443, 8448
+- On your computer: `ansible-core` 2.15.1 or newer (the oldest version upstream expects to work), `git`, and optionally [`just`](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/just.md).
+- A server running a supported Linux distribution, reachable over SSH as root or a sudo user.
+- DNS records as described in [Configuring DNS](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-dns.md): at least `matrix.example.com` pointing at the server.
 
-## Quick Start
+See the [prerequisites page](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/prerequisites.md) for details.
 
-### 1. Clone the Repository
+## Quick start
+
+### 1. Get the playbook
 
 ```bash
 git clone https://github.com/spantaleev/matrix-docker-ansible-deploy.git
 cd matrix-docker-ansible-deploy
-```
-
-### 2. Configure DNS
-
-Point these records to your server:
-
-```
-matrix.example.com    A    YOUR_SERVER_IP
-example.com           A    YOUR_SERVER_IP
-```
-
-### 3. Create Inventory
-
-```bash
 mkdir -p inventory/host_vars/matrix.example.com
+cp examples/vars.yml inventory/host_vars/matrix.example.com/vars.yml
+cp examples/hosts inventory/hosts
 ```
 
-```yaml title="inventory/hosts"
+### 2. Inventory
+
+```ini title="inventory/hosts"
 [matrix_servers]
-matrix.example.com ansible_host=YOUR_SERVER_IP
+matrix.example.com ansible_host=YOUR_SERVER_IP ansible_ssh_user=root
 ```
 
-### 4. Create Configuration
+### 3. Configuration
+
+Start from `examples/vars.yml` and set at least these:
 
 ```yaml title="inventory/host_vars/matrix.example.com/vars.yml"
-# Basic configuration
+# Acknowledges the breaking changes you have reviewed. Keep the value
+# from examples/vars.yml; the playbook tells you when it needs updating.
+matrix_playbook_migration_validated_version: v2026.05.18.0
+
+# The server name: the part after ":" in user IDs. Cannot be changed later.
 matrix_domain: example.com
+
 matrix_homeserver_implementation: synapse
 
-# Admin contact
-matrix_homeserver_generic_secret_key: 'GENERATE_LONG_RANDOM_STRING'
+# A long random string used to derive other secrets (e.g. `pwgen -s 64 1`).
+matrix_homeserver_generic_secret_key: 'CHANGE_ME_LONG_RANDOM_STRING'
 
-# PostgreSQL
-devture_postgres_connection_password: 'GENERATE_ANOTHER_RANDOM_STRING'
+# Traefik, managed by the playbook, is the reverse proxy.
+matrix_playbook_reverse_proxy_type: playbook-managed-traefik
 
-# Element Web
-matrix_client_element_enabled: true
+# Email address for Let's Encrypt
+traefik_config_certificatesResolvers_acme_email: 'admin@example.com'
 
-# SSL with Let's Encrypt
-matrix_ssl_retrieval_method: lets-encrypt
-matrix_ssl_lets_encrypt_support_email: "admin@example.com"
-
-# Create admin user
-matrix_synapse_admin_username: admin
-matrix_synapse_admin_password: 'YOUR_ADMIN_PASSWORD'
+# A long random string for the built-in PostgreSQL server.
+postgres_connection_password: 'CHANGE_ME_ANOTHER_RANDOM_STRING'
 ```
 
-### 5. Run Playbook
+Element Web is installed by default (`matrix_client_element_enabled`).
+
+### 4. Install
+
+Fetch the external roles, then install and start everything ([installing guide](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/installing.md)):
 
 ```bash
-# Install dependencies
-ansible-galaxy collection install -r requirements.yml
+just roles
+# without just: rm -rf roles/galaxy; ansible-galaxy install -r requirements.yml -p roles/galaxy/ --force
 
-# Run setup
-ansible-playbook -i inventory/hosts setup.yml --tags=setup-all
-
-# Start services
-ansible-playbook -i inventory/hosts setup.yml --tags=start
+ansible-playbook -i inventory/hosts setup.yml --tags=install-all,ensure-matrix-users-created,start
 ```
 
-## Common Configurations
+### 5. Create your admin user
 
-### Enable Registration
+The password ends up in your shell history, so clear it afterwards or change the password after first login:
+
+```bash
+just register-user alice 'A_STRONG_PASSWORD' yes
+# or
+ansible-playbook -i inventory/hosts setup.yml \
+  --extra-vars='username=alice password=A_STRONG_PASSWORD admin=yes' --tags=register-user
+```
+
+## Common additions
+
+Each block goes into `vars.yml`, after which you re-run the playbook.
+
+### Registration
+
+Registration is off by default. If you open it, require a token or a CAPTCHA:
 
 ```yaml
 matrix_synapse_enable_registration: true
-matrix_synapse_enable_registration_captcha: true
-matrix_synapse_recaptcha_public_key: "YOUR_KEY"
-matrix_synapse_recaptcha_private_key: "YOUR_KEY"
+matrix_synapse_registration_requires_token: true
 ```
 
-### Add Discord Bridge
+Create tokens with Synapse's [registration tokens admin API](https://element-hq.github.io/synapse/latest/usage/administration/admin_api/registration_tokens.html). For reCAPTCHA (`matrix_synapse_enable_registration_captcha`, `matrix_synapse_recaptcha_public_key`, `matrix_synapse_recaptcha_private_key`), see [Configuring captcha](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-captcha.md). These Synapse settings do not apply when MAS is enabled.
+
+### Bridges
+
+Bridge variables use the `matrix_bridge_` prefix since 2026-07-16. The old `matrix_mautrix_*` names fail validation.
 
 ```yaml
-matrix_mautrix_discord_enabled: true
+matrix_bridge_mautrix_discord_enabled: true
+
+matrix_bridge_mautrix_whatsapp_enabled: true
+
+matrix_bridge_mautrix_telegram_enabled: true
+matrix_bridge_mautrix_telegram_api_id: YOUR_TELEGRAM_APP_ID
+matrix_bridge_mautrix_telegram_api_hash: YOUR_TELEGRAM_APP_HASH
 ```
 
-### Add Telegram Bridge
+Each bridge has its own page in the [MDAD docs](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook.md), for example [mautrix-telegram](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-bridge-mautrix-telegram.md).
+
+### Moderation bot
+
+MDAD supports Draupnir (`matrix_bot_draupnir_enabled`) and Meowlnir; Mjolnir is also still supported. Draupnir needs a management room and a bot account; follow [Setting up Draupnir](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-bot-draupnir.md).
+
+:::warning
+A moderation bot with server admin rights can ban users and redact messages across rooms. Give it only the rights it needs and restrict who can command it.
+:::
+
+### Matrix Authentication Service
 
 ```yaml
-matrix_mautrix_telegram_enabled: true
-matrix_mautrix_telegram_api_id: "YOUR_API_ID"
-matrix_mautrix_telegram_api_hash: "YOUR_API_HASH"
+matrix_authentication_service_enabled: true
 ```
 
-### Add WhatsApp Bridge
+MDAD describes MAS support as experimental and not a default. Read [its MAS page](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-matrix-authentication-service.md) before enabling it, especially for an existing server: migration is hard to reverse, and some services do not work with MAS yet.
+
+### Calls
+
+For Element Call, enable the MatrixRTC stack (LiveKit and lk-jwt-service). The playbook recommends this without installing the Element Call frontend, because Element Web and Element X embed it:
 
 ```yaml
-matrix_mautrix_whatsapp_enabled: true
+matrix_rtc_enabled: true
 ```
 
-### Add Mjolnir (Moderation)
+See [Setting up Matrix RTC](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-matrix-rtc.md) and [Element Call](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-element-call.md).
+
+coturn is no longer enabled by default (since 2026-02-21). Enable it only for legacy 1:1 calls or Jitsi:
 
 ```yaml
-matrix_bot_mjolnir_enabled: true
-matrix_bot_mjolnir_access_token: "GENERATE_TOKEN"
-matrix_bot_mjolnir_management_room: "!ROOM_ID:example.com"
+coturn_enabled: true
+coturn_turn_external_ip_addresses: ['YOUR_PUBLIC_IP']
 ```
 
-### Configure TURN Server
+### Monitoring
 
 ```yaml
-matrix_coturn_enabled: true
-matrix_coturn_turn_external_ip_address: "YOUR_SERVER_IP"
+prometheus_enabled: true
+grafana_enabled: true
 ```
 
-### Custom Synapse Settings
+See [Prometheus and Grafana](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-prometheus-grafana.md). Grafana is served on `stats.example.com` by default and starts with `admin`/`admin` credentials unless you set `grafana_default_admin_user` and `grafana_default_admin_password`; set them before the first run.
+
+### Custom Synapse settings
 
 ```yaml
+matrix_synapse_max_upload_size_mb: 100
+
 matrix_synapse_configuration_extension_yaml: |
-  max_upload_size: 100M
   url_preview_enabled: true
 ```
 
-## Full Configuration Example
+The playbook supplies its own URL preview block list. Check it in the generated `homeserver.yaml` before enabling previews.
 
-```yaml title="inventory/host_vars/matrix.example.com/vars.yml"
-# Domain and basics
-matrix_domain: example.com
-matrix_homeserver_implementation: synapse
-matrix_homeserver_generic_secret_key: 'YOUR_SECRET_KEY'
+## Other homeservers
 
-# Database
-devture_postgres_connection_password: 'DB_PASSWORD'
+Set `matrix_homeserver_implementation` to `conduit`, `continuwuity`, `tuwunel` or `dendrite` instead of `synapse`. Each has its own page: [Conduit](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-conduit.md), [continuwuity](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-continuwuity.md), [tuwunel](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-tuwunel.md), [Dendrite](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-dendrite.md). Choose before the first install; switching later means a new server. Dendrite is in [maintenance mode](../servers/dendrite).
 
-# SSL
-matrix_ssl_retrieval_method: lets-encrypt
-matrix_ssl_lets_encrypt_support_email: "admin@example.com"
-
-# Synapse settings
-matrix_synapse_enable_registration: false
-matrix_synapse_max_upload_size_mb: 100
-
-# Element Web
-matrix_client_element_enabled: true
-matrix_client_element_themes_enabled: true
-
-# TURN (VoIP)
-matrix_coturn_enabled: true
-matrix_coturn_turn_external_ip_address: "YOUR_IP"
-
-# Bridges
-matrix_mautrix_discord_enabled: true
-matrix_mautrix_telegram_enabled: true
-matrix_mautrix_telegram_api_id: "ID"
-matrix_mautrix_telegram_api_hash: "HASH"
-matrix_mautrix_whatsapp_enabled: true
-matrix_mautrix_signal_enabled: true
-
-# Bots
-matrix_bot_mjolnir_enabled: true
-
-# Metrics
-matrix_prometheus_enabled: true
-matrix_grafana_enabled: true
-
-# Admin user
-matrix_synapse_admin_username: admin
-matrix_synapse_admin_password: 'ADMIN_PASSWORD'
-```
-
-## Useful Commands
-
-### Update Services
+## Maintenance
 
 ```bash
-ansible-playbook -i inventory/hosts setup.yml --tags=setup-all,start
+# Update the playbook and its roles
+git pull && just roles
+
+# Apply changes and restart what changed (faster)
+ansible-playbook -i inventory/hosts setup.yml --tags=install-all,start
+
+# After removing components from vars.yml
+ansible-playbook -i inventory/hosts setup.yml --tags=setup-all,ensure-matrix-users-created,start
+
+# Restart all services
+just start-all
+
+# PostgreSQL vacuum
+just run-tags run-postgres-vacuum
 ```
 
-### View Logs
+Before updating, read the [CHANGELOG](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/CHANGELOG.md). Breaking changes make the playbook stop until you update `matrix_playbook_migration_validated_version`. See [Upgrading services](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/maintenance-upgrading-services.md).
+
+## Keeping secrets out of vars.yml
+
+You can encrypt secrets with Ansible Vault and reference them from `vars.yml`:
 
 ```bash
-ssh root@matrix.example.com
-journalctl -fu matrix-synapse
-```
-
-### Restart Services
-
-```bash
-ansible-playbook -i inventory/hosts setup.yml --tags=restart
-```
-
-### Create User
-
-```bash
-ansible-playbook -i inventory/hosts setup.yml --tags=register-user \
-  --extra-vars='username=newuser password=password admin=no'
-```
-
-### Run Maintenance
-
-```bash
-ansible-playbook -i inventory/hosts setup.yml --tags=run-postgres-vacuum
-```
-
-## Directory Structure
-
-```
-inventory/
-├── hosts                           # Server list
-└── host_vars/
-    └── matrix.example.com/
-        ├── vars.yml               # Main config
-        └── vault.yml              # Encrypted secrets (optional)
-```
-
-## Using Vault for Secrets
-
-```bash
-# Create encrypted file
 ansible-vault create inventory/host_vars/matrix.example.com/vault.yml
 ```
 
-```yaml title="vault.yml"
-matrix_homeserver_generic_secret_key: "secret"
-devture_postgres_connection_password: "secret"
+```yaml title="vault.yml (encrypted)"
+vault_matrix_homeserver_generic_secret_key: "..."
+vault_postgres_connection_password: "..."
 ```
 
-Reference in vars.yml:
-```yaml
-matrix_homeserver_generic_secret_key: "{{ vault_secret_key }}"
+```yaml title="vars.yml"
+matrix_homeserver_generic_secret_key: "{{ vault_matrix_homeserver_generic_secret_key }}"
+postgres_connection_password: "{{ vault_postgres_connection_password }}"
 ```
+
+Run the playbook with `--ask-vault-pass`, or set `vault_password_file` in `ansible.cfg`.
 
 ## Troubleshooting
 
-### Check Service Status
-
 ```bash
-ssh root@matrix.example.com
-systemctl status matrix-*
-```
-
-### View Container Logs
-
-```bash
-docker logs matrix-synapse
+# On the server
+systemctl status matrix-synapse
+journalctl -fu matrix-synapse
 docker logs matrix-postgres
 ```
 
-### Federation Issues
-
-```bash
-# Test federation
-curl https://federationtester.matrix.org/api/report?server_name=example.com
-```
+For federation problems, use the [Matrix Federation Tester](https://federationtester.matrix.org/). The playbook's [maintenance and troubleshooting docs](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/maintenance-and-troubleshooting.md) cover the rest.
 
 ## Resources
 
-- [Official Repository](https://github.com/spantaleev/matrix-docker-ansible-deploy)
-- [Full Documentation](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/README.md)
-- [Configuration Options](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook.md)
+- [Repository](https://github.com/spantaleev/matrix-docker-ansible-deploy)
+- [Documentation index](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/README.md)
+- [Configuring the playbook](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook.md)
+- [#matrix-docker-ansible-deploy:devture.com](https://matrix.to/#/#matrix-docker-ansible-deploy:devture.com)
 
 ---
 
