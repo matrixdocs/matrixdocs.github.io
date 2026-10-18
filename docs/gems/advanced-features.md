@@ -1,477 +1,267 @@
 ---
 sidebar_position: 4
 title: Advanced Features
-description: Deep dives into Matrix's advanced capabilities
+description: Widgets, Element Call, image packs, push rules, Matrix URIs, admin API and room versions
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, Synapse 1.163.0, Element Web 1.12.32, Element Call 0.28.0, matrix-widget-api 1.20.0"
 ---
 
 # Advanced Features
 
-Explore Matrix's powerful features that go beyond basic messaging.
+Features beyond basic messaging, with pointers to the spec or upstream docs for details.
 
-## Widgets & Integration Managers
+## Widgets
 
-### What Are Widgets?
+Widgets embed web apps in a room, such as calls, shared documents and dashboards. Element Web lists a room's widgets under **Room info → Extensions**. You can add one by URL with `/addwidget <url>`.
 
-Widgets embed interactive content in rooms:
-- Video conferencing (Jitsi, Element Call)
-- Collaborative documents (Etherpad, HedgeDoc)
-- Polls and surveys
-- Custom web apps
-- Dashboards and monitoring
+### Integration managers
 
-### Dimension Integration Manager
+An integration manager is a catalogue of widgets, bots and bridges that Element Web can open. It is set with `integrations_ui_url` and `integrations_rest_url` in Element's `config.json` (see Element's [config docs](https://github.com/element-hq/element-web/blob/develop/docs/config.md)).
 
-**[Dimension](https://github.com/turt2live/matrix-dimension)** is a self-hosted integration manager providing:
+:::note Dimension is archived
+[Dimension](https://github.com/turt2live/matrix-dimension), the self-hosted integration manager that older guides recommend, has been archived since 2023-08. Don't deploy it for new setups. Add widgets directly, run bots and bridges yourself, or use your deployment tool's built-in options instead.
+:::
 
-- **Widget catalog** - Browse and add widgets easily
-- **Bridge management** - Configure IRC, Telegram, Slack bridges
-- **Bot directory** - Add bots to rooms
-- **Sticker packs** - Manage custom stickers
+### Writing a widget
 
-**Installation:**
-```yaml title="docker-compose.yml"
-services:
-  dimension:
-    image: turt2live/matrix-dimension
-    ports:
-      - "8184:8184"
-    volumes:
-      - ./dimension-data:/data
-    environment:
-      - DIMENSION_DB_PATH=/data/dimension.db
-```
-
-**Configuration in Element:**
-```json
-{
-  "integrations_ui_url": "https://dimension.yourserver.com/element",
-  "integrations_rest_url": "https://dimension.yourserver.com/api/v1/scalar"
-}
-```
-
-### Adding Widgets
-
-In Element:
-1. Room info (i) → Widgets
-2. Add from list or custom URL
-
-With Dimension:
-1. Room settings → Integrations
-2. Browse widget catalog
-3. One-click add
-
-### Custom Widgets
-
-Create your own:
+Widgets talk to the client through the [matrix-widget-api](https://github.com/matrix-org/matrix-widget-api) (1.20.0, 2026-10-01). A minimal page:
 
 ```html title="widget.html"
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="https://unpkg.com/matrix-widget-api@1.0.0/dist/api.js"></script>
+  <script src="https://unpkg.com/matrix-widget-api@1.20.0/dist/api.js"></script>
 </head>
 <body>
-  <h1>My Widget</h1>
+  <h1>My widget</h1>
   <script>
     const widgetApi = new mxwidgets.WidgetApi();
-    widgetApi.requestCapabilities([
-      mxwidgets.MatrixCapabilities.MSC2931Navigate
-    ]);
+    widgetApi.requestCapabilities([mxwidgets.MatrixCapabilities.AlwaysOnScreen]);
     widgetApi.start();
   </script>
 </body>
 </html>
 ```
 
-### Widget API Capabilities
+Some capabilities:
 
-| Capability | Description |
-|------------|-------------|
-| `m.always_on_screen` | Keep widget visible during calls |
-| `m.capability.screenshot` | Capture widget content |
-| `org.matrix.msc2931.navigate` | Navigate to Matrix URIs |
-| `org.matrix.msc2762.timeline` | Read room messages |
-| `org.matrix.msc2762.send.event` | Send messages |
+| Capability | Meaning |
+|------------|---------|
+| `m.always_on_screen` | Stay visible (for example during calls) |
+| `m.capability.screenshot` | Provide screenshots |
+| `m.sticker` | Send stickers |
+| `org.matrix.msc2762.timeline:<roomId>` | Read events in a room (MSC2762, unstable) |
+| `org.matrix.msc2762.send.event:<eventType>` | Send events of a type (MSC2762, unstable) |
+| `org.matrix.msc2931.navigate` | Navigate the client to a Matrix URI (MSC2931, experimental) |
 
-### Popular Widget Types
+The client asks the user to approve the capabilities a widget requests.
 
-| Widget | Purpose | URL |
-|--------|---------|-----|
-| **Jitsi** | Video calls | Built into Element |
-| **Element Call** | Native Matrix calls | call.element.io |
-| **Etherpad** | Collaborative notes | Any Etherpad instance |
-| **HedgeDoc** | Markdown docs | Self-hosted |
-| **YouTube** | Video player | Custom widget |
-| **Polls** | Native in clients | Built-in |
+---
 
-## Spaces Deep Dive
+## Spaces
 
-### Nested Spaces
+### Restricting a room to space members
 
-Create hierarchical structures:
+Set the room's join rule to **Space members** (Element) and members of the parent space can join without an invite. On the wire this is the `restricted` join rule, available from room version 8.
 
-```
-🏢 Organization
-├── 📋 General
-├── 💻 Engineering
-│   ├── #frontend
-│   ├── #backend
-│   └── 📁 Projects
-│       ├── #project-a
-│       └── #project-b
-└── 🎉 Social
-```
+### Suggested rooms
 
-### Space-Based Access Control
+A space lists its rooms as `m.space.child` state events. Setting `suggested` highlights the room to new members:
 
-Configure rooms to inherit access from space:
-
-1. Create space
-2. Add room to space
-3. Set room join rules to "Space members"
-4. Members of space can join room
-
-### Suggested Rooms
-
-Mark rooms as "suggested" in space:
 ```json
 {
   "type": "m.space.child",
-  "state_key": "!room:example.com",
+  "state_key": "!room:example.org",
   "content": {
-    "via": ["example.com"],
+    "via": ["example.org"],
     "suggested": true
   }
 }
 ```
 
-Suggested rooms appear prominently to new space members.
+---
 
-## Threads Advanced
-
-### Thread Best Practices
-
-- Start threads for tangential discussions
-- Keep main timeline for announcements
-- Use threads for Q&A
-
-### Thread Notifications
-
-Configure per-room:
-- All thread messages
-- Only mentions in threads
-- Only root messages
-
-## Voice & Video Calls
+## Voice and video calls
 
 ### Element Call
 
-**[Element Call](https://call.element.io)** is the native Matrix voice/video solution:
+[Element Call](https://github.com/element-hq/element-call) (v0.28.0, 2026-10-13) is the group calling app built on **MatrixRTC**. Element Web and Element X embed it for in-app calls, and it also runs as a standalone web app. Media goes through a **LiveKit** SFU, and calls are end-to-end encrypted.
 
-- **End-to-end encrypted** - True E2EE group calls
-- **No Jitsi needed** - Pure Matrix protocol
-- **SFU support** - Scales to large calls via LiveKit
-- **Screen sharing** - Present to groups
-- **Standalone or embedded** - Works as widget or app
+Element Web turns on native Element Call through the `element_call` section of its `config.json`. The old trick of adding `call.element.io` as a widget with `/addwidget` is not needed.
 
-**Standalone URL:** [call.element.io](https://call.element.io)
+**Self-hosting** takes more than one container. Per the official [Element Call self-hosting guide](https://github.com/element-hq/element-call/blob/main/docs/self_hosting.md), a site needs:
 
-**Add to room:**
-```
-/addwidget https://call.element.io/room/#/your-room
-```
+1. A homeserver with the required MSCs enabled. For Synapse these are MSC3266 (room summaries), MSC4140 (delayed events, via `max_event_delay_duration`), MSC4222 (`state_after` in sync) and the MatrixRTC transports endpoint. It also needs raised `rc_message` and `rc_delayed_event_mgmt` limits and a `matrix_rtc` transport entry. Copy the exact block from the guide.
+2. A [LiveKit](https://github.com/livekit/livekit) SFU.
+3. The MatrixRTC Authorization Service, [lk-jwt-service](https://github.com/element-hq/lk-jwt-service), which issues LiveKit tokens to Matrix users. Synapse needs a `federation` or `openid` listener for it.
+4. Only if you want the standalone web app: the Element Call image `ghcr.io/element-hq/element-call`, configured with a `config.json`.
 
-**Self-hosted Element Call:**
-```yaml title="docker-compose.yml"
-services:
-  element-call:
-    image: vectorim/element-call
-    ports:
-      - "8080:80"
-    environment:
-      - VITE_DEFAULT_HOMESERVER=https://matrix.yourserver.com
-```
+For in-app calling from Element X and Element Web, steps 1 to 3 are enough.
 
-### Voice Rooms
+:::warning
+LiveKit and lk-jwt-service hand out media-server credentials. Keep their API secrets private, and follow the guide's reverse-proxy layout rather than exposing the services directly.
+:::
 
-Voice rooms are persistent call rooms:
+### Video rooms
 
-1. Enable in Labs (Element)
-2. Create room with voice room type
-3. Users can drop in/out anytime
-4. Shows active participants
+Element Web has persistent "video rooms" behind **Settings → Labs → Video rooms**, which is off by default.
 
-### Jitsi Integration
+### Jitsi
 
-For group calls (alternative to Element Call):
-1. Add Jitsi widget
-2. Configure Jitsi server
-3. Start meeting from widget
+Element Web can still embed [Jitsi Meet](https://jitsi.github.io/handbook/) as a widget. If you self-host Jitsi, follow the official [docker-jitsi-meet guide](https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-docker/) and **enable authentication** (`ENABLE_AUTH=1`). Otherwise anyone on the internet can use your server for meetings. Jitsi meetings are separate from Matrix room encryption.
 
-**Self-hosted Jitsi:**
-```yaml title="docker-compose.yml"
-services:
-  jitsi-web:
-    image: jitsi/web:latest
-    environment:
-      - ENABLE_AUTH=0
-      - ENABLE_GUESTS=1
-    ports:
-      - "8443:443"
-
-  jitsi-prosody:
-    image: jitsi/prosody:latest
-
-  jitsi-jicofo:
-    image: jitsi/jicofo:latest
-
-  jitsi-jvb:
-    image: jitsi/jvb:latest
-    ports:
-      - "10000:10000/udp"
-```
-
-### Comparison: Element Call vs Jitsi
-
-| Feature | Element Call | Jitsi |
-|---------|--------------|-------|
-| E2EE | ✅ Native | ❌ Not with E2EE rooms |
-| Matrix native | ✅ | Widget only |
-| Large calls | Via LiveKit SFU | Built-in |
-| Self-hosting | Simple | Complex |
-| Recommended | **Yes** | Legacy option |
-
-## Custom Emojis & Stickers
-
-### Stickerpicker
-
-**[Stickerpicker](https://github.com/maunium/stickerpicker)** is the best way to manage custom stickers:
-
-**Features:**
-- Web interface for managing sticker packs
-- Import from Telegram, Signal
-- Multiple pack support
-- Works with Element, SchildiChat, FluffyChat
-
-**Setup:**
-```bash
-# Clone and configure
-git clone https://github.com/maunium/stickerpicker.git
-cd stickerpicker
-
-# Edit config
-cp config.example.json config.json
-# Set your homeserver URL and credentials
-```
-
-**Import Telegram stickers:**
-```bash
-python3 sticker/import.py --telegram tg://addstickers?set=YourPackName
-```
-
-**Configure in Element:**
-```json
-{
-  "setting_defaults": {
-    "widgetOpenIDPermissions": {
-      "allow": ["https://stickers.yourserver.com"]
-    }
-  },
-  "integrations_widgets_urls": [
-    "https://stickers.yourserver.com/web/"
-  ]
-}
-```
-
-### Room Emoji Packs
-
-Add custom emojis to specific rooms:
-
-```json
-{
-  "type": "im.ponies.room_emotes",
-  "content": {
-    "images": {
-      "custom_laugh": {
-        "url": "mxc://example.com/abc123"
-      },
-      "company_logo": {
-        "url": "mxc://example.com/def456"
-      }
-    }
-  }
-}
-```
-
-### User Emoji Packs
-
-Personal emojis available everywhere:
-
-```json
-{
-  "type": "im.ponies.user_emotes",
-  "content": {
-    "images": {
-      "myface": {
-        "url": "mxc://example.com/xyz789"
-      }
-    }
-  }
-}
-```
-
-### Emoji Pack MSCs
-
-| MSC | Feature |
-|-----|---------|
-| MSC2545 | Basic emoji packs |
-| MSC3892 | Animated stickers |
-| MSC3951 | Sticker events |
-
-### Client Support
-
-| Client | Custom Emojis | Stickers |
-|--------|---------------|----------|
-| Element | Via stickerpicker | ✅ |
-| FluffyChat | ✅ Native | ✅ |
-| Cinny | ✅ Native | ✅ |
-| SchildiChat | Via stickerpicker | ✅ |
-| Nheko | ✅ Native | ✅ |
-
-## Push Rules
-
-### Custom Notifications
-
-Fine-tune notifications via push rules:
-
-```json
-{
-  "actions": ["notify", {"set_tweak": "sound", "value": "default"}],
-  "conditions": [
-    {"kind": "event_match", "key": "content.body", "pattern": "*important*"}
-  ],
-  "rule_id": "important_word"
-}
-```
-
-### Keyword Alerts
-
-Get notified for specific words across all rooms.
-
-## Matrix URIs
-
-### Link Anywhere
-
-Deep link to Matrix content:
-
-```
-matrix:r/room:example.com                    # Room by alias
-matrix:roomid/!abc:example.com               # Room by ID
-matrix:u/user:example.com                    # User profile
-matrix:roomid/!abc:example.com/e/$event123   # Specific message
-```
-
-### Sharing Links
-
-Share Matrix content:
-- Right-click message → Share → Copy link
-- Use matrix.to for universal links
-
-## Admin API Tricks
-
-### Synapse Admin API
-
-Powerful server management (admin only):
-
-```bash
-# List all rooms
-curl -H "Authorization: Bearer $TOKEN" \
-  "https://matrix.example.com/_synapse/admin/v1/rooms"
-
-# Quarantine media
-curl -X POST -H "Authorization: Bearer $TOKEN" \
-  "https://matrix.example.com/_synapse/admin/v1/media/quarantine/!room:example.com"
-
-# Deactivate user
-curl -X POST -H "Authorization: Bearer $TOKEN" \
-  -d '{"erase": true}' \
-  "https://matrix.example.com/_synapse/admin/v1/deactivate/@user:example.com"
-```
-
-### User Management
-
-```bash
-# Reset password
-curl -X POST -H "Authorization: Bearer $TOKEN" \
-  -d '{"new_password": "newpass", "logout_devices": true}' \
-  "https://matrix.example.com/_synapse/admin/v1/reset_password/@user:example.com"
-
-# Make admin
-curl -X PUT -H "Authorization: Bearer $TOKEN" \
-  -d '{"admin": true}' \
-  "https://matrix.example.com/_synapse/admin/v2/users/@user:example.com"
-```
-
-## Room Versions & State Resolution
-
-### Understanding Room Versions
-
-Room versions define how events are processed and state is resolved:
-
-| Version | Status | Features |
-|---------|--------|----------|
-| v1-v5 | Legacy | Avoid for new rooms |
-| v6 | Stable | Fixed integer parsing |
-| v9 | Stable | Restricted joins |
-| v10 | Current | Stricter validation |
-| v11 | Latest | Knock + restricted joins |
-
-### Checking Room Version
-
-In Element: Room Settings → Advanced → Room version
-
-### Upgrading Rooms
-
-```
-/upgraderoom <version>
-```
-
-**Important:**
-- Creates new room with same state
-- Old room becomes tombstoned
-- Users must re-join
-- History preserved via links
-
-### State Resolution v2
-
-Matrix uses state resolution to handle conflicting events (e.g., network splits):
-
-1. **Auth chain** - Events must be authorized
-2. **Power level comparison** - Higher power wins ties
-3. **Event ordering** - Lexicographic ordering for final ties
-
-### Common Issues
-
-**Split-brain scenarios:**
-- Two admins demote each other simultaneously
-- Resolution picks winner by event ordering
-- Check room state if permissions seem wrong
-
-### Room Discovery
-
-**[MatrixRooms.info](https://matrixrooms.info)** - External room directory:
-- Browse 50,000+ public rooms
-- Filter by language, topic, size
-- See member counts and activity
-- Find communities without joining
-
-**matrix.to links:**
-```
-https://matrix.to/#/#room:server.com
-https://matrix.to/#/@user:server.com
-https://matrix.to/#/!roomid:server/$eventid
-```
+| | Element Call | Jitsi widget |
+|---|---|---|
+| Built on | MatrixRTC + LiveKit | Jitsi (separate system) |
+| Encryption | E2EE, keys exchanged over Matrix | Jitsi's own E2EE option |
+| Self-hosting | Moderate: homeserver config, LiveKit, lk-jwt-service | Moderate: docker-jitsi-meet stack with auth |
+| Element X support | Yes | No |
 
 ---
 
-*Next: [Self-Hosting Tips](./self-hosting-tips) →*
+## Custom emoji and stickers
+
+### Image packs are in the spec
+
+Image packs ([MSC2545](https://github.com/matrix-org/matrix-spec-proposals/pull/2545)) were merged and appear in **spec v1.19** ([Image packs](https://spec.matrix.org/v1.19/client-server-api/#image-packs)):
+
+- **`m.room.image_pack`**: a state event. A room can hold any number of packs, each with its own `state_key`.
+- **`m.image_pack.rooms`**: account data listing the room packs a user wants available in every room.
+- Clients should also offer packs from the room's canonical space.
+
+A room pack (based on the spec example):
+
+```json
+{
+  "type": "m.room.image_pack",
+  "state_key": "cats",
+  "content": {
+    "images": {
+      "cat_wave": {
+        "url": "mxc://example.org/abc123",
+        "body": "a waving cat"
+      }
+    },
+    "pack": {
+      "display_name": "Cats",
+      "usage": ["emoticon"]
+    }
+  }
+}
+```
+
+Shortcodes may contain only letters, digits, `-` and `_`, up to 100 bytes. `usage` can be `emoticon`, `sticker` or both.
+
+Before v1.19, clients used the unstable `im.ponies.room_emotes` and `im.ponies.user_emotes` types. Some clients still read or write only those. Client support for the stable types varies, so check your client's release notes.
+
+### Stickerpicker is archived
+
+[maunium/stickerpicker](https://github.com/maunium/stickerpicker) is archived. Its README notes that image packs are now in the spec and that the Telegram bridge can import Telegram sticker packs itself. Don't build new setups on it.
+
+---
+
+## Push rules
+
+Push rules decide which events notify you. Keyword alerts are **content** rules. To add one through the API:
+
+```bash
+curl -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"pattern": "deploy", "actions": ["notify", {"set_tweak": "sound", "value": "default"}]}' \
+  "https://matrix.example.org/_matrix/client/v3/pushrules/global/content/deploy_keyword"
+```
+
+In Element you would normally do this under **Settings → Notifications → Mentions and keywords**.
+
+---
+
+## Matrix URIs
+
+`matrix:` URIs leave out the sigil, and links to room IDs need `via`:
+
+```
+matrix:r/room:example.org                                Room by alias
+matrix:roomid/abc:example.org?via=example.org            Room by ID
+matrix:roomid/abc:example.org/e/eventid?via=example.org  Specific event
+matrix:u/alice:example.org?action=chat                   Chat with a user
+```
+
+The equivalent `https://matrix.to/#/...` links keep the sigils and also take `?via=`. Spec: [Matrix URI scheme](https://spec.matrix.org/v1.19/appendices/#matrix-uri-scheme).
+
+---
+
+## Synapse admin API
+
+:::warning
+Admin API calls run with server-admin rights. Erasing a user and purging media cannot be undone. Test against a non-production server first, and keep admin tokens out of shell history.
+:::
+
+Some useful calls (Synapse 1.163; see the [admin API docs](https://element-hq.github.io/synapse/latest/usage/administration/admin_api/)). Room and user IDs in paths must be URL-encoded.
+
+```bash
+# List rooms
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://matrix.example.org/_synapse/admin/v1/rooms"
+
+# Quarantine all media in a room
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  "https://matrix.example.org/_synapse/admin/v1/room/%21abc%3Aexample.org/media/quarantine"
+
+# Deactivate a user and erase their data (irreversible)
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"erase": true}' \
+  "https://matrix.example.org/_synapse/admin/v1/deactivate/@spammer:example.org"
+
+# Make a user a server admin
+curl -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"admin": true}' \
+  "https://matrix.example.org/_synapse/admin/v2/users/@alice:example.org"
+```
+
+To reset a password, use the `reset_password` endpoint or `synadm user password` (which prompts). Don't put passwords on the command line.
+
+On servers that use Matrix Authentication Service (MAS), MAS owns passwords and sessions, so manage those through MAS rather than these Synapse endpoints.
+
+---
+
+## Room versions
+
+Room versions define event formats, authorisation rules and state resolution. All versions 1 to 12 are **stable** in spec v1.19. The spec recommends **v12** as the default for new rooms, and Synapse has used v12 as its default since 1.162 (2026-09-29).
+
+| Version | What it introduced |
+|---------|--------------------|
+| v1 | Initial version |
+| v2 | State resolution v2 |
+| v3 | Event IDs are hashes of the event |
+| v4 | URL-safe base64 event IDs |
+| v5 | Enforces signing-key validity periods |
+| v6 | Changes to several authorisation rules |
+| v7 | Knocking |
+| v8 | `restricted` join rule (join via membership of another room or space) |
+| v9 | Fixes redaction of some membership events |
+| v10 | Integer-only power levels; `knock_restricted` join rule |
+| v11 | Clarified redaction algorithm |
+| v12 | Room IDs are hashes of the create event; creators have unlimited power; revised state resolution |
+
+Source: [spec room versions](https://spec.matrix.org/v1.19/rooms/).
+
+In Element, the version is shown under **Room settings → Advanced**.
+
+### Upgrading a room
+
+```
+/upgraderoom 12
+/upgraderoom 12 @co-owner:example.org
+```
+
+In v12 you can name extra creators after the version. An upgrade creates a new room and tombstones the old one. Members have to move to the new room (clients offer a link), and history stays in the old room. Large public rooms should check that their members' clients support v12 first.
+
+### State resolution
+
+When servers disagree about a room's state, for example after a network split, the room version's state-resolution algorithm decides which events win. It uses authorisation chains, power levels and event ordering, and v12 revised it. The full rules are in the spec for each [room version](https://spec.matrix.org/v1.19/rooms/). If permissions look wrong after a dispute, inspect the current `m.room.power_levels` in `/devtools`.
+
+---
+
+## Room discovery
+
+[matrixrooms.info](https://matrixrooms.info) indexes public rooms across many servers, with search by topic and language.
