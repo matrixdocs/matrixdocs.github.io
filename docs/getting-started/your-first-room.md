@@ -172,7 +172,7 @@ Widgets embed web apps (for example Jitsi or a custom page) in a room. Element a
 
 ### Room upgrades
 
-Rooms sometimes need upgrading to a newer room version (Element: **Room settings → Advanced → Upgrade this room**):
+Rooms sometimes need upgrading to a newer room version. In Element Web, type `/upgraderoom <version>` in the room. The **Upgrade this room** button under Room settings → Advanced only appears when the room is on an unstable version. See [Room Version 12](../specification/room-v12) for what upgrading to v12 changes.
 
 1. A user with enough power sends the upgrade.
 2. The server creates a new room and puts a "tombstone" in the old one pointing to it.
