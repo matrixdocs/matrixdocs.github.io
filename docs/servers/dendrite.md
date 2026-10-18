@@ -57,7 +57,11 @@ docker run --rm --entrypoint="/bin/sh" \
     -server example.com > /mnt/dendrite.yaml"
 ```
 
-Then start it with the upstream [docker-compose.yml](https://github.com/element-hq/dendrite/blob/main/build/docker/docker-compose.yml). That file publishes ports 8008 and 8448 on all interfaces; behind a reverse proxy, change them to `127.0.0.1:8008:8008` and drop 8448 unless you terminate TLS in Dendrite.
+Then start it with the upstream [docker-compose.yml](https://github.com/element-hq/dendrite/blob/main/build/docker/docker-compose.yml). Edit it before starting:
+
+- It uses `dendrite-monolith:latest`. Pin `ghcr.io/element-hq/dendrite-monolith:v0.15.2`.
+- It sets `POSTGRES_PASSWORD: itsasecret`. Change it to the password you passed to `-db` above.
+- It publishes ports 8008 and 8448 on all interfaces. Behind a reverse proxy, change them to `127.0.0.1:8008:8008` and drop 8448 unless you terminate TLS in Dendrite.
 
 ## Building from source
 

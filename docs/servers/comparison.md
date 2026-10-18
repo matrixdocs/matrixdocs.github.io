@@ -21,7 +21,7 @@ This table compares the homeservers you might choose in October 2026. Versions a
 | Maintainer | Element | Element | Famedly and community | matrix-construct | Community |
 | Licence | AGPL-3.0 (or commercial) | AGPL-3.0 | Apache-2.0 | Apache-2.0 | Apache-2.0 |
 | Database | PostgreSQL (SQLite for testing) | PostgreSQL or SQLite | RocksDB or SQLite (embedded) | RocksDB (embedded) | RocksDB (embedded) |
-| Default room version | 12 (since 1.162) | – | 12 | 12 | 12 |
+| Default room version | 12 (since 1.162) | 10 (configurable) | 12 | 12 | 12 |
 | Simplified Sliding Sync (Element X) | Yes, native since 1.114 | No | Yes | Yes | Yes |
 | MAS / OIDC login | MAS (stable since 1.136), legacy SSO/OIDC too | No | No | Native OIDC option | OIDC option |
 | Application services (bridges) | Yes | "Not well tested" | Yes | Yes | Yes |
@@ -30,7 +30,7 @@ This table compares the homeservers you might choose in October 2026. Versions a
 | Ansible (MDAD) support | Default | Yes | Yes | Yes | Yes |
 | Kubernetes | [ESS Community](https://github.com/element-hq/ess-helm) Helm chart | Helm chart in repo | – | – | – |
 
-Sources: each project's README and changelog; [Dendrite FAQ](https://github.com/element-hq/dendrite/blob/main/docs/FAQ.md) for appservices; the MDAD [README](https://github.com/spantaleev/matrix-docker-ansible-deploy#readme) for Ansible support. "–" means no setting or no first-party option exists. Check licence files in each repository if the licence matters to you.
+Sources: each project's README and changelog; [Dendrite FAQ](https://github.com/element-hq/dendrite/blob/main/docs/FAQ.md) for appservices; the MDAD [README](https://github.com/spantaleev/matrix-docker-ansible-deploy#readme) for Ansible support. "–" means no first-party option exists. Check licence files in each repository if the licence matters to you.
 
 ## Which one to pick
 

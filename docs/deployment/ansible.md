@@ -136,7 +136,7 @@ A moderation bot with server admin rights can ban users and redact messages acro
 matrix_authentication_service_enabled: true
 ```
 
-MDAD describes MAS support as experimental and not a default. Read [its MAS page](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-matrix-authentication-service.md) before enabling it, especially for an existing server: migration is hard to reverse, and some services do not work with MAS yet.
+MDAD describes MAS support as experimental and not a default. Read [its MAS page](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-matrix-authentication-service.md) before enabling it, especially for an existing server: migration is hard to reverse, and some services do not work with MAS yet (MDAD's page says bridges and bots that need encryption fail).
 
 ### Calls
 
@@ -185,7 +185,7 @@ Set `matrix_homeserver_implementation` to `conduit`, `continuwuity`, `tuwunel` o
 # Update the playbook and its roles
 git pull && just roles
 
-# Apply changes and restart what changed (faster)
+# Apply changes and (re)start all services; faster, skips uninstall tasks
 ansible-playbook -i inventory/hosts setup.yml --tags=install-all,start
 
 # After removing components from vars.yml
@@ -194,7 +194,8 @@ ansible-playbook -i inventory/hosts setup.yml --tags=setup-all,ensure-matrix-use
 # Restart all services
 just start-all
 
-# PostgreSQL vacuum
+# PostgreSQL vacuum: the default preset runs VACUUM FULL and stops all services
+# while it runs (needs free disk space). For no downtime, add -e postgres_vacuum_preset=analyze
 just run-tags run-postgres-vacuum
 ```
 

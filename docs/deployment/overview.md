@@ -21,7 +21,7 @@ The easiest option is an account on an existing server such as matrix.org. See [
 
 | Provider | What it offers (checked 2026-10-18) |
 |----------|-------------------------------------|
-| [etke.cc](https://etke.cc) | Managed Synapse hosting; also maintains the Ketesa admin UI |
+| [etke.cc](https://etke.cc/) | Managed Synapse hosting; also maintains the Ketesa admin UI |
 | [Element](https://element.io/pricing) | Element's pricing page lists self-hosted Element Server Suite (ESS) plans: Community (free), Enterprise and Sovereign. It does not list a hosted plan |
 
 Check the provider's current terms before relying on this table; hosting offers change.
@@ -106,6 +106,8 @@ certbot certonly --webroot -w /var/www/html \
   -d matrix.example.com \
   -d example.com
 ```
+
+This issues one certificate for both names and only works if both hostnames are served from that web root on this host. Otherwise run certbot on each host.
 
 ## Next steps
 
