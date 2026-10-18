@@ -1,0 +1,37 @@
+# lychee config for the weekly external link check (.github/workflows/links.yml).
+# Internal links and anchors are checked by the Docusaurus build (onBrokenLinks: throw), so only
+# http(s) links are checked here.
+scheme = ["https", "http"]
+# Resolve root-relative links (/docs/...) to the site itself, which is excluded below.
+base_url = "https://matrixdocs.github.io/"
+
+# Links inside code blocks are examples (http://synapse:8008, https://matrix.example.org/...), not links.
+include_verbatim = false
+
+# Rate limiting means the page exists.
+accept = ["200..=299", "429"]
+
+# crates.io and gitlab.gnome.org reject requests without a browser user agent.
+user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0"
+
+max_retries = 3
+retry_wait_time = 5
+timeout = 30
+max_concurrency = 16
+host_concurrency = 4
+
+exclude_all_private = true
+
+exclude = [
+  # This site: internal links are the build's job, and new pages aren't deployed yet.
+  '^https://matrixdocs\.github\.io/',
+  # Placeholder hosts used in the docs (RFC 2606/6761 names and docs-only subdomains of them).
+  '^https?://([a-z0-9-]+\.)*example(\.(com|org|net))?([:/?#]|$)',
+  '^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\])([:/?#]|$)',
+  # Single-label hosts: Docker service names such as http://synapse:8008 or http://mautrix-telegram:29317.
+  '^https?://[a-z0-9-]+([:/?#]|$)',
+  # Templated URLs such as https://<server>/... or https://{domain}/...
+  '^https?://[^/]*[<>{}$]',
+  # matrix.to links are resolved in the browser from the fragment; the server only ever serves the app.
+  '^https://matrix\.to/#',
+]
