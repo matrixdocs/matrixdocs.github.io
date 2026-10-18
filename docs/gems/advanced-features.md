@@ -92,7 +92,7 @@ Element Web has native Element Call built in and on by default. The `element_cal
 
 **Self-hosting** takes more than one container. Per the official [Element Call self-hosting guide](https://github.com/element-hq/element-call/blob/main/docs/self_hosting.md), a site needs:
 
-1. A homeserver with the required MSCs enabled. For Synapse these are MSC3266 (room summaries), MSC4140 (delayed events, via `max_event_delay_duration`), MSC4222 (`state_after` in sync) and the MatrixRTC transports endpoint. It also needs raised `rc_message` and `rc_delayed_event_mgmt` limits and a `matrix_rtc` transport entry. Copy the exact block from the guide.
+1. A homeserver with the required MSCs enabled. For Synapse these are MSC4140 (delayed events, via `max_event_delay_duration`), MSC4222 (`state_after` in sync) and the MatrixRTC transports endpoint. It also needs raised `rc_message` and `rc_delayed_event_mgmt` limits and a `matrix_rtc` transport entry. MSC3266 (room summaries) has been stable since Synapse 1.153, so leave out the guide's `msc3266_enabled` flag. See [Element Call and LiveKit](../deployment/element-call) for a checked setup.
 2. A [LiveKit](https://github.com/livekit/livekit) SFU.
 3. The MatrixRTC Authorization Service, [lk-jwt-service](https://github.com/element-hq/lk-jwt-service), which issues LiveKit tokens to Matrix users. Synapse needs a `federation` or `openid` listener for it.
 4. Only if you want the standalone web app: Element Call itself, built from source as the guide describes (an image is also published as `ghcr.io/element-hq/element-call`), configured with a `config.json`.
