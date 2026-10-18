@@ -10,7 +10,7 @@ verified_with: "Dendrite v0.15.2 (element-hq/dendrite), spec v1.19"
 # Dendrite
 
 :::warning Maintenance mode
-Dendrite is "currently in maintenance mode, meaning only security fixes are being applied", and its README still calls it **beta** software ([element-hq/dendrite README](https://github.com/element-hq/dendrite#readme)). The latest release is **v0.15.2 (2025-08-15)**. Dendrite does not support Simplified Sliding Sync (MSC4186) or next-gen OIDC auth (MSC3861), so **Element X does not work with it**.
+Dendrite is "currently in maintenance mode, meaning only security fixes are being applied", and its README still calls it **beta** software ([element-hq/dendrite README](https://github.com/element-hq/dendrite#readme)). The latest release is **v0.15.2 (2025-08-15)**. Dendrite does not support Simplified Sliding Sync (MSC4186), which Element X needs, so **Element X does not work with it**. It also lacks the OAuth 2.0 API (MSC3861).
 
 For a new server, use [Synapse](./synapse), or a Rust server from the [Conduit family](./conduit) if you want something lighter.
 :::
