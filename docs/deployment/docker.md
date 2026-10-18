@@ -195,7 +195,7 @@ element.example.com {
 mautrix bridges run as separate containers, and each must be registered with Synapse as an application service. Follow the [mautrix Docker setup guide](https://docs.mau.fi/bridges/general/docker-setup.html). In outline:
 
 1. Run the bridge image once with `/data` mounted; it writes a `config.yaml`.
-2. Edit the config: homeserver address `http://synapse:8008`, your domain, a database, and permissions.
+2. Edit the config: homeserver address `http://synapse:8008`, your domain, a database, and permissions. Set `appservice.address: http://mautrix-telegram:29317` and `appservice.hostname: 0.0.0.0`. The generated default of `127.0.0.1` listens only inside the bridge container, so Synapse can't reach it. Don't publish the bridge port on the host.
 3. Run it again; it writes `registration.yaml`.
 4. Copy the registration into Synapse's data directory and list it in `homeserver.yaml`, then restart Synapse.
 5. Start the bridge on the `matrix` network.
