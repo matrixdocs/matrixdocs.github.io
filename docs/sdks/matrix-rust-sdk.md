@@ -9,7 +9,7 @@ verified_with: "matrix-sdk 0.19.1 (example checked with cargo check), spec v1.19
 
 # matrix-rust-sdk
 
-A Matrix client SDK written in Rust, maintained by Element and the Matrix.org Foundation. Element X (iOS and Android) is built on it, and Element Web is moving parts of itself onto it.
+A Matrix client SDK written in Rust, maintained by Element and the Matrix.org Foundation. Element X (iOS and Android) is built on it, and Element Web uses its crypto crate through `matrix-sdk-crypto-wasm`.
 
 As of 2026-10:
 
@@ -55,7 +55,7 @@ async fn main() -> anyhow::Result<()> {
 
     client
         .matrix_auth()
-        .login_username("bot", "password")
+        .login_username("bot", &std::env::var("BOT_PASSWORD")?)
         .initial_device_display_name("example bot")
         .send()
         .await?;
@@ -95,7 +95,7 @@ With default features, the client encrypts and decrypts automatically. `client.e
 
 For a chat client, don't drive `/sync` yourself. Use the `matrix-sdk-ui` crate:
 
-- `SyncService` and `RoomListService` run Simplified Sliding Sync (MSC4186). The server must support it; Synapse does natively.
+- `SyncService` and `RoomListService` run Simplified Sliding Sync (MSC4186). The server must support it; Synapse 1.163 does natively, enabled by default.
 - `Timeline` gives a ready-to-render room timeline with edits, reactions, threads, read receipts and a send queue.
 
 Simplified Sliding Sync is accepted but not yet in the spec (not in v1.19). Expect API changes between releases.

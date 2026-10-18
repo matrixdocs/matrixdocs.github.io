@@ -26,7 +26,7 @@ A Matrix bot is an ordinary user account driven by a program, or a user inside a
 | [maubot](./maubot) | Python plugin host with a web UI. The usual choice for general-purpose bots. | 0.6.0 (2025-11-17) |
 | [Draupnir](./mjolnir#draupnir) | Moderation bot: policy lists, protections, server ACLs | 3.2.0 (2026-10-14) |
 | [Meowlnir](./mjolnir#meowlnir) | Moderation bot from the mautrix author, tuned for Synapse | 0.2609.0 (2026-09-16) |
-| [Mjolnir](./mjolnir#mjolnir) | The original moderation bot, maintained again | 2.0.1 (2026-10-15) |
+| [Mjolnir](./mjolnir#mjolnir) | The original moderation bot, still maintained by Matrix.org | 2.0.1 (2026-10-15) |
 | [Hookshot](./hookshot) | GitHub, GitLab, Jira, OpenProject, Figma, RSS and webhooks | 7.5.0 (2026-09-22) |
 
 Libraries for writing your own bot are compared in [SDKs](../sdks/overview) and [Building bots](./building-bots).
@@ -40,7 +40,7 @@ The shortest path to a working bot is a [maubot plugin](./maubot#writing-a-plugi
 ## What changed for bots by 2026
 
 - **Encrypted rooms need cross-signing.** Since spec v1.18, clients SHOULD NOT send room keys to devices that aren't cross-signed and SHOULD NOT show their messages ([spec](https://spec.matrix.org/v1.19/client-server-api/#recommended-client-behaviour), MSC4153). Bots on libraries without cross-signing (matrix-nio, matrix-bot-sdk) will lose encrypted rooms as clients enforce this. See [E2EE and cross-signing](./building-bots#e2ee-and-cross-signing).
-- **Tokens on MAS servers.** Servers using Matrix Authentication Service (matrix.org since 2025-04) issue short-lived, refreshing tokens to clients. Give a bot its own account and a personal access token instead of copying a token out of Element. See [Getting a bot account](./building-bots#getting-a-bot-account).
+- **Tokens on MAS servers.** Servers using Matrix Authentication Service (matrix.org since 2025-04) issue short-lived, refreshing tokens to OAuth clients such as Element. Give a bot its own account and a personal access token instead of copying a token out of Element. See [Getting a bot account](./building-bots#getting-a-bot-account).
 - **Room version 12.** Room creators have unlimited power. A bot at power level 100 cannot kick, ban or demote a creator ([room v12](https://spec.matrix.org/v1.19/rooms/v12/)).
 - **Policy servers.** Spec v1.18 added policy servers, which check events for a room before they are accepted ([spec](https://spec.matrix.org/v1.19/client-server-api/#policy-servers)). They complement moderation bots. See [Moderation bots](./mjolnir#policy-servers).
 
@@ -58,7 +58,7 @@ The shortest path to a working bot is a [maubot plugin](./maubot#writing-a-plugi
 |-----|-------|
 | Posts messages or notices | The room's `events_default` (usually 0) |
 | Edits room state (Hookshot connections) | `state_default` (usually 50) |
-| Moderates | `ban`, `kick` and `redact` levels (usually 50), plus permission to send `m.room.server_acl` if it should apply server bans |
+| Moderates | `ban`, `kick` and `redact` levels (usually 50), plus permission to send `m.room.server_acl` if it should apply server bans (100 in rooms Synapse creates) |
 
 Give the lowest level that works. In room v12, no power level overrides a room creator.
 

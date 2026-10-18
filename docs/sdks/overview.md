@@ -18,11 +18,11 @@ A Matrix SDK handles login, `/sync`, room state and, in most cases, end-to-end e
 | [matrix-js-sdk](./matrix-js-sdk) | JavaScript / TypeScript | Element / Matrix.org | 44.0.0 (2026-10-13) | Yes (Rust crypto via WASM) | Yes | Web clients, Element Web |
 | [matrix-rust-sdk](./matrix-rust-sdk) | Rust, with Swift/Kotlin bindings | Element / Matrix.org | 0.19.1 (2026-09-18) | Yes | Yes | Native and mobile clients, Element X |
 | [matrix-nio](./matrix-python-sdk#matrix-nio) | Python (asyncio) | Community | 0.26.0 (2026-07-23) | Yes (vodozemac) | No | Bots, scripts |
-| [mautrix-python](./matrix-python-sdk#mautrix-python) | Python (asyncio) | mautrix (Tulir Asokan) | 0.21.1 (2026-07-05) | Yes | See its docs | maubot plugins, bots |
+| [mautrix-python](./matrix-python-sdk#mautrix-python) | Python (asyncio) | mautrix (Tulir Asokan) | 0.21.1 (2026-07-05) | Yes | Yes (recovery key) | maubot plugins, bots |
 | [mautrix-go](https://github.com/mautrix/go) | Go | mautrix | 0.32.0 (2026-10-16) | Yes | Yes | mautrix bridges (bridgev2), gomuks |
 | [matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk) | TypeScript | turt2live | 0.8.0 (2026-01-16) | Yes (Rust crypto) | No | Node.js bots and appservices |
-| [@vector-im/matrix-bot-sdk](https://github.com/element-hq/matrix-bot-sdk) | TypeScript | Element (fork) | 0.10.1-element.0 (2026-09-18) | Yes | No | Hookshot, Draupnir, matrix-appservice-bridge |
-| [libQuotient](https://github.com/quotient-im/libQuotient) | C++ / Qt | Quotient | see repo | Yes | see repo | Qt clients such as NeoChat |
+| [@vector-im/matrix-bot-sdk](https://github.com/element-hq/matrix-bot-sdk) | TypeScript | Element (fork) | 0.10.1-element.0 (2026-09-18), Node.js 24+ | Yes | No | Hookshot, Draupnir, matrix-appservice-bridge |
+| [libQuotient](https://github.com/quotient-im/libQuotient) | C++ / Qt | Quotient | 0.9.6.1 (2026-02-17) | Yes | see repo | Qt clients such as NeoChat |
 | [matrix-dart-sdk](https://pub.dev/packages/matrix) | Dart / Flutter | Famedly | 14.1.0 (2026-10-16) | Yes | see repo | FluffyChat, Flutter apps |
 | [Trixnity](https://gitlab.com/connect2x/trixnity/trixnity) | Kotlin Multiplatform | connect2x | 5.9.2 (2026-09-17) | Yes | see repo | Kotlin/JVM/native apps |
 
@@ -34,7 +34,7 @@ matrix-org's old `matrix-python-sdk` (published on PyPI as `matrix-client`) has 
 
 ## Choosing an SDK
 
-- **Web client:** matrix-js-sdk. Version 44 is ESM-only and needs Node.js 22 or later for tooling and tests.
+- **Web client:** matrix-js-sdk. Version 44 is ESM-only and declares Node.js 22 or later.
 - **Mobile or desktop client:** matrix-rust-sdk. Element X uses it through the Swift and Kotlin bindings. The `matrix-sdk-ui` crate provides the room list and timeline.
 - **Bot, Python:** write a [maubot](../bots/maubot) plugin (mautrix-python underneath), or use matrix-nio directly for small scripts.
 - **Bot, TypeScript:** matrix-bot-sdk, or Element's fork if you want what Hookshot and Draupnir run on.

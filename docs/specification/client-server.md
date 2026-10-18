@@ -24,7 +24,7 @@ The client finds the homeserver's base URL through [server discovery](https://sp
 
 ## Authentication
 
-Since v1.15 there are **two authentication APIs**, and a server offers one or the other ([client authentication](https://spec.matrix.org/v1.19/client-server-api/#client-authentication)):
+Since v1.15 there are **two authentication APIs**. A server may offer one or both, and a client must keep using the API that issued its current token ([client authentication](https://spec.matrix.org/v1.19/client-server-api/#client-authentication)):
 
 | API | Discovery | Used by |
 |-----|-----------|---------|
@@ -96,7 +96,7 @@ Since v1.11, media is downloaded with an access token from:
 - `GET /_matrix/client/v1/media/download/{serverName}/{mediaId}`
 - `GET /_matrix/client/v1/media/thumbnail/{serverName}/{mediaId}`
 
-The old unauthenticated `v3` download and thumbnail endpoints are deprecated, and servers may refuse to serve media uploaded after they switch ("freezing"); matrix.org did so in 2024-09. Uploads still go to `POST /_matrix/media/v3/upload`. See [content repository](https://spec.matrix.org/v1.19/client-server-api/#content-repository).
+The old unauthenticated `/_matrix/media/v3` download and thumbnail endpoints are deprecated. Servers SHOULD "freeze" them, so media uploaded after the freeze is only served through the authenticated endpoints; matrix.org froze in 2024-09. Uploads still go to `POST /_matrix/media/v3/upload`. See [content repository](https://spec.matrix.org/v1.19/client-server-api/#content-repository).
 
 ## Errors and rate limits
 
