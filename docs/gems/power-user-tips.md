@@ -109,28 +109,29 @@ Don't wrap arguments in quotes: `/myroomnick "Work Me"` sets the name to `"Work 
 | Level | Usual role | Typical abilities |
 |-------|------------|-------------------|
 | 0 | Member | Send messages |
-| 50 | Moderator | Kick, ban, redact others' messages |
-| 100 | Admin | Change power levels and room settings |
+| 50 | Moderator | Kick, ban, redact others' messages; change the name, topic and avatar |
+| 100 | Admin | Change power levels, encryption, server ACLs and history visibility; upgrade the room |
+
+These are the defaults Synapse sets when it creates a room, and each room can change them. In v12 rooms, Synapse sets the upgrade (`m.room.tombstone`) level to 150, so by default only the creators can upgrade.
 
 In **room version 12** (the default for new rooms on current servers) the room **creators** have unlimited power and are not listed in the `users` map. A PL 100 admin cannot demote them. When you upgrade a room to v12, Element lets you name additional creators (`/upgraderoom 12 @other:example.org`).
 
-You can adjust individual permissions in the room's settings, or edit the `m.room.power_levels` state event in `/devtools`. For example:
+Adjust individual permissions in **Room settings → Roles & Permissions**. You can also edit the `m.room.power_levels` state event in `/devtools`.
+
+:::warning Edit, don't replace
+A state event is replaced as a whole. If you send only a fragment, every key you left out is lost. That includes the `users` entry that makes *you* an admin, so you can demote yourself to 0 and lose control of the room. In `/devtools`, open the existing `m.room.power_levels` event, change only the keys you need, and send the complete content back.
+:::
+
+For example, to let PL 25 rename the room and to give one user PL 25, change these keys inside the existing content and leave everything else as it is:
 
 ```json
 {
-  "users_default": 0,
-  "events": {
-    "m.room.name": 25,
-    "m.room.message": 0,
-    "m.room.redaction": 10
-  },
-  "users": {
-    "@vip:example.org": 25
-  }
+  "events": { "m.room.name": 25 },
+  "users": { "@vip:example.org": 25 }
 }
 ```
 
-That gives PL 25 the right to rename the room. (The JSON must be valid, so no comments.)
+Add these entries to the existing `events` and `users` maps rather than replacing the maps.
 
 ```
 /op @user:example.org 75    Set power level 75 (default 50)
@@ -181,6 +182,7 @@ Matrix search has no `from:` or `before:` operators. Element searches message te
 
 | Room setting | Effect |
 |--------------|--------|
+| Match default setting | Follow your account-wide notification settings |
 | All messages | Notify for everything |
 | Mentions and keywords | Only @mentions and your keywords |
 | Mute | No notifications |
@@ -199,7 +201,7 @@ Keywords are set in **Settings → Notifications**.
 2. Leave large rooms you no longer read.
 3. Turn off URL previews in busy rooms.
 
-Element X (mobile) uses sliding sync and starts much faster than the classic mobile apps.
+On mobile, Element X uses sliding sync, which is designed to make startup faster on accounts with many rooms.
 
 ---
 
@@ -271,10 +273,12 @@ matrix:u/alice:example.org?action=chat                  Chat with a user
 ### matrix.to links
 
 ```
-https://matrix.to/#/#room:example.org
-https://matrix.to/#/@alice:example.org
-https://matrix.to/#/!abc:example.org/$eventid?via=example.org
+https://matrix.to/#/%23room%3Aexample.org
+https://matrix.to/#/%40alice%3Aexample.org
+https://matrix.to/#/%21abc%3Aexample.org/%24eventid?via=example.org
 ```
+
+The spec requires the parts after `#/` to be percent-encoded (`#` → `%23`, `!` → `%21`, `@` → `%40`, `$` → `%24`, `:` → `%3A`). Most clients also accept unencoded links, but generate encoded ones.
 
 Always add `?via=` to links that use a room ID. It tells the client which server to join through. Room IDs in v12 rooms have no server part, so `via` is the only routing hint.
 

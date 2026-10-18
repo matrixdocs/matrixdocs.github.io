@@ -88,7 +88,7 @@ Room version 12 is the spec's recommended default (spec v1.19) and Synapse's def
 Custom emoji and sticker packs entered the spec in v1.19 (`m.room.image_pack`). See [Advanced Features](./advanced-features#custom-emoji-and-stickers).
 
 ### Sticky events (experimental)
-[MSC4354](https://github.com/matrix-org/matrix-spec-proposals/pull/4354) adds short-lived per-user state, for example call membership. It is not in spec v1.19. Synapse supports it only behind `experimental_features.msc4354_enabled`, which is off by default.
+[MSC4354](https://github.com/matrix-org/matrix-spec-proposals/pull/4354) proposes a new kind of event for temporary per-user data, such as call membership or live location. These events are not room state: servers keep delivering them to room members until a timeout, without adding them to the room's state. MSC4354 is an open proposal and is not in spec v1.19. Synapse supports it only behind `experimental_features.msc4354_enabled`, which is off by default.
 
 ### Excluding unverified devices (still opt-in)
 Element Web can stop sharing keys with, and decrypting messages from, devices their owners have not verified. As of v1.12.32 this is still a Labs feature ("Exclude insecure devices when sending/receiving messages") and is off by default.
@@ -97,7 +97,7 @@ Element Web can stop sharing keys with, and decrypting messages from, devices th
 
 ## Labs features in Element Web
 
-These are under **Settings → Labs**, which only appears if the deployment sets `show_labs_settings`. As of v1.12.32:
+These appear under **Settings → Labs** only if the deployment sets `show_labs_settings` in `config.json` or you have turned on developer mode. As of v1.12.32:
 
 | Feature | What it does |
 |---------|--------------|
@@ -115,7 +115,7 @@ Threads and pinned messages are no longer Labs features.
 
 - **SchildiChat**: the original Element-based apps are no longer maintained. Development moved to [SchildiChat Next](https://github.com/SchildiChat/schildichat-android-next) (Android, based on Element X) and [SchildiChat Revenge](https://github.com/SchildiChat/schildi-revenge) (desktop and Android, beta).
 - **FluffyChat**: voice messages, location sharing, polls and threads; releases roughly monthly.
-- **Cinny**: Discord-like layout and native custom emoji packs.
+- **Cinny**: a web and desktop client with a simple interface and native custom emoji packs.
 - **gomuks**: the web frontend is ready for daily use; `archivemuks` exports room history.
 
 "Mark as unread" is in the spec (v1.12) and in Element Web, so it is no longer unique to SchildiChat.

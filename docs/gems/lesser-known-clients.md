@@ -65,11 +65,11 @@ Element's docs FAQ says Element Classic mobile shows a migration banner from 202
 | [NeoChat](https://invent.kde.org/network/neochat) | KDE / Qt | Active, ships with KDE Gear (v26.08.2). Successor to Spectral |
 | [Fractal](https://gitlab.gnome.org/World/fractal) | GNOME / Rust | Active; Fractal 14.1 (2026-07-19) |
 | [Quaternion](https://github.com/quotient-im/Quaternion) | Qt / libQuotient | Slow; 0.0.97.1 (2025-03-21) |
-| [Commet](https://github.com/commetchat/commet) | Flutter | Active; Discord-like layout; v0.5.0 (2026-09-24) |
+| [Commet](https://github.com/commetchat/commet) | Flutter | Active; v0.5.0 (2026-09-24). Windows, Linux and Android; spaces, threads, multi-account, custom emoji, GIF search |
 
 ### Cinny
 
-[Cinny](https://github.com/cinnyapp/cinny) (v4.12.7, 2026-09-15) is a web and desktop client with a Discord-like layout and native custom emoji packs. Developer tools are under **Settings → Developer tools**; Cinny has no `/devtools` command.
+[Cinny](https://github.com/cinnyapp/cinny) (v4.12.7, 2026-09-15) is a web and desktop client that aims for a "simple, elegant and secure interface" (its README). It supports custom emoji packs natively. Developer tools are under **Settings → Developer tools**; Cinny has no `/devtools` command.
 
 ---
 
@@ -82,7 +82,7 @@ Element's docs FAQ says Element Classic mobile shows a migration banner from 202
 
 ## Beeper
 
-[Beeper](https://www.beeper.com) is a commercial multi-network chat app, owned by Automattic since 2024. Since 2025 it runs most network connections on the device. Its bridges are open source and built on mautrix-go. To self-host similar bridges on your own homeserver, see [Bridges](../bridges/overview).
+[Beeper](https://www.beeper.com) is a commercial multi-network chat app, owned by Automattic since 2024-04. In 2025-07 it relaunched with an on-device model, so network connections can run on your device instead of only in Beeper's cloud. Beeper's developer docs say its bridges are open source and built on mautrix-go. To self-host similar bridges on your own homeserver, see [Bridges](../bridges/overview).
 
 ---
 

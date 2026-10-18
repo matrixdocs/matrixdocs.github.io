@@ -88,16 +88,16 @@ A space lists its rooms as `m.space.child` state events. Setting `suggested` hig
 
 [Element Call](https://github.com/element-hq/element-call) (v0.28.0, 2026-10-13) is the group calling app built on **MatrixRTC**. Element Web and Element X embed it for in-app calls, and it also runs as a standalone web app. Media goes through a **LiveKit** SFU, and calls are end-to-end encrypted.
 
-Element Web turns on native Element Call through the `element_call` section of its `config.json`. The old trick of adding `call.element.io` as a widget with `/addwidget` is not needed.
+Element Web has native Element Call built in and on by default. The `element_call` section of its `config.json` only changes how it behaves: `use_exclusively` hides the legacy and Jitsi call options, and `disable` turns it off ([config docs](https://github.com/element-hq/element-web/blob/develop/docs/config.md)). The old trick of adding `call.element.io` as a widget with `/addwidget` is not needed.
 
 **Self-hosting** takes more than one container. Per the official [Element Call self-hosting guide](https://github.com/element-hq/element-call/blob/main/docs/self_hosting.md), a site needs:
 
 1. A homeserver with the required MSCs enabled. For Synapse these are MSC3266 (room summaries), MSC4140 (delayed events, via `max_event_delay_duration`), MSC4222 (`state_after` in sync) and the MatrixRTC transports endpoint. It also needs raised `rc_message` and `rc_delayed_event_mgmt` limits and a `matrix_rtc` transport entry. Copy the exact block from the guide.
 2. A [LiveKit](https://github.com/livekit/livekit) SFU.
 3. The MatrixRTC Authorization Service, [lk-jwt-service](https://github.com/element-hq/lk-jwt-service), which issues LiveKit tokens to Matrix users. Synapse needs a `federation` or `openid` listener for it.
-4. Only if you want the standalone web app: the Element Call image `ghcr.io/element-hq/element-call`, configured with a `config.json`.
+4. Only if you want the standalone web app: Element Call itself, built from source as the guide describes (an image is also published as `ghcr.io/element-hq/element-call`), configured with a `config.json`.
 
-For in-app calling from Element X and Element Web, steps 1 to 3 are enough.
+For in-app calling from Element X and Element Web, steps 1 to 3 are enough, and that is what most sites want. To let people without an account join, standalone mode needs a homeserver with open registration (no token or email), so the guide recommends a separate, ideally non-federating homeserver for it. Don't open registration on your main server for this.
 
 :::warning
 LiveKit and lk-jwt-service hand out media-server credentials. Keep their API secrets private, and follow the guide's reverse-proxy layout rather than exposing the services directly.
@@ -210,17 +210,17 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 # Deactivate a user and erase their data (irreversible)
 curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"erase": true}' \
-  "https://matrix.example.org/_synapse/admin/v1/deactivate/@spammer:example.org"
+  "https://matrix.example.org/_synapse/admin/v1/deactivate/%40spammer%3Aexample.org"
 
-# Make a user a server admin
+# Make a user a server admin (not on MAS servers, see below)
 curl -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"admin": true}' \
-  "https://matrix.example.org/_synapse/admin/v2/users/@alice:example.org"
+  "https://matrix.example.org/_synapse/admin/v2/users/%40alice%3Aexample.org"
 ```
 
 To reset a password, use the `reset_password` endpoint or `synadm user password` (which prompts). Don't put passwords on the command line.
 
-On servers that use Matrix Authentication Service (MAS), MAS owns passwords and sessions, so manage those through MAS rather than these Synapse endpoints.
+On servers that use Matrix Authentication Service (MAS), MAS owns accounts. Synapse disables its reset-password, server-admin and login-as-user endpoints, and refuses to create users through `PUT /_synapse/admin/v2/users`. Use the [MAS admin API](https://element-hq.github.io/matrix-authentication-service/topics/admin-api.html) or `mas-cli manage` instead (for example `mas-cli manage promote-admin`).
 
 ---
 
