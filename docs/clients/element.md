@@ -81,7 +81,7 @@ According to Element's [mobile migration FAQ](https://docs.element.io/latest/ele
 
 ### Labs
 
-**Settings → Labs** holds experimental features. As of 1.12.32 these include the **rich text editor**, **video rooms** and **Element Call video rooms**, among others. Threads are no longer a Labs feature, and voice broadcast has been removed. Labs features can change or disappear between releases.
+**Settings → Labs** holds experimental features. As of 1.12.32 these include the **rich text editor**, **video rooms**, **Element Call video rooms**, **Enable ask to join** and **Exclude insecure devices when sending/receiving messages**, among others. Threads are no longer a Labs feature, and voice broadcast has been removed. Labs features can change or disappear between releases.
 
 ## Keyboard shortcuts (Element Web / Desktop)
 
@@ -159,7 +159,7 @@ Fenced code blocks with a language name get syntax highlighting.
 
 ### Device verification
 
-When you sign in on a new device, confirm it from another signed-in device (QR code or emoji) or with your recovery key. A device you have not verified is not trusted: under the spec's recommended behaviour (v1.18, MSC4153), other clients stop sharing room keys with it, and its messages may be hidden.
+When you sign in on a new device, confirm it from another signed-in device (QR code or emoji) or with your recovery key. A device you have not verified is not trusted. Under the spec's recommended behaviour (v1.18, MSC4153), other clients should stop sharing room keys with it and hide its messages. Element has postponed making this the default; in Element Web you can opt in under Labs → **Exclude insecure devices**.
 
 ### Sessions
 

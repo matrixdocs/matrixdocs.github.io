@@ -20,7 +20,7 @@ Rooms are where conversations happen in Matrix. This page walks through creating
 |--------|-------------|
 | **Name** | Display name for the room |
 | **Topic** | Optional description shown in the room header |
-| **Room visibility** | Invite only, Ask to join, Public, or members of the current space |
+| **Room visibility** | Invite only, Public, or members of the current space. **Ask to join** appears only if you turn it on in Settings → Labs |
 | **Enable end-to-end encryption** | On by default for private rooms. It cannot be turned off later. |
 
 3. Click **Create room**.
@@ -45,7 +45,7 @@ Decide on encryption when you create the room. Turning it on later only protects
 
 | Setting | Options |
 |---------|---------|
-| **Access** | Invite only, Ask to join, Space members, Anyone |
+| **Access** | Invite only, Space members, Anyone, and Ask to join (Labs) |
 | **Encryption** | Turn on (permanent) |
 | **Who can read history?** | See below |
 
@@ -65,8 +65,8 @@ The setting applies to messages when they are sent. Changing it does not change 
 **Room settings → Roles & Permissions**. Matrix uses numeric **power levels**:
 
 ```
-Power level 100 - Admin (change settings and permissions)
-Power level 50  - Moderator (kick, ban, delete messages)
+Power level 100 - Admin (permissions, history visibility, encryption, server ACLs)
+Power level 50  - Moderator (kick, ban, delete messages, name, topic, avatar)
 Power level 0   - Default (send messages)
 ```
 
@@ -109,12 +109,12 @@ Invites stay valid until they are accepted, rejected or revoked.
 
 | Action | Default level |
 |--------|---------------|
-| **Invite** | 0 |
+| **Invite** | 0 in private rooms, 50 in public rooms |
 | **Kick** | 50 |
 | **Ban** | 50 |
 | **Change power levels** | 100 |
 
-These are the spec defaults; room presets and clients can set different values.
+These are the values Synapse sets for new rooms. If a room's power-level event leaves a value out, the spec defaults apply (invite 0, kick and ban 50).
 
 ### Kick vs ban
 
@@ -177,7 +177,7 @@ Rooms sometimes need upgrading to a newer room version (Element: **Room settings
 1. A user with enough power sends the upgrade.
 2. The server creates a new room and puts a "tombstone" in the old one pointing to it.
 3. Members are **not** moved automatically. Clients show a link or banner, and each member joins the new room.
-4. Settings such as the name, topic, avatar, join rules, history visibility, power levels and server ACLs are copied, local aliases move to the new room, and Synapse also copies bans. In room version 12, `additional_creators` are not copied automatically, and the user who upgrades becomes the new room's creator.
+4. Settings such as the name, topic, avatar, join rules, history visibility, guest access, encryption, power levels and server ACLs are copied, local aliases move to the new room, and Synapse also copies bans. In room version 12, `additional_creators` are not copied automatically, and the user who upgrades becomes the new room's creator.
 
 ## Good practice
 
@@ -212,7 +212,7 @@ Rooms sometimes need upgrading to a newer room version (Element: **Room settings
 ### "Unable to decrypt"
 
 - Enter your recovery key (Settings → **Encryption**) or verify this device from another one
-- For messages sent before you joined, ask a member to invite you again: clients that support encrypted history sharing (spec v1.19) send the room's keys with the invite. Whether you can see them also depends on the room's history setting.
+- For messages sent before you joined, ask a member to invite you again: clients that support encrypted history sharing (spec v1.19; Element Web since 1.12.18) send the room's keys with the invite. This only covers messages sent while the history setting was **Members (full history)** or **Anyone**.
 
 ### "Changes not saving"
 

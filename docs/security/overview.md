@@ -14,9 +14,9 @@ This page explains what Matrix encryption protects, what it does not, and what u
 :::info Recent changes (2024–2026)
 - **libolm → vodozemac**: the C library libolm was [deprecated in August 2024](https://matrix.org/blog/2024/08/libolm-deprecation/) after timing side-channel reports. Current clients use vodozemac (Rust) through matrix-rust-sdk or its bindings.
 - **"Invisible crypto"** (MSC4153, spec v1.18): clients SHOULD NOT send room keys to devices that their owner has not cross-signed, and SHOULD NOT show messages from such devices.
-- **Encrypted history sharing** (MSC4268, spec v1.19): when you invite someone to an encrypted room, your client can send them the keys for earlier messages, subject to the room's history setting.
+- **Encrypted history sharing** (MSC4268, spec v1.19): when you invite someone to an encrypted room, your client can send them the keys for earlier messages, subject to the room's history setting. Element Web has done this by default since 1.12.18 (2026-05).
 - **OAuth 2.0 login** (spec v1.15+): servers using the Matrix Authentication Service (MAS), including matrix.org, handle passwords and sessions in a separate account portal.
-- **Room version 12** (spec v1.16, the Synapse default since 1.162): fixes two high-severity state-resolution flaws found in [Project Hydra](https://matrix.org/blog/2025/08/project-hydra-improving-state-res/) and gives room creators an unremovable top power level.
+- **Room version 12** (spec v1.16, the Synapse default since 1.162): fixes the two vulnerabilities disclosed in [Project Hydra](https://matrix.org/blog/2025/08/project-hydra-improving-state-res/) (CVE-2025-49090, state resolution; CVE-2025-54315, room IDs) and gives room creators an unremovable top power level.
 :::
 
 ## End-to-end encryption (E2EE)
@@ -47,7 +47,7 @@ In an encrypted room, the server and other participating servers see an event of
 | The new text of an edit; the content of a reply | The `m.relates_to` relation: which event a reply, edit, thread message or reaction points to ([spec](https://spec.matrix.org/v1.19/client-server-api/#forming-relationships-between-events)) |
 | | Read receipts and typing notifications |
 | | Your display name and avatar |
-| | Reactions, unless the client encrypts them |
+| | Reactions, including the emoji: it sits in `m.relates_to`, which stays in cleartext |
 
 Element Web has an experimental Labs option to encrypt some state events (MSC4362), but this is not in the spec as of v1.19.
 
@@ -62,13 +62,13 @@ Under the spec's current recommended behaviour (v1.18, MSC4153):
 
 Cross-signing works at two levels:
 
-1. **Your own devices**: each new device must be confirmed from an existing one (QR code or emoji) or with your recovery key. Until then, it does not get keys.
+1. **Your own devices**: confirm each new device from an existing one (QR code or emoji) or with your recovery key. Clients following the recommendation will not send keys to an unconfirmed device.
 2. **Other people**: verifying someone (comparing emoji in person or over a call) confirms their cross-signing identity. If a verified person's identity later changes, your client shows a prominent warning. If you never verified them, it still shows a notice when their identity changes.
 
 You no longer verify or block other people's devices one by one.
 
 :::info Coming next
-The Foundation [said in November 2025](https://matrix.org/blog/2025/11/exclude-insecure-devices/) that Element would start excluding non-cross-signed devices by default in April 2026. Element's [device verification help page](https://docs.element.io/latest/element-support/device-verification/how-to-verify-devices/) now says the rollout is postponed, with a month's notice to come. Verify all your devices now so nothing breaks when it ships.
+The Foundation [said in November 2025](https://matrix.org/blog/2025/11/exclude-insecure-devices/) that Element would start excluding non-cross-signed devices by default in April 2026. Element's [device verification help page](https://docs.element.io/latest/element-support/device-verification/how-to-verify-devices/) now says the rollout is postponed, with a month's notice to come. Until then, Element sends keys to unverified devices by default; Element Web 1.12.32 has an opt-in Labs option, **Exclude insecure devices when sending/receiving messages**. Verify all your devices now so nothing breaks when it ships.
 :::
 
 ### Key backup and recovery
@@ -90,9 +90,9 @@ When a device cannot decrypt a message, the main remedies are:
 
 1. **Key backup**: enter your recovery key.
 2. **Verification**: verify the device from another signed-in device; the client then shares secrets, including the backup key.
-3. **History sharing on invite** (spec v1.19): clients that support it send an encrypted key bundle when they invite someone, so new members can read earlier messages if the room's history setting allows.
+3. **History sharing on invite** (spec v1.19): clients that support it (Element Web since 1.12.18) send an encrypted key bundle when they invite someone, so new members can read messages sent while the history setting was `shared` or `world_readable`.
 
-The spec also defines **key requests** (`m.room_key_request`), which a device can send to *your own* other devices. These are a fallback; other users' devices do not answer them.
+The spec also defines **key requests** (`m.room_key_request`). Clients answer them only in limited cases, mainly for the same user's verified devices, so treat them as a fallback rather than a way to recover history.
 
 ## Privacy considerations
 
@@ -106,7 +106,7 @@ Even with E2EE, a lot of metadata is visible:
 | When and by whom each message was sent | Every participating homeserver |
 | Room names, topics and avatars | Every participating homeserver and room members |
 | Read receipts and typing | Every participating homeserver and room members |
-| Contact lookups by email or phone | The identity server your client uses (matrix.org's clients default to `vector.im`) |
+| Contact lookups by email or phone | The identity server your client uses (Element at app.element.io defaults to `vector.im`) |
 
 ### Choosing a homeserver
 
@@ -123,7 +123,7 @@ Your homeserver sees the most metadata: your IP address, the rooms you join, you
 - **Your homeserver** sees your IP address on every request.
 - **Other homeservers** normally see only your homeserver's address, not yours.
 - **Calls**: TURN servers and LiveKit/Element Call media servers see your IP address, and 1:1 calls may connect peer-to-peer.
-- **Media and link previews** are fetched through your homeserver, which hides your IP from the remote site. Since spec v1.11, media downloads require authentication.
+- **Media and link previews** are fetched through your homeserver, which hides your IP from the remote site. Spec v1.11 added authenticated media downloads, and Synapse refuses unauthenticated downloads of new media by default (`enable_authenticated_media`).
 
 Use a VPN or Tor if you need to hide your IP from your own homeserver.
 

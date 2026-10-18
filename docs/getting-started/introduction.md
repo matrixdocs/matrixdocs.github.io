@@ -25,7 +25,7 @@ Unlike WhatsApp, Slack or Discord, Matrix does not depend on one company's serve
 
 ### End-to-end encryption
 
-Matrix uses the [Olm and Megolm](https://matrix.org/docs/matrix-concepts/end-to-end-encryption/) protocols, which build on the Double Ratchet design also used by Signal. Element and Element X turn end-to-end encryption on by default for direct messages and private rooms. Public rooms are usually not encrypted.
+Matrix uses two protocols ([overview](https://matrix.org/docs/matrix-concepts/end-to-end-encryption/)): **Olm**, a Double Ratchet between two devices like the one Signal uses, and **Megolm**, a group ratchet that encrypts room messages. Element and Element X turn end-to-end encryption on by default for direct messages and private rooms. Public rooms are usually not encrypted.
 
 The main implementation of these protocols is now [vodozemac](https://github.com/matrix-org/vodozemac), written in Rust (0.11.1, 2026-09-30). The older C library libolm was [deprecated in August 2024](https://matrix.org/blog/2024/08/libolm-deprecation/).
 
@@ -51,10 +51,10 @@ Matrix IDs follow the format `@localpart:server.name`. The server part tells you
 
 "Matrix 2.0" is the Foundation's name for four pieces of work [announced together in October 2024](https://matrix.org/blog/2024/10/29/matrix-2.0-is-here/). As of 2026-10 the spec version has not been renamed 2.0, but most of the pieces are in use:
 
-- **Simplified sliding sync** (MSC4186): fast startup for large accounts. Synapse implements it natively, and Element X needs it.
+- **Simplified sliding sync** (MSC4186): fast startup for large accounts. It is not yet in the spec as of v1.19, but Synapse implements it natively and Element X needs it.
 - **Next-generation auth**: login through OAuth 2.0, in the spec since v1.15 ([OAuth 2.0 API](https://spec.matrix.org/v1.19/client-server-api/#oauth-20-api)). The Matrix Authentication Service (MAS) provides it for Synapse. matrix.org [moved to MAS](https://matrix.org/blog/2025/04/morg-now-running-mas/) in April 2025.
 - **MatrixRTC / Element Call**: voice and video calls signalled over Matrix, with media through LiveKit.
-- **Invisible crypto** (MSC4153, a spec recommendation since v1.18): clients stop sharing keys with devices their owner has not verified, which removes most per-device verification prompts.
+- **Invisible crypto** (MSC4153, a spec recommendation since v1.18): clients should stop sharing keys with devices their owner has not verified, which removes most per-device verification prompts. Element has postponed turning this on by default; see [Security](../security/overview#device-trust).
 
 **Element X** is Element's current mobile app and is built on these features. The older Element mobile apps are now called "Element Classic"; see [Element](../clients/element).
 

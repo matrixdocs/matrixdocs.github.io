@@ -4,7 +4,7 @@ title: Matrix Clients Overview
 description: Matrix clients for every platform, and how to choose one
 last_update:
   date: 2026-10-18
-verified_with: "Element Web 1.12.32, Element X Android 26.09.4, Cinny 4.12.7, FluffyChat 2.10.0 (release notes and repos checked 2026-10-18)"
+verified_with: "Element Web 1.12.32, Element X Android 26.09.4 (and 26.10.0 pre-release), Cinny 4.12.7, FluffyChat 2.10.0 (release notes and repos checked 2026-10-18)"
 ---
 
 # Matrix Clients
@@ -38,7 +38,7 @@ Element is developed by Element, the company that also develops Synapse.
 
 - **Platforms**: Android, iOS
 - **Status**: Element's main mobile app, built on matrix-rust-sdk
-- **Strengths**: fast startup through simplified sliding sync; Element Call voice and video; spaces (including creating them since early 2026); OAuth 2.0 login
+- **Strengths**: fast startup through simplified sliding sync; Element Call voice and video; spaces (on Android, creating them is on by default since 26.02, 2026-02); OAuth 2.0 login
 - **Limits**: needs a homeserver that supports simplified sliding sync (Synapse does natively). As of 2026-10, Element's [migration FAQ](https://docs.element.io/latest/element-server-suite-pro/migration/classic-to-pro-mobile-apps-faq/) says it still lacks widgets and slash commands. There is no Element X for desktop; use Element Web or Desktop there.
 
 ### Element Classic (old mobile apps)
@@ -51,7 +51,7 @@ The original Element Android and iOS apps are now called **Element Classic** and
 
 - **Platforms**: web ([app.cinny.in](https://app.cinny.in)), desktop (Tauri)
 - **Status**: active; v4.12.7 (2026-09-15)
-- **Strengths**: clean Discord-like layout, spaces, custom emoji and stickers, voice/video rooms through the Element Call library (since v4.11, 2026-03)
+- **Strengths**: clean Discord-like layout, spaces, custom emoji and stickers, voice/video rooms through the Element Call library (since v4.11, 2026-03) and calls in DMs and rooms (since v4.12, 2026-05)
 - **Limits**: no native mobile app (the web app works on phones); thread support is partial
 
 [cinny.in](https://cinny.in)
@@ -69,7 +69,7 @@ The original Element Android and iOS apps are now called **Element Classic** and
 SchildiChat's original apps were forks of the old Element apps. Both are being replaced:
 
 - **SchildiChat Next** (Android): a fork of Element X, in beta. [GitHub](https://github.com/SchildiChat/schildichat-android-next)
-- **SchildiChat Revenge** (desktop and Android): a new Kotlin client on matrix-rust-sdk, in beta, keyboard-driven and multi-account. [GitHub](https://github.com/SchildiChat/schildi-revenge)
+- **SchildiChat Revenge** (desktop and Android): a new Kotlin client on matrix-rust-sdk, in beta, keyboard-driven and multi-account. Desktop builds are on [GitHub](https://github.com/SchildiChat/schildi-revenge); Android builds are on Google Play and the developer's F-Droid repo.
 - The old **SchildiChat Desktop/Web** is archived, and classic **SchildiChat Android** carries a deprecation notice.
 
 [schildi.chat](https://schildi.chat)
@@ -85,7 +85,7 @@ SchildiChat's original apps were forks of the old Element apps. Both are being r
 ### Fractal and NeoChat
 
 - **Fractal** is GNOME's client, written in Rust on matrix-rust-sdk (14.1, 2026-07-19).
-- **NeoChat** is KDE's client, shipped with KDE Gear (26.08.2, 2026-10-06).
+- **NeoChat** is KDE's client, shipped with KDE Gear (26.08.2, 2026-10-08).
 
 ### gomuks
 
@@ -102,8 +102,8 @@ This table reflects release notes and documentation checked on 2026-10-18. Clien
 | Client | E2EE | Threads | Spaces | Voice/Video | Multi-account | Platforms |
 |--------|------|---------|--------|-------------|---------------|-----------|
 | Element Web/Desktop | ✅ | ✅ | ✅ | ✅ (Element Call) | ❌ | Web, desktop |
-| Element X | ✅ | ✅ (may need Labs) | ✅ | ✅ (Element Call) | Android 26.10+ | Android, iOS |
-| Cinny | ✅ | 🔄 partial | ✅ | ✅ (voice/video rooms) | ❌ | Web, desktop |
+| Element X | ✅ | ✅ (may need Labs) | ✅ | ✅ (Element Call) | Android 26.10.0 pre-release | Android, iOS |
+| Cinny | ✅ | 🔄 partial | ✅ | ✅ (calls and voice/video rooms) | ❌ | Web, desktop |
 | FluffyChat | ✅ | ✅ | ✅ | ✅ (MatrixRTC video calls) | ✅ | Mobile, web, desktop |
 | Nheko | ✅ | 🔄 | ✅ | 🔄 (varies by platform) | 🔄 | Desktop |
 | SchildiChat Revenge | ✅ | 🔄 | ✅ | ❌ | ✅ | Desktop, Android |

@@ -28,7 +28,7 @@ flatpak install flathub in.cinny.Cinny
 **Notable features**:
 - Spaces, custom emoji and sticker packs
 - Customizable power levels and developer tools for inspecting room state (Cinny 4.x)
-- Voice/video rooms using the Element Call library (since v4.11, 2026-03)
+- Voice/video rooms using the Element Call library (since v4.11, 2026-03), and calls in DMs and rooms (since v4.12, 2026-05)
 - Thread support is still partial
 
 ### Nheko
@@ -65,7 +65,7 @@ flatpak install flathub org.gnome.Fractal
 
 KDE's Matrix client, released with KDE Gear.
 
-- **Status**: active; 26.08.2 (2026-10-06)
+- **Status**: active; 26.08.2 (2026-10-08)
 
 ```bash
 flatpak install flathub org.kde.neochat
@@ -125,7 +125,7 @@ flatpak install flathub im.fluffychat.Fluffychat
 The original SchildiChat apps were forks of the old Element apps. They are being replaced:
 
 - **SchildiChat Next** (Android): a fork of Element X with extra options, in beta. [Google Play](https://play.google.com/store/apps/details?id=chat.schildi.android) | [F-Droid](https://f-droid.org/packages/chat.schildi.android) | [GitHub](https://github.com/SchildiChat/schildichat-android-next)
-- **SchildiChat Revenge** (desktop and Android): a new Kotlin/Compose client on matrix-rust-sdk, in beta. Keyboard-driven, with multi-account and a merged inbox. [GitHub releases](https://github.com/SchildiChat/schildi-revenge/releases)
+- **SchildiChat Revenge** (desktop and Android): a new Kotlin/Compose client on matrix-rust-sdk, in beta. Keyboard-driven, with multi-account and a merged inbox. Desktop: [GitHub releases](https://github.com/SchildiChat/schildi-revenge/releases). Android: [Google Play](https://play.google.com/store/apps/details?id=chat.schildi.revenge) or the developer's F-Droid repo listed in the README.
 - **SchildiChat Desktop/Web** (the Element Web fork) is archived. Classic **SchildiChat Android** has a deprecation notice.
 
 [schildi.chat](https://schildi.chat)
