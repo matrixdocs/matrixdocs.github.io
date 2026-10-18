@@ -38,7 +38,9 @@
     "docker:jitsi/jicofo": "jitsi/docker-jitsi-meet; checked 2026-10-18",
     "docker:jitsi/jvb": "jitsi/docker-jitsi-meet; checked 2026-10-18",
     "docker:matrixdotorg/sydent": "element-hq/sydent (moved from matrix-org, which is archived); v2.7.0 (2025-07-18); image pushed 2026-09-03; checked 2026-10-18",
-    "pypi:synadm": "codeberg.org/synadm/synadm (not archived, updated 2026-07-04); 0.49.2; checked 2026-10-18"
+    "pypi:synadm": "codeberg.org/synadm/synadm (not archived, updated 2026-07-04); 0.49.2; checked 2026-10-18",
+    "docker:matrixconduit/matrix-conduit": "Conduit (gitlab.com/famedly/conduit) official image per docs/deploying/docker.md; v0.10.15 pushed 2026-09-30; checked 2026-10-18",
+    "docker:ghcr.io/element-hq/dendrite-monolith": "element-hq/dendrite documented image; v0.15.2 pullable; checked 2026-10-18"
   },
   "denied": {
     "docker:t2bot/matrix-media-repo": "does not exist on Docker Hub; use ghcr.io/t2bot/matrix-media-repo",
