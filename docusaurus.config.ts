@@ -64,6 +64,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
+          showLastUpdateTime: true,
           editUrl: 'https://github.com/matrixdocs/matrixdocs.github.io/tree/main/',
         },
         blog: false,
@@ -99,7 +100,7 @@ const config: Config = {
 
     announcementBar: {
       id: 'unofficial-2026-10',
-      content: 'Unofficial, independent guide, not affiliated with the Matrix.org Foundation or Element. First drafted with AI in January 2026 and now being verified page by page against <a href="https://spec.matrix.org/v1.19/">spec v1.19</a> and <a href="https://element-hq.github.io/synapse/latest/">Synapse 1.163</a>. When in doubt, the official docs win. <a href="/docs/about">About this site</a>',
+      content: 'Unofficial, independent guide, not affiliated with the Matrix.org Foundation or Element. First drafted with AI in January 2026, then verified page by page in October 2026 against <a href="https://spec.matrix.org/v1.19/">spec v1.19</a> and <a href="https://element-hq.github.io/synapse/latest/">Synapse 1.163</a>. When in doubt, the official docs win. <a href="/docs/about">About this site</a>',
       backgroundColor: '#fff3cd',
       textColor: '#3d2e00',
       isCloseable: false,

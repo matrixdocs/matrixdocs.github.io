@@ -1,5 +1,7 @@
 ---
 title: About this site
+last_update:
+  date: 2026-10-18
 description: Who writes Matrix Docs, how it was made, how pages are verified, and where the official documentation lives.
 ---
 
@@ -11,14 +13,16 @@ description: Who writes Matrix Docs, how it was made, how pages are verified, an
 
 The first version of every page was drafted with an AI model in January 2026 and published without being checked. Readers noticed, rightly ([issue #1](https://github.com/matrixdocs/matrixdocs.github.io/issues/1)). That first draft contained invented packages, configuration keys and features, and was out of date in places.
 
-Since October 2026 the site is being verified and rewritten page by page. Each page is checked against pinned upstream sources:
+In October 2026 every page was audited and then rewritten or corrected. Each one was checked against pinned upstream sources:
 
 | Source | Pinned version |
 |---|---|
 | [Matrix specification](https://spec.matrix.org/v1.19/) | v1.19 (2026-07-08) |
 | [Synapse documentation](https://element-hq.github.io/synapse/latest/) | v1.163.0 (2026-10-14) |
 
-A page that has been re-verified says so in its front matter (`verified_with`) and shows a real "last updated" date. Pages without that marker are still first drafts: treat them with suspicion.
+Bridges, bots, clients, SDKs and other servers were checked against each project's current release, and every page records what it was checked against in its front matter (`verified_with`). An automated check (`npm run check`) compares Synapse config keys, `/_matrix` endpoints, admin API paths, event types and install commands with these pinned sources on every change.
+
+Verification reduces errors; it does not remove them. Projects change quickly, and a page is only as current as its date.
 
 ## Official documentation
 
