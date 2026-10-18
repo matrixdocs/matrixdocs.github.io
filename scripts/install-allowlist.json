@@ -36,7 +36,8 @@
     "docker:jitsi/web": "jitsi/docker-jitsi-meet; checked 2026-10-18",
     "docker:jitsi/prosody": "jitsi/docker-jitsi-meet; checked 2026-10-18",
     "docker:jitsi/jicofo": "jitsi/docker-jitsi-meet; checked 2026-10-18",
-    "docker:jitsi/jvb": "jitsi/docker-jitsi-meet; checked 2026-10-18"
+    "docker:jitsi/jvb": "jitsi/docker-jitsi-meet; checked 2026-10-18",
+    "docker:matrixdotorg/sydent": "element-hq/sydent (moved from matrix-org, which is archived); v2.7.0 (2025-07-18); image pushed 2026-09-03; checked 2026-10-18"
   },
   "denied": {
     "docker:t2bot/matrix-media-repo": "does not exist on Docker Hub; use ghcr.io/t2bot/matrix-media-repo",
@@ -46,7 +47,6 @@
     "docker:turt2live/matrix-dimension": "Dimension is archived (2023-08); do not recommend",
     "docker:containrrr/watchtower": "Watchtower is archived (2025-12); do not recommend unattended auto-updates of a homeserver",
     "docker:signald/signald": "signald is unmaintained (last image 2023-03); mautrix-signal no longer uses it",
-    "docker:matrixdotorg/sydent": "Sydent repo archived 2025-07",
     "go:maunium.net/go/gomuks": "old module path; current module is go.mau.fi/gomuks",
     "pypi:matrix-python-sdk": "PyPI name now belongs to an unrelated package; matrix-org's old SDK was matrix-client and is dead. Use matrix-nio or mautrix",
     "pypi:nio-bot": "NioBot repo archived; deprecated by its author"
