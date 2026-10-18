@@ -2,212 +2,183 @@
 sidebar_position: 2
 title: Account Security
 description: Protect your Matrix account from unauthorized access
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, Synapse 1.163.0, Element Web 1.12.32"
 ---
 
 # Account Security
 
-Protect your Matrix account with these security practices.
+How to protect your Matrix account, your devices and your encrypted history.
 
-## Strong Authentication
+## Signing in
 
 ### Passwords
 
-If using password authentication:
+If your server uses passwords:
 
-- **Minimum 16 characters**
-- Use a **password manager**
-- **Unique password** for Matrix
-- Consider **passphrase** (4+ random words)
+- Use a **password manager** and a long, **unique** password.
+- On servers that use the **Matrix Authentication Service (MAS)**, such as matrix.org, you enter your password on the server's account page (for matrix.org, [account.matrix.org](https://account.matrix.org/)), not inside the chat app. Check the address before typing it.
 
-### Single Sign-On (SSO)
+### Single sign-on
 
-Many homeservers support SSO:
+Homeservers can delegate login to an identity provider:
 
-- **OAuth/OIDC** providers (Google, GitHub)
-- **SAML** for enterprise
-- **LDAP** for organizations
+- **MAS with OAuth 2.0** is the current approach (spec v1.15+). MAS can itself use an upstream OpenID Connect provider, such as your organization's Keycloak, Entra ID or Google Workspace.
+- **Synapse's built-in SSO** (OIDC, SAML, CAS) and LDAP via a password-provider module are still supported for servers that do not use MAS.
 
-SSO benefits:
-- Centralized authentication
-- 2FA at provider level
-- No Matrix-specific password
+### Two-factor authentication
 
-### Two-Factor Authentication
+Neither Synapse nor MAS has built-in two-factor authentication (no TOTP or security keys). The MAS documentation recommends pairing MAS with an upstream identity provider if you need them. In practice:
 
-Enable 2FA when available:
+- **As a user**: if your server offers SSO through a provider with multi-factor authentication, use it.
+- **As an admin**: enforce MFA in the upstream identity provider that MAS or Synapse uses.
 
-1. Check homeserver supports it
-2. Configure via homeserver admin
-3. Use authenticator app
+## Sessions
 
-## Session Management
+### Review active sessions
 
-### Review Active Sessions
-
-Regularly check your logged-in devices:
-
-**Element**: Settings → Security → Sessions
+- **Element Web / Desktop**: Settings → **Devices**
+- **Element X**: Settings → **Manage account & devices** (or **Manage devices**), which opens the account portal on MAS servers
+- **MAS servers**: also in the account portal (for matrix.org, [account.matrix.org](https://account.matrix.org/account/))
 
 Look for:
-- **Unknown devices** - Potential compromise
-- **Old sessions** - Remove if unused
-- **Unverified** - Verify or remove
+- **Unknown devices**: possible compromise; sign them out
+- **Old sessions**: sign out if unused
+- **Unverified sessions**: verify them or sign them out
 
-### Session Security
+### Device trust
 
-| Session Type | Security Level |
-|--------------|---------------|
-| Verified, cross-signed | Highest |
-| Verified | High |
-| Unverified | Medium |
-| Unknown | Low - investigate |
+Under the spec's recommended behaviour (v1.18, MSC4153), a device is either cross-signed by its owner or it is not:
 
-### Remote Sign-Out
+| Session | Trust |
+|---------|-------|
+| Cross-signed by you (verified) | Trusted. Receives keys for encrypted messages. |
+| Not cross-signed | Not trusted. Other clients should not send it keys, and should not show its messages. |
+| A session you do not recognise | Treat as a compromise: sign it out and follow [If compromised](#if-compromised). |
 
-If a device is lost/stolen:
+There is no "medium" trust level. Verify every session you use, and remove the rest.
 
-1. Go to Security settings
-2. Find the session
-3. Click "Sign out" or "Remove"
-4. Change password if compromised
+### Remote sign-out
 
-## Key Backup Security
+If a device is lost or stolen:
 
-### Recovery Key
+1. Open your session list (above).
+2. Select the session and choose **Sign out**.
+3. Change your password if you think it was exposed (on MAS servers, in the account portal).
 
-Your recovery key provides full access. Protect it:
+## Recovery key
 
-**DO:**
-- Store in password manager
-- Keep offline backup
-- Use encrypted storage
+### Protecting it
 
-**DON'T:**
-- Share with anyone
-- Store in plain text
-- Screenshot and sync to cloud
+Your recovery key unlocks your encrypted message history and your cross-signing identity.
 
-### Recovery Scenarios
+**Do:**
+- Store it in a password manager
+- Keep an offline copy in a safe place
 
-| Scenario | Solution |
-|----------|----------|
-| New device | Verify from existing device |
-| Lost all devices | Use recovery key |
-| Lost recovery key | Create new backup |
-| Compromised key | Reset and re-verify |
+**Don't:**
+- Share it with anyone, including people claiming to be admins
+- Keep it in plain text or in a screenshot synced to the cloud
 
-## Social Engineering
+Check that it is set up: Element Web → Settings → **Encryption**. **Key storage** should be on, and **Recovery** should be set up.
 
-### Common Attacks
+### Recovery scenarios
+
+| Scenario | What to do |
+|----------|------------|
+| New device | Verify it from a signed-in device, or enter your recovery key |
+| Lost all devices, have recovery key | Sign in and enter the recovery key |
+| Lost recovery key, still have a signed-in device | Create a new recovery key from that device (Settings → **Encryption**) |
+| Lost recovery key **and** all devices | Reset your digital identity. You keep your account and rooms, but lose encrypted history that existed only in key backup, and must re-verify devices and contacts. |
+| Recovery key exposed | Create a new recovery key; if you suspect account compromise, reset your identity |
+
+## Social engineering
+
+### Common attacks
 
 | Attack | Example | Defense |
 |--------|---------|---------|
-| Phishing | Fake login pages | Check URL carefully |
-| Impersonation | "Admin" asking for password | Never share passwords |
-| Verification scams | "Verify with me" | Verify out-of-band |
+| Phishing | Fake login or account page | Check the URL; on MAS servers, only enter your password on your server's account page |
+| Impersonation | "Admin" asking for your password or recovery key | Never share either |
+| Verification scams | A stranger asking you to "verify" them | Verify only people you can confirm through another channel |
 
-### Verification Best Practices
+### Verifying people safely
 
-Before verifying someone:
+1. **Confirm identity** through another channel (in person, video call).
+2. **Compare the emoji carefully.**
+3. **Don't rush.**
+4. **When in doubt, don't verify.**
 
-1. **Confirm identity** through another channel
-2. **Compare emojis carefully**
-3. **Don't rush** the process
-4. **When in doubt**, don't verify
+## If compromised {#if-compromised}
 
-## Account Recovery
+1. **Change your password** (on MAS servers, in the account portal).
+2. **Sign out all other sessions**, from your client or the account portal.
+3. **Reset your digital identity** if someone may have had your recovery key or a verified device: Element Web → Settings → **Encryption** → reset. This creates new cross-signing keys and a new recovery key.
+4. **Verify your remaining devices** again.
+5. **Check your rooms and profile** for changes.
+6. **Tell your contacts**, so they re-verify you and ignore messages sent while you were compromised.
 
-### If Compromised
+### If locked out
 
-1. **Change password** immediately
-2. **Sign out all sessions**
-3. **Reset key backup**
-4. **Re-verify all devices**
-5. **Check room memberships**
-6. **Notify contacts** if needed
+1. Use your server's password reset (usually by email).
+2. Contact your homeserver admin.
+3. Once back in, enter your recovery key to restore encrypted history.
 
-### If Locked Out
+## Deactivating your account
 
-1. Try **recovery key/phrase**
-2. Contact **homeserver admin**
-3. May need to **create new account**
-4. History in encrypted rooms **may be lost**
+### Taking a break
 
-## Deactivation
+Sign out of your clients or mute rooms. Your account stays as it is.
 
-### Temporary Leave
+### Permanent deactivation
 
-To take a break without deleting:
-- Log out of all clients
-- Leave/mute rooms
-- Account remains
+You can deactivate your own account; no admin is needed:
 
-### Permanent Deactivation
+- **Element Web**: Settings → **Account** → **Deactivate account**.
+- **MAS servers**: from the account portal, or through the client.
 
-Irreversible account deletion:
+Deactivation is irreversible. You leave all rooms, your Matrix ID can never be reused, and your contact details are removed from the identity server.
 
-1. Contact homeserver admin
-2. Or use admin API (if available)
-3. All messages remain (by design)
-4. Display name erased
+Your old messages stay visible to people who already received them. Element offers to **hide your messages from people who join rooms later**; this uses the spec's `erase` option ([account deactivation](https://spec.matrix.org/v1.19/client-server-api/#post_matrixclientv3accountdeactivate)), so servers show redacted copies to future joiners.
 
-### Before Deactivating
+### Before deactivating
 
-- Export important data
-- Leave rooms manually
-- Inform contacts
-- Remove personal info from profile
+- Export anything you want to keep (Element can export a room's chat history)
+- Tell your contacts where to find you
+- Remove personal information from your profile
 
-## Privacy Settings
+## Privacy settings
 
-### Profile Visibility
+### Profile
 
-Control what others see:
+- **Display name** and **avatar** are public to everyone who shares a room with you, and are not encrypted.
+- **Presence** (online status) is shared only if your homeserver enables it.
 
-- **Display name** - Can be anything or empty
-- **Avatar** - Optional
-- **Presence** - Can disable
+### Read receipts and typing
 
-### Read Receipts
+In Element Web, **Settings → Preferences**:
+- **Send read receipts**: when off, Element sends private receipts (`m.read.private`), which your server must support.
+- **Send typing notifications**
 
-Disable if you don't want others to know you've read messages:
+## Several accounts
 
-Settings → Preferences → Disable read receipts
+Separate accounts can make sense for work and personal use. Client support varies:
 
-### Typing Indicators
+- **Element Web / Desktop**: one account at a time.
+- **Element X**: Android added multi-account support in v26.10.0 (2026-10-16).
+- **FluffyChat**, **Commet** and **SchildiChat Revenge**: several accounts at once.
+- **gomuks**: one account per backend; run several backends for several accounts.
 
-Can also be disabled for privacy.
+## Checklist
 
-## Multi-Account Usage
+Every few months:
 
-### Separate Accounts
-
-Consider separate accounts for:
-
-| Purpose | Why |
-|---------|-----|
-| Work | Compliance, separation |
-| Personal | Privacy |
-| Testing | Experimentation |
-| Anonymous | Sensitive topics |
-
-### Account Switching
-
-Most clients support multiple accounts:
-- Element: Profile menu → Add account
-- FluffyChat: Built-in multi-account
-
-## Audit Checklist
-
-Monthly security review:
-
-- [ ] Review active sessions
-- [ ] Remove unused sessions
-- [ ] Check verified devices
-- [ ] Verify key backup works
+- [ ] Review sessions and sign out unused ones
+- [ ] Confirm every session you use is verified
+- [ ] Confirm your recovery key is stored safely and **Key storage** is on
 - [ ] Review room memberships
-- [ ] Update password if needed
-- [ ] Check for client updates
+- [ ] Update your clients
 
 ---
 

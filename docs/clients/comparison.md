@@ -1,202 +1,101 @@
 ---
 sidebar_position: 4
 title: Client Comparison
-description: Detailed comparison of Matrix clients
+description: Side-by-side comparison of popular Matrix clients
+last_update:
+  date: 2026-10-18
+verified_with: "release notes, READMEs and release assets of each client, checked 2026-10-18"
 ---
 
 # Client Comparison
 
-A comprehensive comparison to help you choose the right Matrix client.
+These tables compare the most-used Matrix clients as of 2026-10. They are built from each project's release notes, README and published downloads. Clients change monthly, so check the project before relying on one feature.
 
-## Feature Comparison
+## Features
 
-### Core Features
+| Feature | Element Web/Desktop | Element X | Cinny | FluffyChat | Nheko |
+|---------|---------|-----------|-------|------------|-------|
+| **E2EE with cross-signing** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Key backup / recovery key** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Spaces** | ✅ | ✅ (including creating them) | ✅ | ✅ | ✅ |
+| **Threads** | ✅ | ✅ (may need Labs) | 🔄 partial | ✅ (since v2.3.0) | 🔄 |
+| **Voice/video calls** | ✅ Element Call | ✅ Element Call | ✅ voice/video rooms (v4.11+) | ✅ MatrixRTC | 🔄 varies by platform |
+| **Several accounts** | ❌ | Android 26.10+ | ❌ | ✅ | 🔄 |
 
-| Feature | Element | Element X | Cinny | FluffyChat | SchildiChat | Nheko |
-|---------|---------|-----------|-------|------------|-------------|-------|
-| **E2EE** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Cross-signing** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Key backup** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Device verification** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **QR verification** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
+✅ supported · 🔄 partial · ❌ not supported
 
-### Communication Features
+Since spec v1.18 (MSC4153), clients are expected to stop sharing room keys with devices their owner has not cross-signed, and to hide messages from such devices. Element's apps are rolling this out; check each client for its own behaviour.
 
-| Feature | Element | Element X | Cinny | FluffyChat | SchildiChat | Nheko |
-|---------|---------|-----------|-------|------------|-------------|-------|
-| **Spaces** | ✅ | ✅ | ✅ | 🔄 | ✅ | 🔄 |
-| **Threads** | ✅ | 🔄 | ✅ | ❌ | ✅ | ❌ |
-| **Reactions** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Replies** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Edit messages** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Delete messages** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+## Platforms
 
-### Media Features
-
-| Feature | Element | Element X | Cinny | FluffyChat | SchildiChat | Nheko |
-|---------|---------|-----------|-------|------------|-------------|-------|
-| **Voice calls** | ✅ | 🔄 | ❌ | ✅ | ✅ | ✅ |
-| **Video calls** | ✅ | 🔄 | ❌ | ✅ | ✅ | ✅ |
-| **Screen sharing** | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| **Voice messages** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| **File upload** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Stickers** | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
-
-### Platform Support
-
-| Platform | Element | Element X | Cinny | FluffyChat | SchildiChat | Nheko |
-|----------|---------|-----------|-------|------------|-------------|-------|
-| **Web** | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ |
+| Platform | Element Web/Desktop | Element X | Cinny | FluffyChat | Nheko | SchildiChat Revenge |
+|----------|---------|-----------|-------|------------|-------|-----|
+| **Web** | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ |
 | **Windows** | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| **macOS** | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **macOS** | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
 | **Linux** | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| **Android** | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
-| **iOS** | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **Android** | Classic only | ✅ | ❌ | ✅ | ❌ | ✅ |
+| **iOS** | Classic only | ✅ | ❌ | ✅ | ❌ | ❌ |
 
-## Performance Comparison
+"Classic only" means the old Element mobile app, which gets security fixes only; use Element X instead. SchildiChat Revenge publishes Linux and Windows desktop packages (no macOS build as of v26.10.18); see its [releases](https://github.com/SchildiChat/schildi-revenge/releases).
 
-### Resource Usage (Approximate)
+## Technology
 
-| Client | RAM Usage | CPU Idle | Startup Time |
-|--------|-----------|----------|--------------|
-| **Element Web** | 300-800 MB | Medium | 3-5s |
-| **Element Desktop** | 400-900 MB | Medium | 2-4s |
-| **Element X** | 100-200 MB | Low | &lt;1s |
-| **Cinny** | 150-400 MB | Low | 1-2s |
-| **FluffyChat** | 100-250 MB | Low | 1-2s |
-| **Nheko** | 80-200 MB | Very Low | &lt;1s |
-| **gomuks** | 30-80 MB | Very Low | &lt;1s |
+| Client | Built with | Notes |
+|--------|-----------|-------|
+| Element Web/Desktop | TypeScript, React; Desktop is Electron | Moving onto matrix-rust-sdk piece by piece |
+| Element X | Kotlin / Swift on matrix-rust-sdk | Needs simplified sliding sync on the server |
+| Cinny | TypeScript, React; Desktop is Tauri | Lighter than Electron apps |
+| FluffyChat | Flutter (Dart), matrix-dart-sdk | |
+| Nheko | C++ / Qt | Native desktop app |
+| SchildiChat Revenge | Kotlin / Compose on matrix-rust-sdk | Beta |
 
-:::tip Power User Insight
-If performance is critical, Element X and native clients like Nheko offer the best experience. Electron-based clients (Element Desktop, Cinny Desktop) use more resources.
-:::
+We do not publish RAM or startup-time numbers: they depend heavily on account size and platform, and no reproducible benchmark exists.
 
-### Sync Performance
+## Recommendations
 
-| Client | Initial Sync | Incremental Sync | Large Rooms |
-|--------|-------------|------------------|-------------|
-| **Element** | Slow | Medium | Struggles |
-| **Element X** | Fast | Fast | Good |
-| **Cinny** | Medium | Fast | Good |
-| **FluffyChat** | Medium | Medium | Medium |
-| **Nheko** | Medium | Fast | Good |
+### Organizations
 
-## UI/UX Comparison
+Element Web/Desktop and Element X, or Element's commercial offering (Element Pro and Element Server Suite) if you need support, admin tooling and compliance features.
 
-### Design Philosophy
+### Communities
 
-| Client | Style | Target Audience |
-|--------|-------|-----------------|
-| **Element** | Feature-complete, enterprise | Everyone |
-| **Element X** | Modern, minimal | Mobile users |
-| **Cinny** | Discord-like | Discord refugees |
-| **FluffyChat** | Friendly, colorful | Casual users |
-| **SchildiChat** | Traditional IM | WhatsApp/Telegram users |
-| **Nheko** | Native, efficient | Linux power users |
+Element Web/Desktop for moderators (full room settings, developer tools, widgets). Cinny is a good choice for members who like a Discord-style layout.
 
-### Customization Options
+### Personal use
 
-| Client | Themes | Custom CSS | Layouts |
-|--------|--------|------------|---------|
-| **Element** | 3 built-in | Labs | 2 |
-| **Cinny** | 4 built-in | ✅ Full | 1 |
-| **FluffyChat** | Many | ❌ | 1 |
-| **SchildiChat** | 5+ | ❌ | 3 |
-| **Nheko** | System | QSS | 1 |
+Element X or FluffyChat on mobile; Element, Cinny or a native desktop client on the computer.
 
-## Use Case Recommendations
+### Terminal and keyboard users
 
-### For Organizations
+iamb in the terminal. SchildiChat Revenge is keyboard-driven on desktop. gomuks web can be self-hosted and used from a browser.
 
-**Best Choice: Element or SchildiChat**
+## Moving between clients
 
-- Complete feature set
-- Admin controls
-- Integration options
-- Professional appearance
+Your account lives on your homeserver, so you can use several clients at once or switch at any time:
 
-### For Communities
+1. Install the new client.
+2. Sign in with the same account.
+3. Verify the new session from an existing device, or enter your recovery key.
+4. Sign out of the old client if you no longer need it.
 
-**Best Choice: Cinny or Element**
+### What carries over
 
-- Good moderation tools
-- Spaces support
-- Thread support
-- Multiple platform access
-
-### For Personal Use
-
-**Best Choice: FluffyChat or Element X**
-
-- Easy to use
-- Good mobile apps
-- Privacy-friendly
-- Quick sync
-
-### For Developers
-
-**Best Choice: gomuks or Nheko**
-
-- Low resource usage
-- Keyboard-driven
-- Can inspect protocol details
-- Works over SSH
-
-### For Privacy Advocates
-
-**Best Choice: FluffyChat or Nheko**
-
-- Open source
-- No telemetry
-- Can build from source
-- Works with Tor
-
-## Migration Between Clients
-
-Switching clients is easy since they all use the same account:
-
-1. **Log out** of current client (optional)
-2. **Install** new client
-3. **Log in** with same credentials
-4. **Verify** the new session
-5. **Export/Import** settings if needed
-
-:::info
-Your messages, rooms, and contacts are stored on your homeserver, not the client. You can use multiple clients simultaneously.
-:::
-
-### What Transfers
-
-| Data | Transfers? | Notes |
+| Data | Carries over? | Notes |
 |------|------------|-------|
-| Messages | ✅ | Stored on server |
-| Room memberships | ✅ | Stored on server |
-| E2EE keys | ✅ | Via key backup |
-| Settings | ❌ | Client-specific |
-| Themes | ❌ | Client-specific |
+| Messages | ✅ | Stored on the server |
+| Room memberships | ✅ | Stored on the server |
+| Encrypted message history | ✅ | Through key backup (recovery key) or verification |
+| Account data (e.g. DM list, ignored users) | ✅ | Stored on the server |
+| App settings and themes | ❌ | Client-specific |
 
-## Making Your Decision
+## Try without installing
 
-### Quick Decision Tree
-
-```
-Need all features? → Element
-├── Want mobile speed? → Element X
-├── Love Discord's UI? → Cinny
-├── Want simplicity? → FluffyChat
-├── Use Linux native? → Nheko
-├── Need terminal access? → gomuks
-└── Want Element+extras? → SchildiChat
-```
-
-### Try Before Committing
-
-| Client | Try Without Install |
-|--------|---------------------|
+| Client | Web version |
+|--------|-------------|
 | Element | [app.element.io](https://app.element.io) |
 | Cinny | [app.cinny.in](https://app.cinny.in) |
 | FluffyChat | [fluffychat.im/web](https://fluffychat.im/web) |
-| Hydrogen | [hydrogen.element.io](https://hydrogen.element.io) |
 
 ---
 

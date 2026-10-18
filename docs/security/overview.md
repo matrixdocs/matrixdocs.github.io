@@ -2,208 +2,232 @@
 sidebar_position: 1
 title: Security & Privacy
 description: Understanding Matrix security and protecting your privacy
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, Synapse 1.163.0, Element Web 1.12.32"
 ---
 
 # Security & Privacy
 
-Matrix is designed with security in mind. Understanding these features helps you make informed decisions about your privacy.
+This page explains what Matrix encryption protects, what it does not, and what users and admins should do about it. The normative reference is the [end-to-end encryption section of the spec](https://spec.matrix.org/v1.19/client-server-api/#end-to-end-encryption).
 
-## End-to-End Encryption (E2EE)
+:::info Recent changes (2024–2026)
+- **libolm → vodozemac**: the C library libolm was [deprecated in August 2024](https://matrix.org/blog/2024/08/libolm-deprecation/) after timing side-channel reports. Current clients use vodozemac (Rust) through matrix-rust-sdk or its bindings.
+- **"Invisible crypto"** (MSC4153, spec v1.18): clients SHOULD NOT send room keys to devices that their owner has not cross-signed, and SHOULD NOT show messages from such devices.
+- **Encrypted history sharing** (MSC4268, spec v1.19): when you invite someone to an encrypted room, your client can send them the keys for earlier messages, subject to the room's history setting.
+- **OAuth 2.0 login** (spec v1.15+): servers using the Matrix Authentication Service (MAS), including matrix.org, handle passwords and sessions in a separate account portal.
+- **Room version 12** (spec v1.16, the Synapse default since 1.162): fixes two high-severity state-resolution flaws found in [Project Hydra](https://matrix.org/blog/2025/08/project-hydra-improving-state-res/) and gives room creators an unremovable top power level.
+:::
 
-### How It Works
+## End-to-end encryption (E2EE)
 
-Matrix uses the **Olm** and **Megolm** cryptographic protocols:
+### How it works
+
+Matrix uses two protocols, both implemented in [vodozemac](https://github.com/matrix-org/vodozemac):
+
+- **Megolm** encrypts room messages, in DMs and group rooms alike. A sender encrypts each message once with its current Megolm session.
+- **Olm** is a Double Ratchet channel between two devices. It is used to send each recipient device the Megolm session key, and for other device-to-device secrets.
 
 ```mermaid
-sequenceDiagram
-    participant Alice as Alice's Device
-    participant Server as Matrix Server
-    participant Bob as Bob's Device
-
-    Alice->>Server: Encrypted Message
-    Note over Server: Cannot read content
-    Server->>Bob: Encrypted Message
-    Note over Bob: Decrypts with keys
+flowchart LR
+    A["Alice's device"] -->|"Megolm-encrypted message\n(via servers)"| R["Room"]
+    A -->|"Megolm session key\n(Olm-encrypted, to each device)"| B["Bob's devices"]
+    R --> B
 ```
 
-- **Olm**: For 1:1 device-to-device encryption
-- **Megolm**: For efficient group encryption
+### What is encrypted
 
-### What's Encrypted
+In an encrypted room, the server and other participating servers see an event of type `m.room.encrypted`. Inside it, only the recipients can read the payload.
 
-| Encrypted | Not Encrypted |
-|-----------|---------------|
-| Message content | Room membership |
-| File contents | Room names/topics |
-| Reactions | Timestamps |
-| Edits | Sender information |
-| Replies | Message type |
+| Encrypted (payload) | Not encrypted (visible to servers) |
+|---------------------|------------------------------------|
+| Message text and formatting | Outer event type (`m.room.encrypted`) |
+| Message type (`msgtype`: text, image, file…) | Sender, room, timestamp |
+| Attachments (files are encrypted before upload) | All room state: name, topic, avatar, membership, power levels, join rules |
+| The new text of an edit; the content of a reply | The `m.relates_to` relation: which event a reply, edit, thread message or reaction points to ([spec](https://spec.matrix.org/v1.19/client-server-api/#forming-relationships-between-events)) |
+| | Read receipts and typing notifications |
+| | Your display name and avatar |
+| | Reactions, unless the client encrypts them |
 
-### Device Verification
+Element Web has an experimental Labs option to encrypt some state events (MSC4362), but this is not in the spec as of v1.19.
 
-Verify devices to ensure you're talking to the right person:
+### Device trust
 
-1. **Emoji Verification**: Compare emojis displayed on both devices
-2. **QR Code**: Scan a QR code on the other device
-3. **Cross-Signing**: Your verified devices vouch for each other
+Under the spec's current recommended behaviour (v1.18, MSC4153):
 
-```
-✓ Verified device    - Messages are secure
-⚠ Unverified device  - Could be an attacker
-✗ Blocked device     - Will not receive messages
-```
+| Device status | What happens |
+|---------------|--------------|
+| **Cross-signed by its owner** | Trusted. Receives room keys. Its messages are shown normally. |
+| **Not cross-signed** | Not trusted. Clients SHOULD NOT send it room keys or secrets, and SHOULD NOT show its messages. |
 
-## Key Management
+Cross-signing works at two levels:
 
-### Secure Backup
+1. **Your own devices**: each new device must be confirmed from an existing one (QR code or emoji) or with your recovery key. Until then, it does not get keys.
+2. **Other people**: verifying someone (comparing emoji in person or over a call) confirms their cross-signing identity. If a verified person's identity later changes, your client shows a prominent warning. If you never verified them, it still shows a notice when their identity changes.
 
-**Critical!** Set up secure backup to protect your keys:
+You no longer verify or block other people's devices one by one.
 
-1. **Settings → Security → Secure Backup**
-2. Choose recovery method:
-   - **Security Key**: Save a long code
-   - **Security Phrase**: Remember a passphrase
-3. **Store safely** - Losing this means losing message history
+:::info Coming next
+The Foundation [said in November 2025](https://matrix.org/blog/2025/11/exclude-insecure-devices/) that Element would start excluding non-cross-signed devices by default in April 2026. Element's [device verification help page](https://docs.element.io/latest/element-support/device-verification/how-to-verify-devices/) now says the rollout is postponed, with a month's notice to come. Verify all your devices now so nothing breaks when it ships.
+:::
 
-### Cross-Signing
+### Key backup and recovery
 
-Cross-signing lets your devices trust each other:
+Key backup stores your Megolm session keys on your homeserver, encrypted with a key only you hold. It lets a new device read old messages.
 
-```
-Master Key
-    │
-    ├── Self-Signing Key (signs your devices)
-    │       └── Device A ✓
-    │       └── Device B ✓
-    │
-    └── User-Signing Key (signs other users)
-            └── Friend's Master Key ✓
-```
+- **Element Web / Desktop**: Settings → **Encryption** → Recovery, and make sure **Key storage** is on.
+- **Element X**: Settings → **Encryption** → Recovery.
 
-### Key Requests
+New setups produce a single **recovery key**. Older setups may have a "Security Phrase"; Element still accepts it for restoring, but no longer creates one.
 
-When you can't decrypt a message:
+:::warning
+If you lose your recovery key **and** every signed-in device, you must reset your digital identity (Settings → **Encryption** → reset). You keep your account, contacts and rooms, but you lose any encrypted history that was stored only in key backup.
+:::
 
-1. Client requests key from your other devices
-2. Other devices share the session key
-3. Message becomes decryptable
+### Getting keys for older messages
 
-## Privacy Considerations
+When a device cannot decrypt a message, the main remedies are:
+
+1. **Key backup**: enter your recovery key.
+2. **Verification**: verify the device from another signed-in device; the client then shares secrets, including the backup key.
+3. **History sharing on invite** (spec v1.19): clients that support it send an encrypted key bundle when they invite someone, so new members can read earlier messages if the room's history setting allows.
+
+The spec also defines **key requests** (`m.room_key_request`), which a device can send to *your own* other devices. These are a fallback; other users' devices do not answer them.
+
+## Privacy considerations
 
 ### Metadata
 
-Even with E2EE, some information is visible:
+Even with E2EE, a lot of metadata is visible:
 
-| Visible | To Whom |
-|---------|---------|
-| Who's in rooms | Server admins, other members |
-| When messages sent | Server admins |
-| Who you message | Server admins |
-| Room names/topics | Server admins, members |
+| What | Visible to |
+|------|------------|
+| Who is in which room | Your homeserver, every homeserver with members in the room, room members |
+| When and by whom each message was sent | Every participating homeserver |
+| Room names, topics and avatars | Every participating homeserver and room members |
+| Read receipts and typing | Every participating homeserver and room members |
+| Contact lookups by email or phone | The identity server your client uses (matrix.org's clients default to `vector.im`) |
 
-### Homeserver Trust
+### Choosing a homeserver
 
-Your homeserver sees metadata. Choose carefully:
+Your homeserver sees the most metadata: your IP address, the rooms you join, your devices and your contacts. Choose one whose operator you trust:
 
-| Homeserver | Trust Level |
-|------------|-------------|
-| Self-hosted | Full control |
-| Trusted provider | Read their privacy policy |
-| matrix.org | Large, public |
+| Homeserver | Consider |
+|------------|----------|
+| Self-hosted | You control the data, and you carry the maintenance and security work |
+| Public provider | Read its privacy policy, terms and logging practice |
+| matrix.org | Large public server run by the Foundation; see its [terms](https://matrix.org/legal/terms-and-conditions/) |
 
-### IP Addresses
+### IP addresses
 
-Your IP is visible to:
-- Your homeserver
-- Federated servers (in some cases)
-- Turn servers (for VoIP)
+- **Your homeserver** sees your IP address on every request.
+- **Other homeservers** normally see only your homeserver's address, not yours.
+- **Calls**: TURN servers and LiveKit/Element Call media servers see your IP address, and 1:1 calls may connect peer-to-peer.
+- **Media and link previews** are fetched through your homeserver, which hides your IP from the remote site. Since spec v1.11, media downloads require authentication.
 
-Use a VPN for additional privacy.
+Use a VPN or Tor if you need to hide your IP from your own homeserver.
 
-## Room Security
+## Room security
 
-### Private vs Public Rooms
+### Join rules and history are separate settings
 
-| Setting | Private Room | Public Room |
-|---------|--------------|-------------|
-| Join | Invite only | Anyone |
-| Directory | Hidden | Listed |
-| History | Members only | Configurable |
+Who can join (join rule) and who can read history (history visibility) are set independently.
 
-### History Visibility
+| Join rule | Meaning |
+|-----------|---------|
+| `invite` | Invite only |
+| `knock` | Users can ask to join |
+| `restricted` | Members of chosen spaces can join |
+| `public` | Anyone can join |
 
-Control who sees past messages:
+### History visibility
 
-| Setting | Who Can See |
-|---------|-------------|
-| `world_readable` | Anyone, even non-members |
-| `shared` | All members (current and past) |
-| `invited` | From when they were invited |
-| `joined` | Only from when they joined |
+| Value | Who can read |
+|-------|-------------|
+| `world_readable` | Anyone, even without joining |
+| `shared` (default) | Members can read all history, including messages sent before they joined |
+| `invited` | Members can read from the point they were invited |
+| `joined` | Members can read from the point they joined |
 
-### Server ACLs
+The setting applies when a message is sent. Changing it later does not hide or reveal earlier messages ([spec](https://spec.matrix.org/v1.19/client-server-api/#room-history-visibility)).
 
-Block entire servers from a room:
+### Server ACLs {#server-acls}
+
+A server ACL blocks whole servers from a room:
 
 ```json
 {
   "type": "m.room.server_acl",
+  "state_key": "",
   "content": {
     "allow": ["*"],
-    "deny": ["evil.server.com"],
+    "deny": ["evil.example.com", "*.evil.example.com"],
     "allow_ip_literals": false
   }
 }
 ```
 
-## Best Practices
+Element has no settings screen for ACLs. Send the event with `/devtools` → **Send custom state event**, or let a moderation bot such as Draupnir manage it. Keep your own server allowed, or you lock yourself out.
 
-### For Users
+## Good practice
 
-1. **Enable E2EE** for sensitive conversations
-2. **Verify devices** of important contacts
-3. **Set up key backup** immediately
-4. **Review sessions** regularly
-5. **Use strong passwords** or SSO
-6. **Be cautious** about room invites
+### Users
 
-### For Admins
+1. **Set up recovery** and store the recovery key in a password manager.
+2. **Verify every device you sign in on**, straight away.
+3. **Verify the people you talk to** about sensitive things, in person or over a call.
+4. **Review your sessions** (Element: Settings → **Devices**) and sign out old ones.
+5. **Use a strong, unique password**, or single sign-on with multi-factor authentication if your server offers it.
+6. **Be careful with invites** from people you do not know.
 
-1. **Enable registration limits** to prevent abuse
-2. **Configure rate limiting** against spam
-3. **Monitor federation** for problematic servers
-4. **Regular backups** of signing keys
-5. **Keep software updated**
-6. **Use TLS everywhere**
+### Admins
 
-## Security Tools
+:::warning
+Open registration without a token, CAPTCHA or email check invites spam accounts that can get your server blocked across the federation.
+:::
 
-### Mjolnir/Draupnir
+1. **Control registration.** In Synapse, either keep `enable_registration: false` and create accounts yourself, or require a token or CAPTCHA:
 
-Moderation bots for community protection:
-- Ban list management
-- Spam detection
-- Server ACLs
+   ```yaml
+   # homeserver.yaml (Synapse 1.163)
+   enable_registration: true
+   registration_requires_token: true
+   ```
 
-### Pantalaimon
+   `enable_registration_captcha` adds a reCAPTCHA check. Never set `enable_registration_without_verification`. On servers that use the Matrix Authentication Service, registration is configured in MAS instead. See the [Synapse configuration reference](https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html#registration).
+2. **Keep rate limits on** (`rc_message`, `rc_registration` and related settings).
+3. **Watch federation** and use server ACLs or policy lists against abusive servers.
+4. **Back up the signing key** (`signing_key_path`) along with the database.
+5. **Keep software updated**, and follow the [Synapse security advisories](https://github.com/element-hq/synapse/security/advisories). Update deliberately, not with unattended auto-updates.
+6. **Use TLS everywhere**, including federation.
 
-E2EE proxy for bots:
-- Allows bots to work in encrypted rooms
-- Handles key management
+## Security tools
 
-## Reporting Security Issues
+### Moderation bots
 
-Found a vulnerability?
+[Draupnir](https://github.com/the-draupnir-project/Draupnir) is the most widely used moderation bot. It manages ban lists, applies them across rooms and can set server ACLs. Mjolnir, its predecessor, is still maintained. See [Moderation bots](../bots/mjolnir).
 
-- **Element**: security@element.io
-- **Matrix.org**: security@matrix.org
-- **Responsible disclosure** expected
+:::warning
+A moderation bot needs high power levels in every room it protects. Run it on an account you control, and keep its access token secret.
+:::
+
+### Bots in encrypted rooms
+
+Pantalaimon, the old E2EE proxy for bots, is archived (2025-06) and relies on deprecated libolm. Use an SDK with built-in encryption instead, such as matrix-rust-sdk, matrix-nio, mautrix (Go or Python) or matrix-bot-sdk with its Rust crypto. See [SDKs](../sdks/overview).
+
+## Reporting security issues
+
+Found a vulnerability? Follow the disclosure policies:
+
+- **Matrix protocol, matrix.org services and Foundation projects**: [matrix.org/security-disclosure-policy](https://matrix.org/security-disclosure-policy/)
+- **Element products, including Synapse**: [element.io/security/security-disclosure-policy](https://element.io/security/security-disclosure-policy)
 
 ## Resources
 
-- [Matrix Security Disclosures](https://matrix.org/security-disclosure-policy/)
-- [E2EE Implementation Guide](https://matrix.org/docs/guides/implementing-more-advanced-e2ee-features/)
-- [Olm/Megolm Specification](https://matrix.org/docs/matrix-concepts/end-to-end-encryption/)
+- [Spec: end-to-end encryption](https://spec.matrix.org/v1.19/client-server-api/#end-to-end-encryption)
+- [Matrix.org: end-to-end encryption explained](https://matrix.org/docs/matrix-concepts/end-to-end-encryption/)
+- [libolm deprecation](https://matrix.org/blog/2024/08/libolm-deprecation/)
+- [Excluding insecure devices](https://matrix.org/blog/2025/11/exclude-insecure-devices/)
 
 ---
 

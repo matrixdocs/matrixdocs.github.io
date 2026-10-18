@@ -1,229 +1,224 @@
 ---
 sidebar_position: 4
 title: Your First Room
-description: Create and manage Matrix rooms like a pro
+description: Create and manage Matrix rooms
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, Synapse 1.163.0, Element Web 1.12.32"
 ---
 
 # Your First Room
 
-Rooms are where conversations happen in Matrix. Let's create and configure one.
+Rooms are where conversations happen in Matrix. This page walks through creating and running one in Element Web. Other clients have similar options under different names.
 
-## Creating a Room
+## Creating a room
 
-### In Element
-
-1. Click the **+** button next to "Rooms"
-2. Select **"New Room"**
-3. Configure your room:
+1. Click **+** next to the room list and choose **New room**.
+2. Fill in the dialog:
 
 | Option | Description |
 |--------|-------------|
 | **Name** | Display name for the room |
-| **Topic** | Brief description shown in room header |
-| **Private** | Invite-only vs public visibility |
-| **Encryption** | Enable end-to-end encryption |
+| **Topic** | Optional description shown in the room header |
+| **Room visibility** | Invite only, Ask to join, Public, or members of the current space |
+| **Enable end-to-end encryption** | On by default for private rooms. It cannot be turned off later. |
 
-4. Click **"Create Room"**
+3. Click **Create room**.
 
 :::tip
-Enable encryption during creation if you want E2EE. Enabling it later means old messages won't be encrypted.
+Decide on encryption when you create the room. Turning it on later only protects new messages, and it can never be turned off. Element warns that many bridges and bots do not work in encrypted rooms.
 :::
 
-## Room Settings Deep Dive
+## Room settings
 
-### General Settings
+### General
 
-Access via **Room Settings** (gear icon) → **General**:
+**Room settings → General**:
 
-- **Room Name**: Can be changed anytime
-- **Room Topic**: Supports basic markdown
-- **Room Address**: Create public aliases like `#myroom:server.org`
-- **Room Avatar**: Upload a custom image
+- **Room name** and **topic**: can be changed at any time
+- **Room addresses**: publish aliases like `#myroom:server.org`
+- **Room avatar**: upload an image
 
 ### Security & Privacy
 
-**Room Settings → Security & Privacy**:
+**Room settings → Security & Privacy**:
 
 | Setting | Options |
 |---------|---------|
-| **Who can access** | Invite only, public, space members |
-| **Encryption** | Enable/disable (can't disable once enabled) |
-| **Who can read history** | Members only, since joined, anyone |
+| **Access** | Invite only, Ask to join, Space members, Anyone |
+| **Encryption** | Turn on (permanent) |
+| **Who can read history?** | See below |
+
+Element's history options map to the spec's `m.room.history_visibility` values:
+
+| Element label | Spec value | Who can read |
+|---------------|-----------|--------------|
+| Anyone (history is public) | `world_readable` | Anyone, even without joining |
+| Members (full history) | `shared` | Members, including messages sent before they joined. This is the default. |
+| Members since invited | `invited` | Members, from the moment they were invited |
+| *(not offered by Element)* | `joined` | Members, from the moment they joined |
+
+The setting applies to messages when they are sent. Changing it does not change who can read older messages.
 
 ### Roles & Permissions
 
-**Room Settings → Roles & Permissions**:
-
-Matrix uses **power levels** (0-100) for permissions:
+**Room settings → Roles & Permissions**. Matrix uses numeric **power levels**:
 
 ```
-Power Level 100 - Admin (full control)
-Power Level 50  - Moderator (kick, ban, delete messages)
-Power Level 0   - Default (send messages)
+Power level 100 - Admin (change settings and permissions)
+Power level 50  - Moderator (kick, ban, delete messages)
+Power level 0   - Default (send messages)
 ```
 
-Customize thresholds for specific actions:
-- Change room name
-- Kick/ban users
-- Send messages
-- Change permissions
+In [room version 12](https://spec.matrix.org/v1.19/rooms/v12/) rooms (the default for new rooms on Synapse 1.162 and later), the room's **creator** sits above all of these with an unlimited power level. Creators cannot be demoted, and they do not appear in the power-level list. If you want co-owners, they must be added as `additional_creators` when the room is created; otherwise make them admins (100).
 
-## Room Aliases
+You can change the level required for each action, such as changing the room name, kicking or banning, sending messages, or changing permissions.
+
+## Room aliases
 
 Aliases make rooms easy to find and share.
 
-### Creating an Alias
+### Creating an alias
 
-1. Go to **Room Settings → General**
-2. Under "Local Addresses", add an alias
+1. Go to **Room settings → General**.
+2. Under the local addresses section, add an address.
 3. Format: `#alias:yourserver.org`
 
-### Multiple Aliases
+### Multiple aliases
 
-A room can have multiple aliases:
+A room can have several aliases:
 - `#project:matrix.org` (main alias)
 - `#project-chat:matrix.org` (alternative)
-- `#project:example.com` (on different server)
+- `#project:example.com` (on another server)
 
 :::info
-Only users on your homeserver can create aliases on that server. But you can set any alias as the "main" alias regardless of which server it's on.
+You can only create aliases on your own homeserver. Any published alias can be chosen as the room's main address.
 :::
 
-## Managing Members
+## Managing members
 
-### Inviting Users
+### Inviting users
 
-**Methods to invite:**
+1. **Direct invite**: enter their Matrix ID (`@user:server.org`)
+2. **Share a link**: copy the room link (`https://matrix.to/#/...`)
+3. **Public directory**: publish the room in your server's room directory
 
-1. **Direct Invite**: Enter their Matrix ID (`@user:server.org`)
-2. **Share Link**: Copy room link or QR code
-3. **Public Directory**: List room in public directory
+Invites stay valid until they are accepted, rejected or revoked.
 
-### Member Management
+### Required power levels
 
-| Action | Required Power Level |
-|--------|---------------------|
-| **Invite** | Usually 0 or 50 |
-| **Kick** | Usually 50 |
-| **Ban** | Usually 50 |
-| **Promote/Demote** | 100 (or custom) |
+| Action | Default level |
+|--------|---------------|
+| **Invite** | 0 |
+| **Kick** | 50 |
+| **Ban** | 50 |
+| **Change power levels** | 100 |
 
-### Banning vs Kicking
+These are the spec defaults; room presets and clients can set different values.
 
-- **Kick**: Removes user, they can rejoin
-- **Ban**: Removes user, prevents rejoin
+### Kick vs ban
 
-## Room Moderation
+- **Kick**: removes the user; they can rejoin
+- **Ban**: removes the user and stops them rejoining
 
-### Setting Up Moderation
+## Moderation
 
-1. **Assign Moderators**: Promote trusted users to power level 50+
-2. **Configure Permissions**: Adjust what each level can do
-3. **Enable Slow Mode**: Limit message frequency (if supported by client)
+### Setting up
 
-### Moderation Actions
+1. **Assign moderators**: give trusted users power level 50 or more.
+2. **Adjust permissions**: decide what each level can do.
+3. **For large public rooms**, consider a moderation bot such as [Draupnir](../bots/mjolnir), which can share ban lists between rooms.
+
+Matrix has no per-room "slow mode". Message rate limits are set by each homeserver (in Synapse, `rc_message`).
+
+### Slash commands in Element
 
 ```
 /kick @user:server.org [reason]    - Remove from room
 /ban @user:server.org [reason]     - Ban from room
 /unban @user:server.org            - Remove ban
-/op @user:server.org [level]       - Set power level
-/deop @user:server.org             - Reset to default
+/op @user:server.org <level>       - Set power level
+/deop @user:server.org             - Reset power level
 ```
 
-### Server ACLs (Advanced)
+### Server ACLs (advanced)
 
-Block entire servers from joining:
+A server ACL (`m.room.server_acl`) blocks whole servers from taking part in a room. Element has no settings screen for this. You can:
 
-1. Room Settings → Security
-2. Add server to blocklist
-3. Users from that server can't join
+- send the state event yourself with `/devtools` → **Send custom state event** → type `m.room.server_acl` (see the [example](../security/overview#server-acls)), or
+- let a moderation bot such as Draupnir manage it.
 
 :::warning
-Server ACLs are powerful but use them carefully. They affect all users from that server, not just problematic ones.
+A server ACL affects every user on the blocked server, and a mistake can lock out your own server. Always keep your own server in `allow`.
 :::
 
-## Spaces Integration
+## Spaces
 
-### Adding Room to a Space
+### Adding a room to a space
 
-1. Open the Space settings
-2. Click **"Add existing room"**
-3. Select your room
-4. Room now appears in Space hierarchy
+1. Open the space's menu.
+2. Choose **Add existing room**.
+3. Select your room.
 
-### Space-Based Access
+### Space-based access
 
-Configure room access based on Space membership:
-- "Space members" - Anyone in the parent Space can join
-- Useful for community management
+Set the room's access to **Space members** (the `restricted` join rule). Members of the chosen spaces can then join without an invite.
 
-## Advanced Room Features
+## Advanced features
 
-### Widgets
+### Widgets and integrations
 
-Add interactive widgets to rooms:
-- **Jitsi**: Video conferencing
-- **Etherpad**: Collaborative notes
-- **Custom**: Any embeddable web app
+Widgets embed web apps (for example Jitsi or a custom page) in a room. Element adds them through an **integration manager**, which is optional and configured by your client or homeserver admin. Many self-hosted setups have none. Bridges and bots, such as GitHub notifications or RSS feeds, are usually invited to the room directly; see [Bots](../bots/overview) and [Bridges](../bridges/overview).
 
-### Integrations
+### Room upgrades
 
-Connect external services via bridges or bots:
-- GitHub notifications
-- RSS feeds
-- Custom webhooks
+Rooms sometimes need upgrading to a newer room version (Element: **Room settings → Advanced → Upgrade this room**):
 
-### Room Upgrades
+1. A user with enough power sends the upgrade.
+2. The server creates a new room and puts a "tombstone" in the old one pointing to it.
+3. Members are **not** moved automatically. Clients show a link or banner, and each member joins the new room.
+4. Settings such as the name, topic, avatar, join rules, history visibility, power levels and server ACLs are copied, local aliases move to the new room, and Synapse also copies bans. In room version 12, `additional_creators` are not copied automatically, and the user who upgrades becomes the new room's creator.
 
-Sometimes rooms need to be upgraded (new room version):
-1. Matrix introduces new room features
-2. Admin initiates upgrade
-3. Old room tombstoned, new room created
-4. Members automatically moved
+## Good practice
 
-## Best Practices
+### Private groups
 
-### For Private Groups
+- Turn on encryption before the first message
+- Use **Invite only** access
+- Set history to **Members since invited**
+- Verify the people you talk to
 
-- Enable encryption before first message
-- Set history visibility to "Members only"
-- Use invite-only access
-- Verify member devices
+### Public communities
 
-### For Public Communities
+- Write a clear name, topic and rules
+- Build a moderation team, and consider a moderation bot
+- Keep public rooms unencrypted unless you have a reason; encryption gives little privacy when anyone can join
 
-- Create clear room name and topic
-- Set up moderation team
-- Consider slow mode for busy rooms
-- Establish and pin community guidelines
+### Organizations
 
-### For Organizations
-
-- Use Spaces to organize channels
-- Set up SSO/OIDC if available
-- Configure data retention policies
-- Plan for room archival
+- Use spaces to organize rooms
+- Use single sign-on through the Matrix Authentication Service (OAuth 2.0) if your homeserver supports it
+- Set data retention policies on the server
+- Plan for archiving rooms
 
 ## Troubleshooting
 
 ### "Unable to join room"
 
-- Check if you're banned
-- Verify room still exists
-- Ensure invite hasn't expired
+- Check whether you are banned, or whether the room is invite-only
+- Check that the room still exists and the alias is correct
+- If the room has a server ACL, your server may be blocked
 
-### "Unable to decrypt messages"
+### "Unable to decrypt"
 
-- Verify your session
-- Check key backup
-- Request key share from other members
+- Enter your recovery key (Settings → **Encryption**) or verify this device from another one
+- For messages sent before you joined, ask a member to invite you again: clients that support encrypted history sharing (spec v1.19) send the room's keys with the invite. Whether you can see them also depends on the room's history setting.
 
 ### "Changes not saving"
 
 - Check your power level
-- Verify internet connection
-- Look for error messages
+- Check your connection
+- Look for an error message
 
 ---
 

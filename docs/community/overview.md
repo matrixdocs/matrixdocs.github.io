@@ -2,6 +2,9 @@
 sidebar_position: 1
 title: Community & Resources
 description: Matrix community resources and how to get involved
+last_update:
+  date: 2026-10-18
+verified_with: "room aliases checked against the matrix.org room directory; links checked 2026-10-18"
 ---
 
 # Community & Resources
@@ -22,13 +25,13 @@ Join the Matrix community and find helpful resources.
 ### Documentation
 
 - [Matrix Documentation](https://matrix.org/docs/)
-- [Synapse Documentation](https://element-hq.github.io/synapse/)
+- [Synapse Documentation](https://element-hq.github.io/synapse/latest/)
 - [Element Documentation](https://element.io/help)
 
 ### Blogs
 
 - [Matrix.org Blog](https://matrix.org/blog/)
-- [This Week In Matrix (TWIM)](https://matrix.org/blog/category/this-week-in-matrix/)
+- [This Week In Matrix (TWIM)](https://matrix.org/category/this-week-in-matrix/)
 
 ## Community Rooms
 
@@ -57,15 +60,15 @@ Join the Matrix community and find helpful resources.
 | [#discord:maunium.net](https://matrix.to/#/#discord:maunium.net) | Discord bridge |
 | [#telegram:maunium.net](https://matrix.to/#/#telegram:maunium.net) | Telegram bridge |
 | [#maubot:maunium.net](https://matrix.to/#/#maubot:maunium.net) | Maubot |
-| [#mjolnir:matrix.org](https://matrix.to/#/#mjolnir:matrix.org) | Mjolnir moderation |
+| [#draupnir:matrix.org](https://matrix.to/#/#draupnir:matrix.org) | Draupnir moderation bot |
+| [#mjolnir:matrix.org](https://matrix.to/#/#mjolnir:matrix.org) | Mjolnir moderation bot |
 
 ## Finding Rooms
 
 ### Room Directories
 
 - **Element**: Click Explore (compass icon)
-- [matrixrooms.info](https://matrixrooms.info) - Room search
-- [matrix-rooms.com](https://matrix-rooms.com) - Another directory
+- [matrixrooms.info](https://matrixrooms.info) - Room search across many servers
 
 ### Popular Topics
 
@@ -92,7 +95,7 @@ Search for rooms about:
 |---------|-----------|
 | Synapse | [github.com/element-hq/synapse](https://github.com/element-hq/synapse) |
 | Element | [github.com/element-hq](https://github.com/element-hq) |
-| Dendrite | [github.com/matrix-org/dendrite](https://github.com/matrix-org/dendrite) |
+| Dendrite (maintenance mode) | [github.com/element-hq/dendrite](https://github.com/element-hq/dendrite) |
 | matrix-rust-sdk | [github.com/matrix-org/matrix-rust-sdk](https://github.com/matrix-org/matrix-rust-sdk) |
 
 ### To Documentation
@@ -104,15 +107,17 @@ Search for rooms about:
 
 ### FOSDEM
 
-Annual open source conference with Matrix devroom:
+Annual open source conference in Brussels where Matrix projects often present:
 - [fosdem.org](https://fosdem.org)
-- Usually first weekend of February
+- Usually the first weekend of February (2026: 31 January – 1 February)
 - Brussels, Belgium
 
-### Matrix Community Summit
+### The Matrix Conference
 
-Dedicated Matrix conference:
-- Watch for announcements on matrix.org
+The Foundation's annual conference: [conference.matrix.org](https://conference.matrix.org/)
+- 2025: Strasbourg, France
+- 2026: Malmö, Sweden, 20–22 October, with a hackathon on 23 October ([announcement](https://matrix.org/blog/2026/04/conference-announcement/))
+- Recordings of past talks are announced on the [Matrix.org blog](https://matrix.org/blog/)
 
 ### Local Meetups
 
@@ -125,7 +130,7 @@ Search for Matrix meetups in your area or start one!
 | Platform | Account |
 |----------|---------|
 | Mastodon | [@matrix@mastodon.matrix.org](https://mastodon.matrix.org/@matrix) |
-| Twitter/X | [@mataborix](https://twitter.com/matrixdotorg) |
+| X (Twitter) | [@matrixdotorg](https://x.com/matrixdotorg) |
 | YouTube | [Matrix.org](https://youtube.com/c/Matrixdotorg) |
 
 ## Supporting Matrix
@@ -153,14 +158,13 @@ Support companies building on Matrix:
 
 ### Tutorials
 
-- [Matrix Guide](https://joinmatrix.org) - Getting started
-- [Are We Matrix Yet](https://arewematrixyet.com) - Feature comparison
-- YouTube tutorials - Search "Matrix protocol tutorial"
+- [Join Matrix](https://joinmatrix.org) - A community-written beginner's guide
+- [servers.joinmatrix.org](https://servers.joinmatrix.org) - Public homeservers and their sign-up rules
 
 ### Books & Articles
 
-- [Matrix Protocol Guide](https://matrix.org/docs/guides/)
-- Various blog posts on matrix.org
+- [Matrix.org documentation](https://matrix.org/docs/) (older guides are archived at matrix.org/docs/older/)
+- [The specification](https://spec.matrix.org/)
 
 ### Videos
 
@@ -178,7 +182,7 @@ Support companies building on Matrix:
 
 ### RSS Feeds
 
-- matrix.org/blog/feed
+- [matrix.org/atom.xml](https://matrix.org/atom.xml) (Matrix.org blog, including TWIM)
 
 ---
 

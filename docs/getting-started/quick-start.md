@@ -2,154 +2,125 @@
 sidebar_position: 3
 title: Quick Start
 description: Get up and running with Matrix in minutes
+last_update:
+  date: 2026-10-18
+verified_with: "spec v1.19, Synapse 1.163.0, Element Web 1.12.32, Element X Android 26.09.4"
 ---
 
 # Quick Start
 
-Get chatting on Matrix in under 5 minutes.
+This page gets you an account, a client and your first rooms.
 
-## Option 1: Use Element Web (Fastest)
+## 1. Pick a homeserver
 
-The quickest way to try Matrix:
+Your homeserver holds your account. You can talk to people on any other server, so the choice is about who runs it, their rules and their limits.
 
-1. Go to [app.element.io](https://app.element.io)
-2. Click **"Create Account"**
-3. Choose a username and password
-4. You're on Matrix!
+- **matrix.org** is run by the Matrix.org Foundation and is the default in most apps. Free accounts have [media upload limits](https://matrix.org/homeserver/pricing/) (as of 2026-10: 10 MB per file, 100 MB per 24 hours) and a paid premium tier. Guest accounts are disabled.
+- **Other public servers** are listed at [servers.joinmatrix.org](https://servers.joinmatrix.org), with their registration rules. For example, [tchncs.de](https://tchncs.de/matrix) is a long-running German server; its page states that sign-up uses Google reCAPTCHA and that IP logs are kept for 7 days. Read each server's terms before you sign up.
+- **Your own server**: see [Servers](../servers/overview).
 
-Your new Matrix ID will be `@username:matrix.org`.
-
-## Option 2: Download Element
-
-For a better experience, download the native app:
-
-| Platform | Download |
-|----------|----------|
-| **Windows/Mac/Linux** | [element.io/download](https://element.io/download) |
-| **Android** | [Google Play](https://play.google.com/store/apps/details?id=im.vector.app) / [F-Droid](https://f-droid.org/packages/im.vector.app/) |
-| **iOS** | [App Store](https://apps.apple.com/app/element-messenger/id1083446067) |
-
-## Option 3: Choose a Different Homeserver
-
-For more privacy or features, register on a different homeserver:
-
-| Homeserver | Features |
-|------------|----------|
-| [matrix.org](https://matrix.org) | Default, largest community |
-| [envs.net](https://element.envs.net) | Privacy-focused, no phone required |
-| [tchncs.de](https://tchncs.de/matrix) | German, privacy-respecting |
-| [nitro.chat](https://nitro.chat) | Fast, US-based |
-
-:::tip Power User Tip
-You can use any Matrix client with any homeserver. The homeserver just stores your account - you're free to switch clients anytime.
+:::tip
+You can use any Matrix client with any homeserver, and switch clients at any time.
 :::
 
-## First Steps After Signup
+## 2. Create an account
 
-### 1. Set Up Key Backup
+On matrix.org, accounts are managed by the Matrix Authentication Service (MAS) at [account.matrix.org](https://account.matrix.org/):
 
-**This is crucial!** Set up key backup to protect your encrypted messages:
+1. Open [app.element.io](https://app.element.io) (or Element X, below) and choose **Create account**.
+2. The app sends you to account.matrix.org. Pick a username and password, give an email address, and complete the CAPTCHA.
+3. Confirm your email, then return to the app.
 
-1. Go to **Settings** → **Security & Privacy**
-2. Click **"Set up Secure Backup"**
-3. Save your recovery key somewhere safe
+Your Matrix ID will be `@username:matrix.org`. Password changes, sessions and account deletion on matrix.org are also handled at account.matrix.org.
+
+Other servers may still show a sign-up form inside the app. The steps are similar.
+
+## 3. Install a client
+
+Element's current mobile app is **Element X**. The older mobile app is now **Element Classic**, which receives security fixes only and, according to Element's [migration FAQ](https://docs.element.io/latest/element-server-suite-pro/migration/classic-to-pro-mobile-apps-faq/), is due to leave the app stores on 2026-12-31.
+
+| Platform | App | Download |
+|----------|-----|----------|
+| **Android** | Element X | [Google Play](https://play.google.com/store/apps/details?id=io.element.android.x) / [F-Droid](https://f-droid.org/packages/io.element.android.x/) |
+| **iOS** | Element X | [App Store](https://apps.apple.com/app/element-x-secure-chat-call/id1631335820) |
+| **Windows / macOS / Linux** | Element Desktop | [element.io/download](https://element.io/download) |
+| **Browser** | Element Web | [app.element.io](https://app.element.io) |
+
+Prefer something else? See [Clients](../clients/overview).
+
+## 4. Set up recovery
+
+**Do this first.** Your recovery key lets a new device unlock your encrypted message history.
+
+- **Element Web / Desktop:** Settings → **Encryption** → Recovery → **Get recovery key**. Make sure **Key storage** is on.
+- **Element X:** Settings → **Encryption** → Recovery.
+
+Save the recovery key in a password manager or another safe place, then confirm it.
 
 :::warning
-Without key backup, you'll lose access to encrypted message history if you log out or lose your device.
+If you lose your recovery key **and** all your signed-in devices, you cannot read your old encrypted messages. You will have to reset your digital identity and start again.
 :::
 
-### 2. Verify Your Session
+## 5. Verify your other devices
 
-If you have multiple devices:
+When you sign in on a second device, the app asks you to confirm it from a device you already use (scan a QR code or compare emoji) or to enter your recovery key. Do it straight away: under the current spec's recommended behaviour, devices you have not verified do not get keys to new encrypted messages.
 
-1. Log in on both devices
-2. You'll see a verification prompt
-3. Complete emoji or QR verification
-4. Both sessions are now verified
+## 6. Join some rooms
 
-### 3. Join Some Rooms
-
-Find interesting rooms to join:
+A few public rooms on matrix.org:
 
 ```
-#matrix:matrix.org        - Official Matrix HQ
-#element-web:matrix.org   - Element Web chat
+#matrix:matrix.org        - Matrix HQ, general discussion
+#element-web:matrix.org   - Element Web and Desktop
 #offtopic:matrix.org      - General chat
 #homeservers:matrix.org   - Homeserver admins
 ```
 
-To join: Click **+** → **Join public room** → Enter room alias
+To join one in Element Web, use **Explore rooms** in the room list, or start a new chat and paste the alias. You can also open a `https://matrix.to/#/#matrix:matrix.org` link.
 
-### 4. Explore Public Room Directories
+## Useful settings in Element Web
 
-1. Click the **Explore** button (compass icon)
-2. Browse rooms by category
-3. Search for topics you're interested in
+| Where | What |
+|-------|------|
+| Settings → **Notifications** | Desktop notifications, keywords, per-room rules |
+| Settings → **Appearance** | Theme, message layout (Modern, Message bubbles, IRC), font size |
+| Settings → **Preferences** | Send read receipts, send typing notifications |
+| Settings → **Devices** | Your signed-in sessions; sign out old ones |
+| Settings → **Encryption** | Recovery key, key storage, reset identity |
 
-## Essential Settings
-
-Configure these for the best experience:
-
-### Notifications
-
-**Settings → Notifications**
-- Enable desktop notifications
-- Configure which events trigger alerts
-- Set quiet hours if needed
-
-### Appearance
-
-**Settings → Appearance**
-- Choose light/dark theme
-- Adjust message layout (IRC style vs bubbles)
-- Set font size
-
-### Privacy
-
-**Settings → Security & Privacy**
-- Review logged-in devices
-- Enable/disable read receipts
-- Configure typing indicators
-
-## Keyboard Shortcuts
-
-Master these for faster navigation:
+## Keyboard shortcuts (Element Web)
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl/Cmd + K` | Quick room switcher |
+| `Ctrl/Cmd + K` | Search rooms |
 | `Ctrl/Cmd + /` | Show all shortcuts |
-| `Tab` | Autocomplete usernames |
-| `↑` | Edit last message |
-| `Ctrl/Cmd + Shift + U` | Upload file |
-
-## What's Next?
-
-Now that you're set up:
-
-1. **[Create Your First Room](./your-first-room)** - Learn room management
-2. **[Explore Clients](../clients/overview)** - Try different Matrix apps
-3. **[Hidden Gems](../gems/overview)** - Discover power user features
+| `Tab` | Autocomplete names |
+| `↑` | Edit your last message |
+| `Ctrl/Cmd + Shift + U` | Upload a file |
 
 ## Troubleshooting
 
-### Can't Receive Messages?
+### Messages not arriving
 
-- Check your internet connection
-- Try refreshing the page/app
-- Look for sync errors in Settings
+- Check your connection and reload the app.
+- Check whether your homeserver is up (for matrix.org, see [status.matrix.org](https://status.matrix.org)).
 
-### Encryption Issues?
+### "Unable to decrypt"
 
-- Ensure key backup is set up
-- Verify your other sessions
-- Check if the room has encryption enabled
+- Enter your recovery key (Settings → **Encryption**), or verify this device from another signed-in device.
+- Make sure **Key storage** is on, so new keys are backed up.
+- Messages sent before you joined a room may be unreadable by design, depending on the room's history settings.
 
-### Slow Performance?
+### Slow app
 
-- Clear cache (Settings → Help & About)
-- Reduce number of joined rooms
-- Try a lighter client like [Cinny](https://cinny.in)
+- Element Web: Settings → Help & About → **Clear cache and reload**.
+- On mobile, Element X is much faster than Element Classic. On desktop, a lighter client such as [Cinny](https://cinny.in) may help.
+
+## What's next?
+
+1. **[Create your first room](./your-first-room)**
+2. **[Explore other clients](../clients/overview)**
+3. **[Account security](../security/account)**
 
 ---
 
